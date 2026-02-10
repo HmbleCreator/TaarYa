@@ -166,6 +166,16 @@ class VectorSearch:
         collection = collection or self.DEFAULT_COLLECTION
         client = qdrant_conn.get_client()
         
+        # Check collection exists before searching
+        try:
+            collections = client.get_collections().collections
+            if collection not in [c.name for c in collections]:
+                logger.warning(f"Collection '{collection}' not found — no documents indexed yet")
+                return []
+        except Exception as e:
+            logger.error(f"Failed to check collections: {e}")
+            return []
+        
         # Embed the query
         query_vector = self.embed_text(query_text)
         
