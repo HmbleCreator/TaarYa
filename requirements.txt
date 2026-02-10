@@ -46,3 +46,6 @@ tenacity==8.2.3
 pytest==8.0.0
 black==24.1.1
 ruff==0.1.15
+
+# Desktop App
+pywebview==5.0.5

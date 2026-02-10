@@ -1,0 +1,373 @@
+/* ======================================================
+   TaarYa — Frontend Application Logic
+   Connects to FastAPI backend at /api/*
+   ====================================================== */
+
+const API = '';  // same origin — works for both web and desktop
+
+// ---- Stars Background ----
+function initStars() {
+    const bg = document.getElementById('starsBg');
+    if (!bg) return;
+    for (let i = 0; i < 80; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        const size = Math.random() * 2 + 1;
+        star.style.width = size + 'px';
+        star.style.height = size + 'px';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.setProperty('--dur', (Math.random() * 4 + 2) + 's');
+        star.style.animationDelay = Math.random() * 4 + 's';
+        bg.appendChild(star);
+    }
+}
+
+// ---- Tab Navigation ----
+function initTabs() {
+    document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            const panel = document.getElementById('panel' + capitalize(btn.dataset.tab));
+            if (panel) panel.classList.add('active');
+
+            // Auto-load stats when System tab is opened
+            if (btn.dataset.tab === 'stats') loadStats();
+        });
+    });
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+// ---- Chat ----
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+
+function sendSuggestion(el) {
+    chatInput.value = el.textContent;
+    sendMessage();
+}
+
+async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = '';
+
+    // Add user message
+    appendMessage('user', text);
+
+    // Show typing indicator
+    const typingEl = appendTyping();
+
+    // Disable send button
+    const sendBtn = document.getElementById('chatSend');
+    sendBtn.disabled = true;
+
+    try {
+        // Try the agent endpoint first (LLM-powered)
+        let data;
+        try {
+            const resp = await fetch(API + '/api/agent/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: text }),
+            });
+            data = await resp.json();
+        } catch (e) {
+            // Fallback: try direct search based on input
+            data = await fallbackSearch(text);
+        }
+
+        typingEl.remove();
+
+        if (data.answer) {
+            appendMessage('assistant', data.answer, data.tools_used);
+        } else if (data.error) {
+            appendMessage('assistant', '⚠️ ' + data.error);
+        } else {
+            appendMessage('assistant', formatSearchResult(data));
+        }
+    } catch (err) {
+        typingEl.remove();
+        appendMessage('assistant', '❌ Failed to reach the server. Is it running?\n\n' + err.message);
+    }
+
+    sendBtn.disabled = false;
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function fallbackSearch(text) {
+    // Parse coordinates from text
+    const raMatch = text.match(/ra\s*[=:]\s*([\d.]+)/i);
+    const decMatch = text.match(/dec\s*[=:]\s*([+-]?[\d.]+)/i);
+    const idMatch = text.match(/(?:star|source_id|id)\s*[=:]*\s*(\d{5,})/i);
+
+    if (raMatch && decMatch) {
+        const ra = parseFloat(raMatch[1]);
+        const dec = parseFloat(decMatch[1]);
+        const resp = await fetch(API + `/api/stars/cone-search?ra=${ra}&dec=${dec}&radius=0.5&limit=10`);
+        return await resp.json();
+    }
+
+    if (idMatch) {
+        const resp = await fetch(API + `/api/stars/lookup/${idMatch[1]}`);
+        return await resp.json();
+    }
+
+    return { answer: "I couldn't parse your query. Try providing coordinates like 'RA=45, Dec=0.5' or a star ID." };
+}
+
+function appendMessage(role, text, toolsUsed) {
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = role === 'assistant' ? '✦' : '👤';
+
+    const content = document.createElement('div');
+    content.className = 'message-content';
+
+    const textDiv = document.createElement('div');
+    textDiv.className = 'message-text';
+    textDiv.innerHTML = formatText(text);
+
+    // Show tools used
+    if (toolsUsed && toolsUsed.length > 0) {
+        const toolsDiv = document.createElement('div');
+        toolsDiv.className = 'tools-used';
+        toolsDiv.innerHTML = 'Tools used: ' + toolsUsed.map(t =>
+            `<span>${t.tool}</span>`
+        ).join(' ');
+        textDiv.appendChild(toolsDiv);
+    }
+
+    content.appendChild(textDiv);
+    div.appendChild(avatar);
+    div.appendChild(content);
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+}
+
+function appendTyping() {
+    const div = document.createElement('div');
+    div.className = 'message assistant';
+    div.innerHTML = `
+        <div class="message-avatar">✦</div>
+        <div class="message-content">
+            <div class="typing-indicator">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    `;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
+}
+
+function formatText(text) {
+    if (typeof text !== 'string') {
+        text = JSON.stringify(text, null, 2);
+    }
+    // Convert newlines
+    text = text.replace(/\n/g, '<br>');
+    // Bold **text**
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Inline code
+    text = text.replace(/`(.*?)`/g, '<code style="background:rgba(80,191,247,0.1);padding:1px 5px;border-radius:3px;font-family:var(--font-mono);font-size:12px;color:var(--accent);">$1</code>');
+    return text;
+}
+
+function formatSearchResult(data) {
+    if (data.stars && data.stars.length > 0) {
+        let html = `Found **${data.count || data.stars.length} stars**:\n\n`;
+        html += '| Source ID | RA | Dec | G-mag | Distance |\n';
+        html += '|---|---|---|---|---|\n';
+        for (const s of data.stars.slice(0, 10)) {
+            const dist = s.angular_distance ? s.angular_distance.toFixed(4) + '°' : '-';
+            html += `| ${s.source_id} | ${s.ra.toFixed(4)} | ${s.dec.toFixed(4)} | ${(s.phot_g_mean_mag || '-')} | ${dist} |\n`;
+        }
+        return html;
+    }
+
+    if (data.source_id) {
+        let info = `**Star ${data.source_id}**\n`;
+        info += `• RA: ${data.ra?.toFixed(6)}°\n`;
+        info += `• Dec: ${data.dec?.toFixed(6)}°\n`;
+        if (data.parallax) info += `• Parallax: ${data.parallax.toFixed(4)} mas\n`;
+        if (data.phot_g_mean_mag) info += `• G-mag: ${data.phot_g_mean_mag.toFixed(3)}\n`;
+        return info;
+    }
+
+    return JSON.stringify(data, null, 2);
+}
+
+// Enter key to send
+document.addEventListener('DOMContentLoaded', () => {
+    chatInput?.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+});
+
+
+// ---- Explore Tab: Cone Search ----
+async function runConeSearch() {
+    const ra = parseFloat(document.getElementById('searchRA').value);
+    const dec = parseFloat(document.getElementById('searchDec').value);
+    const radius = parseFloat(document.getElementById('searchRadius').value);
+    const magLimit = document.getElementById('searchMag').value;
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Searching...';
+
+    try {
+        let url = `${API}/api/stars/cone-search?ra=${ra}&dec=${dec}&radius=${radius}&limit=50`;
+        if (magLimit) url += `&mag_limit=${magLimit}`;
+
+        const resp = await fetch(url);
+        const data = await resp.json();
+        displayResults(data.stars || [], data.count);
+
+        // Also get count
+        const countResp = await fetch(`${API}/api/stars/count?ra=${ra}&dec=${dec}&radius=${radius}`);
+        const countData = await countResp.json();
+        document.getElementById('regionCount').textContent = countData.count?.toLocaleString() || '0';
+    } catch (err) {
+        alert('Search failed: ' + err.message);
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Search Stars';
+}
+
+function displayResults(stars, totalCount) {
+    const card = document.getElementById('resultsCard');
+    const body = document.getElementById('resultsBody');
+    const count = document.getElementById('resultsCount');
+
+    if (!stars || stars.length === 0) {
+        card.style.display = 'none';
+        return;
+    }
+
+    card.style.display = 'block';
+    count.textContent = `${stars.length} of ${totalCount || stars.length} results`;
+    body.innerHTML = '';
+
+    for (const s of stars) {
+        const bpRp = (s.phot_bp_mean_mag && s.phot_rp_mean_mag)
+            ? (s.phot_bp_mean_mag - s.phot_rp_mean_mag).toFixed(3)
+            : '-';
+        const dist = s.angular_distance ? s.angular_distance.toFixed(4) : '-';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${s.source_id}</td>
+            <td>${s.ra?.toFixed(4)}</td>
+            <td>${s.dec?.toFixed(4)}</td>
+            <td>${s.phot_g_mean_mag?.toFixed(2) || '-'}</td>
+            <td>${bpRp}</td>
+            <td>${s.parallax?.toFixed(3) || '-'}</td>
+            <td>${dist}</td>
+            <td><button class="btn-sm" onclick="viewStar('${s.source_id}')">View</button></td>
+        `;
+        body.appendChild(tr);
+    }
+}
+
+// ---- Explore Tab: Star Lookup ----
+async function runStarLookup() {
+    const sid = document.getElementById('lookupId').value.trim();
+    if (!sid) return;
+
+    const resultBox = document.getElementById('lookupResult');
+    resultBox.classList.add('visible');
+    resultBox.textContent = 'Loading...';
+
+    try {
+        const resp = await fetch(`${API}/api/stars/lookup/${sid}`);
+        if (!resp.ok) {
+            resultBox.textContent = 'Star not found.';
+            return;
+        }
+        const s = await resp.json();
+        const bpRp = (s.phot_bp_mean_mag && s.phot_rp_mean_mag)
+            ? (s.phot_bp_mean_mag - s.phot_rp_mean_mag).toFixed(3)
+            : 'N/A';
+        resultBox.textContent = [
+            `Source ID: ${s.source_id}`,
+            `RA: ${s.ra?.toFixed(6)}°`,
+            `Dec: ${s.dec?.toFixed(6)}°`,
+            `Parallax: ${s.parallax?.toFixed(4) || 'N/A'} mas`,
+            `Proper Motion: (${s.pmra?.toFixed(4)}, ${s.pmdec?.toFixed(4)}) mas/yr`,
+            `G-mag: ${s.phot_g_mean_mag?.toFixed(3)}`,
+            `BP-RP: ${bpRp}`,
+        ].join('\n');
+    } catch (err) {
+        resultBox.textContent = 'Error: ' + err.message;
+    }
+}
+
+function viewStar(sid) {
+    document.getElementById('lookupId').value = sid;
+    runStarLookup();
+    // Scroll to the lookup card
+    document.querySelector('.lookup-card')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+
+// ---- Stats Tab ----
+async function loadStats() {
+    try {
+        const resp = await fetch(API + '/api/stats');
+        const data = await resp.json();
+
+        // PostgreSQL
+        const pgTotal = data.postgresql?.total_stars || 0;
+        document.getElementById('statPostgres').textContent = pgTotal.toLocaleString();
+        const pgStatus = document.getElementById('statPostgresStatus');
+        pgStatus.textContent = data.postgresql?.status === 'connected' ? 'Connected' : 'Disconnected';
+        pgStatus.className = 'stat-status ' + (data.postgresql?.status === 'connected' ? 'connected' : 'error');
+
+        // Qdrant
+        const qCount = data.qdrant?.points_count || (data.qdrant?.exists === false ? 0 : '?');
+        document.getElementById('statQdrant').textContent = qCount.toLocaleString ? qCount.toLocaleString() : qCount;
+        const qStatus = document.getElementById('statQdrantStatus');
+        if (data.qdrant?.exists === false) {
+            qStatus.textContent = 'Collection Empty';
+            qStatus.className = 'stat-status warning';
+        } else {
+            qStatus.textContent = 'Active';
+            qStatus.className = 'stat-status connected';
+        }
+
+        // Neo4j
+        const nTotal = (data.neo4j?.stars || 0) + (data.neo4j?.papers || 0) + (data.neo4j?.clusters || 0);
+        document.getElementById('statNeo4j').textContent = nTotal.toLocaleString();
+        const nStatus = document.getElementById('statNeo4jStatus');
+        nStatus.textContent = data.neo4j?.status === 'connected' ? 'Connected' : 'Disconnected';
+        nStatus.className = 'stat-status ' + (data.neo4j?.status === 'connected' ? 'connected' : 'error');
+
+    } catch (err) {
+        console.error('Failed to load stats:', err);
+        ['statPostgresStatus', 'statQdrantStatus', 'statNeo4jStatus'].forEach(id => {
+            const el = document.getElementById(id);
+            el.textContent = 'Offline';
+            el.className = 'stat-status error';
+        });
+    }
+}
+
+
+// ---- Init ----
+document.addEventListener('DOMContentLoaded', () => {
+    initStars();
+    initTabs();
+});
