@@ -7,7 +7,6 @@ Unlike traditional search interfaces that require expert knowledge of SQL or ADQ
 ---
 
 
-```markdown
 # TaarYa 
 
 ![Project Status](https://img.shields.io/badge/status-implementation--orange.svg) ![Python](https://img.shields.io/badge/python-3.9+-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -167,7 +166,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨 Authors & Acknowledgments
 
-* **[Your Name]** - [Amit Kumar](https://github.com/HmbleCreator)
+* **[Author]** - [Amit Kumar](https://github.com/HmbleCreator)
 
 Special thanks to the Gaia Collaboration, SIMBAD, and the global open-source AI community for the tools that made this project possible.
 ```
