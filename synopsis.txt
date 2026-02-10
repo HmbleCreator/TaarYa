@@ -209,17 +209,17 @@ Diagrams
 
 ●	Class
 
-
+synopsisImages\Class Diagram.png
 
 
 
 
 
 ●	Use Case
-
+synopsisImages\UseCase Diagram.png
  
 ●	DFD (Level 0)
-
+synopsisImages\DFD 0.png
 
 
 
@@ -230,16 +230,17 @@ Diagrams
 
 
 ●	DFD (Level 1)
-
+synopsisImages\DFD 1.png
  
 ●	DFD (Level 2)
 
-
+synopsisImages\DFD 2.png
  
 ●	E-R
-
+synopsisImages\ER Diagram.png
  
 ●	Gantt Chart
+synopsisImages\Gantt Chart.png
 
  
 References
