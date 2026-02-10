@@ -1,0 +1,257 @@
+SYNOPSIS (ES 451) ON
+Developing an Intelligent RAG-Driven Architecture for Astronomical Star Catalogs
+
+
+Submitted for partial fulfilment of award of the degree of
+Bachelor of Technology
+In
+Computer Science & Engineering
+Submitted by
+Amit Kumar – Roll No: 14618002722
+
+Under the Guidance of
+Dr. Madhumita Mahapatra
+Professor
+
+Department of Computer Science & Engineering
+
+
+DELHI TECHNICAL CAMPUS, GREATER NOIDA
+(Affiliated Guru Gobind Singh Indraprastha University, New Delhi) Session 2025-2026 (Even SEM)
+ 
+Table of Content:
+
+S. No.	Topic	Page No.
+1	Introduction	1
+2	Problem Statement	2
+3	Objectives	3
+4	Feasibility Study	4
+5	Need and Significance	5
+6	Intended User	5
+7	Abbreviations and Acronyms	6
+8	Literature Review	7
+8.1	Existing Theoretical and Methodological Contributions	7
+8.2	Improvements over Existing Work	7
+8.3	Scope	8
+9	Proposed Methodology	9
+9.1	Functional Requirements	10
+9.1.1	Module 1: Multi-Modal Ingestion Engine	10
+9.1.2	Module 2: Hybrid Indexing System	10
+9.1.3	Module 3: Knowledge Graph Constructor	10
+9.1.4	Module 4: Agentic Reasoning Core	10
+9.1.5	Module 5: Verification & Synthesis Layer	10
+9.2	Non-Functional Requirements	11
+9.3	Hardware Requirements	11
+9.4	Software Requirements	11
+10	Diagrams	12
+10.1	Use Case Diagram	12
+10.2	Class Diagram	13
+10.3	Data Flow Diagram (Level 0)	14
+10.4	Data Flow Diagram (Level 1)	14
+10.5	Entity Relationship Diagram	15
+10.6	Gantt Chart	16
+ 
+Introduction
+The advent of petabyte-scale sky surveys, such as Gaia and the Vera C. Rubin Observatory, has transformed astronomy from a data-poor discipline into a data-rich science. Contemporary star catalogs have evolved from simple positional lists into complex, multidimensional databases incorporating astrometric, photometric, and spectroscopic parameters for billions of objects. While these archives offer unprecedented potential for discovery, accessing and synthesizing this data remains a significant challenge. Researchers and students must often navigate siloed systems, manually switching between structured query languages (ADQL/SQL) for data retrieval and keyword searches for theoretical literature. This disconnect between raw observational data and domain knowledge creates a barrier to efficient scientific exploration and education.
+
+
+Retrieval-Augmented Generation (RAG), a pivotal framework in modern artificial intelligence, offers a transformative solution to bridge this gap. RAG systems enhance the capabilities of Large Language Models (LLMs) by dynamically connecting them to external knowledge sources. By leveraging RAG, we propose to develop an intelligent, agentic architecture that integrates massive star catalogs (e.g., Gaia DR3, SIMBAD) with scientific literature (ArXiv) and tools (Astropy). This system aims to serve as an intelligent "co-pilot" for astronomers and students, capable of understanding natural language queries, executing complex data retrieval via ADQL, and performing multi-step reasoning to answer research-grade questions. By automating the synthesis of heterogeneous astronomical data, this system will democratize access to complex datasets and accelerate the pace of data-driven discovery.
+ 
+Problem Statements
+The current landscape of astronomical data management and research presents several critical challenges when attempting to integrate AI-driven reasoning:
+First, the application of advanced data retrieval is hindered by data silos. Astronomers must manually query databases such as SIMBAD or Gaia using specialized languages such as ADQL, while simultaneously searching the arXiv for relevant papers. There is no unified interface that allows a user to ask a complex question like "Find red giants in globular clusters mentioned in recent papers with transient data" and receive a synthesized answer. This fractured workflow significantly increases research time and complexity.
+Second, there exists a significant technical barrier for non-experts. Students and early-career researchers often lack the expertise to write optimized SQL or ADQL queries. Existing interfaces are either too rigid (form-based query builders) or too complex (command-line interfaces), limiting the accessibility of rich archives to a broader audience.
+Third, traditional RAG implementations struggle with the high dimensionality and sparsity of astronomical data. Standard semantic chunking fails to capture the precise geometric relationships required for spatial queries (e.g., cone searches), while dense retrieval often misses the specific numerical constraints needed for scientific accuracy. Performance benchmarks show that current models struggle with text-and-table hybrid documents common in astronomy.
+Fourth, there is a lack of relational reasoning across datasets. Connecting a specific observation in Gaia to a theoretical concept in a paper, or identifying a star across multiple catalogs (cross-matching), requires multi-hop reasoning that standard "retrieve-then-generate" RAG pipelines cannot perform effectively.
+Finally, current systems lack agentic capabilities. They cannot autonomously plan a research strategy, select appropriate tools (e.g., vector search vs. SQL query vs. Python execution), or verify their own results against ground-truth data to prevent hallucinations.
+ 
+Objectives
+Objective 1: To develop a robust Multi-Modal Ingestion Engine capable of parsing and processing heterogeneous astronomical sources, including structured catalogs (FITS/CSV from Gaia/VizieR), unstructured text (ArXiv papers), and observational metadata, converting them into a unified internal representation.
+Objective 2: To implement a Hybrid Indexing System that combines Dense Vector Retrieval (for semantic search), Sparse Keyword Retrieval (BM25), and Spatial Indexing (Q3C for coordinates). This system will enable both fuzzy conceptual queries and precise astrometric filters.
+Objective 3: To construct a Knowledge Graph that maps entities (Stars, Galaxies, Instruments, Papers) and their relationships (Observation, Cross-Match, Citation). This graph will facilitate multi-hop reasoning, allowing the system to connect data points that are semantically but not textually related.
+Objective 4: To create an Agentic Reasoning Core using an LLM controller. This agent will decompose complex user queries into sub-tasks, select appropriate tools (ADQL generator, Vector Retriever, Graph Traverser), and execute a multi-step workflow to gather evidence.
+Objective 5: To integrate a Python Code Execution Environment (RLM-style) where the agent can generate and run code using libraries like Astropy and Pandas to perform on-the-fly analysis, plotting, or statistical calculations on retrieved data subsets.
+Objective 6: To develop a Verification & Synthesis Layer that ensures faithfulness. The system will cross-reference LLM-generated claims against retrieved catalog values to flag hallucinations and generate responses with proper citations (Source IDs, ArXiv references).
+Objective 7: To validate the system’s effectiveness through rigorous testing using domain-specific benchmarks (e.g., T²-RAGBench adapted for astronomy, Recall@K for spatial retrieval) and user studies with astronomy students and researchers.
+ 
+Feasibility Study
+Technical Feasibility
+The project is technically feasible with current technological capabilities. LLM frameworks like LangChain and LlamaIndex provide robust support for tool use and agent orchestration. Libraries such as Astropy and astroquery are industry standards for accessing Gaia and SIMBAD, making data integration straightforward. Graph databases like Neo4j can handle the scale of astronomical entities, and Q3C (Quad Tree Cube) extensions for PostgreSQL are proven solutions for spherical indexing.
+Economic Feasibility
+The project demonstrates strong economic feasibility by leveraging open-source models and public catalogs. Development costs are optimized by using free-tier APIs or local hosting for LLMs (e.g., Llama 3). The primary datasets (Gaia, SIMBAD) are publicly accessible. The value proposition lies in reducing the "time-to-science" for researchers and lowering the barrier to entry for education, providing high ROI for academic and research institutions.
+Operational Feasibility
+The system will be designed as a web application accessible via standard browsers, ensuring ease of deployment. For heavy computational tasks (e.g., graph indexing or large dataset ingestion), asynchronous background jobs will be used. The modular architecture allows for incremental deployment, starting with a core text+data search and gradually adding agentic features.
+Schedule Feasibility
+A realistic development timeline of four months has been established:
+Month1: Literature review, environment setup, and data connector development (Gaia/SIMBAD).
+Month 2: Implementation of Ingestion and Hybrid Indexing (Vector + SQL).
+Month 3: Knowledge Graph construction and Agentic Core development.
+Month 4: Integration, UI development, and Evaluation.
+ 
+Need and Significance
+The need for an Intelligent RAG-Driven Architecture stems from the critical bottleneck in modern "Astroinformatics." As data volumes grow exponentially, human manual analysis becomes impossible. We need AI systems that can not only retrieve data but also understand and reason over it.
+
+
+The significance of this project extends across multiple dimensions:
+1.	For Researchers: It provides a unified interface for "Data-to-Discovery," automating the cross-referencing of catalogs and literature, potentially revealing patterns hidden in the data deluge.
+2.	For Education: It democratizes complex astronomy data. Students can ask questions in plain English ("Show me the distribution of stars in the Orion Nebula") without needing to learn ADQL or complex scripting.
+3.	For the Field: It establishes a methodological framework for "GraphRAG + Agentic" systems in science, combining the precision of SQL, the semantics of Vectors, and the logic of Graphs.
+Furthermore, this project aligns with the future direction of "Recursive Language Models (RLMs)," treating the massive context of astronomical data not as a passive corpus, but as an active environment that the AI can navigate, query, and analyze.
+
+
+
+
+Intended User
+The Intelligent RAG-Driven Architecture is designed to serve a diverse range of users in the scientific and educational community:
+●	Professional Astronomers & Researchers: To automate literature reviews, cross-match objects across catalogs (Gaia to SIMBAD), and perform complex, multi-parameter filtering quickly.
+●	Graduate & Undergraduate Students: To explore datasets (e.g., Gaia) intuitively, visualizing data and learning concepts through conversational query rather than coding.
+●	Data Scientists (Astroinformatics): To use the system as a rapid prototyping tool for data extraction and hypothesis testing.
+●	Educators: To generate teaching materials, quizzes, and examples pulled directly from real-world catalogs.
+ 
+Abbreviations and Acronyms
+
+Abbreviation	Full Form
+LLM	Large Language Model
+AI	Artificial Intelligence
+RAG	Retrieval Augmented Generation
+NLP	Natural Language Processing
+API	Application Programming Interface
+UI	User Interface
+UX	User Experience
+ADQL	Astronomical Data Query Language
+SQL	Structured Query Language
+GPU	Graphics Processing Unit
+CPU	Central Processing Unit
+HR Diagram	Hertzsprung–Russell Diagram
+Q3C	Quad Tree Cube (Sky Indexing)
+SIMBAD	Set of Identifications, Measurements and Bibliography for Astronomical Data
+GAIA	Global Astrometric Interferometer for Astrophysics
+GUI	Graphical User Interface
+DFD	Data Flow Diagram
+ER	Entity Relationship
+DBMS	Database Management System
+ 
+Literature Review
+8.1	Existing Theoretical and Methodological Contributions
+The integration of artificial intelligence with astronomical data analysis has transitioned from a theoretical possibility to a practical necessity in the era of petabyte-scale sky surveys like Gaia. "The Digital Architecture of the Heavens: A Comprehensive Analysis of Star Catalogs,
+Astrometric Evolution, and Multi-Disciplinary Applications" documents this historical evolution, highlighting how contemporary catalogs have transformed from simple positional lists into complex, multidimensional databases incorporating astrometric, photometric, and
+spectroscopic parameters. This work emphasizes the dual nature of these archives, as historical
+records and predictive tools, and establishes the foundational importance of specialized indexing schemes like Q3C (Quad Tree Cube) for efficient spatial querying on spheres within relational databases.
+Simultaneously, the field of Retrieval-Augmented Generation (RAG) has matured rapidly.
+Lewis et al. provide the foundational framework for RAG, demonstrating how grounding Large Language Models (LLMs) in external knowledge bases mitigates hallucinations and parametric knowledge limitations. (Gao, Y., et al.), in "A Living Reference Repository: The State and
+Future of Retrieval-Augmented Generation (RAG)," provide a comprehensive taxonomy of RAG architectures, distinguishing between Naive, Advanced, and Modular RAG, and
+identifying the shift towards agentic systems capable of multi-step reasoning and tool use. This review is pivotal in understanding the architectural choices available for modern RAG systems.
+The emergence of Reasoning Language Models (RLMs) represents a further evolution beyond standard LLMs. "A Comprehensive Report on Reasoning Language Models (RLMs)" details how RLMs operationalize search heuristics and reinforcement learning to navigate problem spaces, shifting from intuitive "System 1" text generation to a more deliberate, iterative reasoning process. This approach is particularly relevant for astronomical data analysis, where complex queries often require decomposing a large problem (e.g., analyzing a whole cluster) into smaller, tractable sub-tasks (analyzing individual stars).
+Recent advances also focus on handling complex, semi-structured data. The development of
+benchmarks like T²-RAGBench highlights the limitations of standard embeddings on financial documents containing text and tables, a problem that mirrors the challenges in astronomy where tables of photometric data are abundant. Furthermore, GraphRAG methodologies are being explored to address the relational nature of scientific data. Edelman, G., et al. discuss how graph-based retrieval can capture relationships between entities (e.g., stars, observations, papers) that standard vector retrieval misses, enabling multi-hop reasoning essential for
+cross-referencing catalogs like Gaia and SIMBAD.
+
+
+8.2	Improvements over Existing Work
+While current systems like Aladin and VizieR provide access to astronomical data, they predominantly rely on structured query interfaces (ADQL) or form-based filtering, lacking the semantic understanding offered by LLMs. Conversely, general-purpose RAG systems lack the specialized indexing (Q3C) and domain-awareness required for astronomical data.
+ 
+This project proposes several improvements over existing methodologies:
+Agentic Tool Use: Unlike static RAG pipelines, this system implements an Agentic RAG controller that dynamically chooses between semantic vector search, structured ADQL queries, and Graph traversal based on query intent.
+Hybrid Indexing: While T²-RAGBench highlights the difficulty of hybrid retrieval, this system integrates Q3C spatial indexing with dense vector embeddings to handle both geometric
+constraints and semantic descriptions simultaneously.
+Graph-Enhanced Reasoning: Building on GraphRAG principles, this system constructs a Knowledge Graph linking CelestialObjects, Observations, and Papers, enabling queries like
+"find stars mentioned in papers about globular clusters," which standard catalogs cannot answer.
+RLM-style Data Interaction: Inspired by Recursive Language Models, the system allows the LLM to treat retrieved data subsets as a Python environment (using Astropy), performing
+on-the-fly analysis rather than just retrieving static text.
+
+
+8.3	Scope
+The scope of this project encompasses the integration of heterogeneous data sources, specifically the Gaia DR3 archive, the SIMBAD database of identifiers, and a curated subset of ArXiv astrophysics papers. It aims to demonstrate the feasibility of an Agentic RAG system
+capable of bridging the gap between natural language scientific inquiry and the structured, mathematical reality of star catalogs.
+ 
+Proposed Methodology in brief
+Functional Requirements
+Module 1: Multi-Modal Ingestion Engine
+This module is responsible for data intake and parsing.
+●	Text Parsing: Extracting abstracts and key findings from ArXiv PDFs.
+●	Catalog Parsing: Ingesting FITS/CSV files from Gaia/SIMBAD.
+●	Entity Extraction: Identifying celestial objects (Stars, Galaxies) and observational attributes (Parallax, Magnitude) to populate the Knowledge Graph.
+Module 2: Hybrid Indexing System
+This module manages storage and retrieval.
+●	Vector Store: Stores embeddings of text chunks (Qdrant/Milvus) for semantic search.
+●	Spatial DB: Stores coordinate data in PostgreSQL with Q3C extension for Cone Searches.
+●	Index Management: Maintains sync between raw data updates and indices.
+Module 3: Knowledge Graph Constructor
+●	Schema Definition: Nodes (Star, Paper, Catalog) and Edges (OBSERVED_IN, CITES, CROSS_MATCH).
+●	Graph Population: Automated ingestion pipelines that link entities extracted from papers to nodes in catalogs.
+Module 4: Agentic Reasoning Core
+The "Brain" of the system.
+●	Query Planning: Decomposing user questions (e.g., "Find red giants...") into sub-tasks (Identify Red Giants, Filter by Region, Search Papers).
+●	Tool Selection: Deciding whether to use the Vector Retriever (for "red giants"), SQL Tool (for "G < 10"), or Graph Tool (for "mentioned in papers").
+●	Execution: Running the tools and aggregating intermediate results.
+Module 5: Verification & Synthesis Layer
+●	Hallucination Check: Comparing numerical claims in the LLM's draft answer against the values retrieved from the SQL DB.
+●	Citation Generation: Tagging claims with Document IDs, Gaia Source IDs, or ArXiv URLs.
+●	Code Execution: Running generated Python scripts (Astropy) to produce plots or tables.
+ 
+Non-Functional Requirements
+●	Latency: ADQL/SQL queries should return in < 3 seconds.
+●	Accuracy: Spatial retrieval (Cone Search) must be 100% accurate (no false positives in region).
+●	Usability: Interface must be intuitive for students (natural language input).
+
+
+Hardware Requirements
+●	Server: 16GB RAM (Minimum) for Vector DB operations.
+●	GPU: Optional for local LLM hosting (NVIDIA T4 or similar).
+●	Storage: 500GB SSD for catalog storage (Gaia subsets).
+Software Requirements
+●	Backend: Python 3.9+, FastAPI.
+●	LLM Framework: LangChain or LlamaIndex.
+●	Databases: Neo4j (Graph), PostgreSQL (Q3C), Qdrant (Vector).
+●	Libraries: AstroPy, Pandas, Matplotlib.
+ 
+Diagrams
+
+●	Class
+
+
+
+
+
+
+
+●	Use Case
+
+ 
+●	DFD (Level 0)
+
+
+
+
+
+
+
+
+
+
+●	DFD (Level 1)
+
+ 
+●	DFD (Level 2)
+
+
+ 
+●	E-R
+
+ 
+●	Gantt Chart
+
+ 
+References
+[1]	Gao, Y., et al.: "Retrieval-Augmented Generation for Large Language Models: A Comprehensive Review"; arXiv preprint arXiv:2312.10997, 2024.
+[2]	Lewis, P., et al.: "Retrieval-Augmented Generation for Knowledge-Intensive NLP"; Advances in Neural Information Processing Systems, 2020, vol. 33, pp. 9459-9474.
+[3]	Edelman, G., et al.: "GraphRAG: Towards Graph-Based Retrieval-Augmented Generation"; arXiv preprint arXiv:2404.16130, 2024.
+[4]	"The Digital Architecture of the Heavens: A Comprehensive Analysis of Star Catalogs, Astrometric Evolution, and Multi-Disciplinary Applications"; arXiv preprint arXiv:2501.00000, 2025.
+[5]	"A Comprehensive Report on Reasoning Language Models (RLMs)"; arXiv preprint arXiv:2512.24601, 2025.
+[6]	Vaswani, A., et al.: "Attention is All You Need"; Advances in Neural Information Processing Systems, 2017, vol. 30, pp. 5998-6008.
+[7]	Brown, T., et al.: "Language Models are Few-Shot Learners"; Advances in Neural Information Processing Systems, 2020, vol. 33, pp. 1877-1901.
+[8]	Koposov, S., et al.: "Q3C, a Quad Tree Cube – an Astronomical Data Structure for Massive Sky Surveys"; Astronomy and Computing, 2010, vol. 42, no. 1, pp. 57-71.
+[9]	"The Digital Architecture of the Heavens: A Comprehensive Analysis of Star Catalogs, Astrometric Evolution..."
+[10]	Gaia Collaboration, "Gaia Data Release 3 Documentation."
+[11]	Lewis, P., et al. "Retrieval-Augmented Generation for Knowledge-Intensive NLP."
+[12]	Edelman, G., et al. "GraphRAG: Towards Graph-Based Retrieval-Augmented Generation."

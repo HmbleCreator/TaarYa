@@ -1,0 +1,47 @@
+# Core Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# LLM & AI
+langchain==0.1.4
+langchain-openai==0.0.5
+langgraph==0.0.20
+openai==1.10.0
+
+# Embeddings
+sentence-transformers==2.3.1
+
+# Vector Database
+qdrant-client==1.7.3
+
+# Graph Database
+neo4j==5.16.0
+
+# Relational Database
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.25
+
+# Astronomy Libraries
+astropy==6.0.0
+astroquery==0.4.7
+
+# Data Processing
+pandas==2.2.0
+numpy==1.26.3
+
+# PDF & Document Processing
+pypdf==4.0.1
+pymupdf==1.23.21
+unstructured==0.12.0
+
+# Utilities
+python-dotenv==1.0.1
+httpx==0.26.0
+tenacity==8.2.3
+
+# Development
+pytest==8.0.0
+black==24.1.1
+ruff==0.1.15

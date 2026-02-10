@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Vector Database for semantic search
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: taarya-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+
+  # Graph Database for relationships
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: taarya-neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    environment:
+      - NEO4J_AUTH=neo4j/taarya123
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+
+  # Spatial Database with Q3C extension
+  postgres:
+    image: postgres:15-alpine
+    container_name: taarya-postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-q3c.sh:/docker-entrypoint-initdb.d/init-q3c.sh
+    environment:
+      - POSTGRES_USER=taarya
+      - POSTGRES_PASSWORD=taarya123
+      - POSTGRES_DB=astronomy
+
+volumes:
+  qdrant_storage:
+  neo4j_data:
+  neo4j_logs:
+  postgres_data:
