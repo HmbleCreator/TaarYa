@@ -1,19 +1,21 @@
-### 1. Project Description
-
-**TaarYa** is an intelligent, agentic architecture designed to act as the digital eye for modern astronomy. In a universe where data is scattered across billions of coordinates and millions of papers, **TaarYa** provides the vision to connect them. By leveraging Agentic RAG, it weaves the siloed threads of star catalogs (Gaia, SIMBAD) and scientific literature (ArXiv) into a unified tapestry of knowledge.
-
-Unlike traditional search interfaces that require expert knowledge of SQL or ADQL, **TaarYa** acts as an autonomous research co-pilot. It understands natural language inquiries, executes complex spatial queries (Cone Searches), traverses relational graphs to find hidden connections, and even writes and runs Python code to analyze data on the fly. It transforms petabyte-scale astronomical archives from static repositories into a living, interactive cosmos.
-
----
-
+<div align="center">
 
 # TaarYa 
 
-![Project Status](https://img.shields.io/badge/status-implementation--orange.svg) ![Python](https://img.shields.io/badge/python-3.9+-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Project Status](https://img.shields.io/badge/status-implementation--orange.svg) 
+![Python](https://img.shields.io/badge/python-3.9+-blue.svg) 
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 **Illuminating the Cosmos.**
 
 An intelligent, Agentic RAG-driven architecture that integrates Gaia DR3, SIMBAD, and scientific literature to act as your autonomous research co-pilot.
+
+</div>
+
+
+**TaarYa** is an intelligent, agentic architecture designed to act as the digital eye for modern astronomy. In a universe where data is scattered across billions of coordinates and millions of papers, **TaarYa** provides the vision to connect them. By leveraging Agentic RAG, it weaves the siloed threads of star catalogs (Gaia, SIMBAD) and scientific literature (ArXiv) into a unified tapestry of knowledge.
+
+Unlike traditional search interfaces that require expert knowledge of SQL or ADQL, **TaarYa** acts as an autonomous research co-pilot. It understands natural language inquiries, executes complex spatial queries (Cone Searches), traverses relational graphs to find hidden connections, and even writes and runs Python code to analyze data on the fly. It transforms petabyte-scale astronomical archives from static repositories into a living, interactive cosmos.
 
 ---
 
