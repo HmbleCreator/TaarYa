@@ -43,6 +43,18 @@ async def health_check():
     return {"status": "healthy"}
 
 
+# Register API routers
+from src.api.stars import router as stars_router
+from src.api.papers import router as papers_router
+from src.api.search import router as search_router, stats_router
+
+app.include_router(stars_router, prefix="/api")
+app.include_router(papers_router, prefix="/api")
+app.include_router(search_router, prefix="/api")
+app.include_router(stats_router, prefix="/api")
+
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
