@@ -84,7 +84,7 @@ The system is built on a modular pipeline:
 
 2.  **Install Python dependencies**
     ```bash
-    pip install -r requirements.txt
+    uv pip install -r requirements.txt
     ```
 
 3.  **Setup Environment Variables**

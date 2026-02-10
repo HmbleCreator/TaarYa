@@ -11,9 +11,11 @@ apk add --no-cache --virtual .build-deps \
     gcc \
     make \
     postgresql-dev \
-    git
+    git \
+    libc-dev
 
 # Clone and build Q3C
+# Using a specific commit hash for stability or just latest master
 cd /tmp
 git clone https://github.com/segasai/q3c.git
 cd q3c
@@ -28,6 +30,7 @@ apk del .build-deps
 echo "Q3C extension installed successfully"
 
 # Create the extension in the database (will run when DB starts)
+# Connect to the specific database 'astronomy'
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
     CREATE EXTENSION IF NOT EXISTS q3c;
 EOSQL

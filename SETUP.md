@@ -27,9 +27,14 @@ This will start:
 
 ### 3. Install Python Dependencies
 ```bash
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
+# Using uv (Recommended)
+uv venv
+uv pip install -r requirements.txt
+
+# Or standard pip
+# python -m venv venv
+# venv\Scripts\activate
+# pip install -r requirements.txt
 ```
 
 ### 4. Run the Application
