@@ -288,30 +288,38 @@ async function runStarLookup() {
     if (!sid) return;
 
     const resultBox = document.getElementById('lookupResult');
-    resultBox.classList.add('visible');
-    resultBox.textContent = 'Loading...';
+    resultBox.classList.remove('hidden');
+    resultBox.innerHTML = '<div class="text-slate-400 text-xs">Loading...</div>';
 
     try {
         const resp = await fetch(`${API}/api/stars/lookup/${sid}`);
         if (!resp.ok) {
-            resultBox.textContent = 'Star not found.';
+            resultBox.innerHTML = '<div class="text-red-400 text-xs">Star not found.</div>';
             return;
         }
         const s = await resp.json();
         const bpRp = (s.phot_bp_mean_mag && s.phot_rp_mean_mag)
             ? (s.phot_bp_mean_mag - s.phot_rp_mean_mag).toFixed(3)
             : 'N/A';
-        resultBox.textContent = [
-            `Source ID: ${s.source_id}`,
-            `RA: ${s.ra?.toFixed(6)}°`,
-            `Dec: ${s.dec?.toFixed(6)}°`,
-            `Parallax: ${s.parallax?.toFixed(4) || 'N/A'} mas`,
-            `Proper Motion: (${s.pmra?.toFixed(4)}, ${s.pmdec?.toFixed(4)}) mas/yr`,
-            `G-mag: ${s.phot_g_mean_mag?.toFixed(3)}`,
-            `BP-RP: ${bpRp}`,
-        ].join('\n');
+
+        resultBox.innerHTML = `
+            <div class="grid grid-cols-2 gap-y-2 text-[11px] font-mono">
+                <div class="text-slate-500 dark:text-slate-400">Source ID</div>
+                <div class="text-right text-slate-700 dark:text-slate-300">${s.source_id}</div>
+                <div class="text-slate-500 dark:text-slate-400">RA</div>
+                <div class="text-right text-slate-700 dark:text-slate-300">${s.ra?.toFixed(6)}</div>
+                <div class="text-slate-500 dark:text-slate-400">Dec</div>
+                <div class="text-right text-slate-700 dark:text-slate-300">${s.dec?.toFixed(6)}</div>
+                <div class="text-slate-500 dark:text-slate-400">Parallax</div>
+                <div class="text-right text-primary">${s.parallax?.toFixed(4) || '-'} mas</div>
+                <div class="text-slate-500 dark:text-slate-400">G-mag</div>
+                <div class="text-right text-slate-700 dark:text-slate-300">${s.phot_g_mean_mag?.toFixed(3)}</div>
+                <div class="text-slate-500 dark:text-slate-400">BP-RP</div>
+                <div class="text-right text-slate-700 dark:text-slate-300">${bpRp}</div>
+            </div>
+        `;
     } catch (err) {
-        resultBox.textContent = 'Error: ' + err.message;
+        resultBox.innerHTML = `<div class="text-red-400 text-xs">Error: ${err.message}</div>`;
     }
 }
 
@@ -325,49 +333,71 @@ function viewStar(sid) {
 
 // ---- Stats Tab ----
 async function loadStats() {
+    const setStatus = (el, active, text) => {
+        if (!el) return;
+        el.textContent = text || (active ? 'Active' : 'Offline');
+        el.className = active
+            ? 'px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20'
+            : 'px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20';
+    };
+
     try {
         const resp = await fetch(API + '/api/stats');
         const data = await resp.json();
 
         // PostgreSQL
-        const pgTotal = data.postgresql?.total_stars || 0;
-        document.getElementById('statPostgres').textContent = pgTotal.toLocaleString();
-        const pgStatus = document.getElementById('statPostgresStatus');
-        pgStatus.textContent = data.postgresql?.status === 'connected' ? 'Connected' : 'Disconnected';
-        pgStatus.className = 'stat-status ' + (data.postgresql?.status === 'connected' ? 'connected' : 'error');
+        if (document.getElementById('statPostgres')) {
+            const pgTotal = data.postgresql?.total_stars || 0;
+            document.getElementById('statPostgres').textContent = pgTotal.toLocaleString();
+            setStatus(document.getElementById('statPostgresStatus'), data.postgresql?.status === 'connected', 'CONNECTED');
+        }
 
         // Qdrant
-        const qCount = data.qdrant?.points_count || (data.qdrant?.exists === false ? 0 : '?');
-        document.getElementById('statQdrant').textContent = qCount.toLocaleString ? qCount.toLocaleString() : qCount;
-        const qStatus = document.getElementById('statQdrantStatus');
-        if (data.qdrant?.exists === false) {
-            qStatus.textContent = 'Collection Empty';
-            qStatus.className = 'stat-status warning';
-        } else {
-            qStatus.textContent = 'Active';
-            qStatus.className = 'stat-status connected';
+        if (document.getElementById('statQdrant')) {
+            const qCount = data.qdrant?.points_count || (data.qdrant?.exists === false ? 0 : '?');
+            document.getElementById('statQdrant').textContent = qCount.toLocaleString ? qCount.toLocaleString() : qCount;
+            const qActive = data.qdrant?.exists !== false;
+            setStatus(document.getElementById('statQdrantStatus'), qActive, qActive ? 'ACTIVE' : 'EMPTY');
         }
 
         // Neo4j
-        const nTotal = (data.neo4j?.stars || 0) + (data.neo4j?.papers || 0) + (data.neo4j?.clusters || 0);
-        document.getElementById('statNeo4j').textContent = nTotal.toLocaleString();
-        const nStatus = document.getElementById('statNeo4jStatus');
-        nStatus.textContent = data.neo4j?.status === 'connected' ? 'Connected' : 'Disconnected';
-        nStatus.className = 'stat-status ' + (data.neo4j?.status === 'connected' ? 'connected' : 'error');
+        if (document.getElementById('statNeo4j')) {
+            const nTotal = (data.neo4j?.stars || 0) + (data.neo4j?.papers || 0) + (data.neo4j?.clusters || 0);
+            document.getElementById('statNeo4j').textContent = nTotal.toLocaleString();
+            setStatus(document.getElementById('statNeo4jStatus'), data.neo4j?.status === 'connected', 'CONNECTED');
+        }
 
     } catch (err) {
         console.error('Failed to load stats:', err);
         ['statPostgresStatus', 'statQdrantStatus', 'statNeo4jStatus'].forEach(id => {
-            const el = document.getElementById(id);
-            el.textContent = 'Offline';
-            el.className = 'stat-status error';
+            setStatus(document.getElementById(id), false, 'ERROR');
         });
     }
 }
 
 
+// ---- Theme ----
+function initTheme() {
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+}
+
+function toggleTheme() {
+    if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.theme = 'light';
+    } else {
+        document.documentElement.classList.add('dark');
+        localStorage.theme = 'dark';
+    }
+}
+
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     initStars();
     initTabs();
 });

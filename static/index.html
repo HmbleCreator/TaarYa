@@ -1,208 +1,177 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaarYa — Intelligent Astronomy Research Assistant</title>
-    <meta name="description" content="TaarYa: AI-powered astronomy research assistant with Gaia catalog search, paper discovery, and knowledge graph exploration.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TaarYa Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#50c2f7",
+                        "accent-purple": "#7c4dff",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0a0e1a",
+                        "sidebar-light": "#ffffff",
+                        "sidebar-dark": "#0d1424",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#161f32",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#1e293b",
+                        "success": "#00e676",
+                        "warning": "#ffea00",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                font-family: 'Inter', sans-serif;
+                @apply bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 transition-colors duration-200;
+            }
+        }
+        .message-content {
+            @apply bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-lg p-4 max-w-3xl backdrop-blur-md shadow-sm dark:shadow-none;
+        }
+        .message.user .message-content {
+            @apply bg-primary/10 border-primary/20 text-slate-900 dark:text-white;
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #50c2f7 0%, #7c4dff 100%);
+        }
+        .sidebar-item-active {
+            @apply bg-primary/10 text-primary border-r-2 border-primary;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { @apply bg-slate-300 dark:bg-slate-700 rounded-lg; }
+        ::-webkit-scrollbar-thumb:hover { @apply bg-primary/50; }
+
+        /* Star Animation */
+        .stars-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+        .star { position: absolute; border-radius: 50%; background: white; animation: twinkle var(--dur) ease-in-out infinite; }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.8; }
+        }
+    </style>
 </head>
-<body>
-    <!-- Background stars effect -->
-    <div class="stars-bg" id="starsBg"></div>
-    
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-brand">
-            <span class="nav-icon">✦</span>
-            <span class="nav-title">TaarYa</span>
-            <span class="nav-subtitle">Astronomy Intelligence</span>
-        </div>
-        <div class="nav-links">
-            <button class="nav-btn active" data-tab="chat" id="tabChat">
-                <span class="btn-icon">💬</span> Ask
-            </button>
-            <button class="nav-btn" data-tab="explore" id="tabExplore">
-                <span class="btn-icon">🔭</span> Explore
-            </button>
-            <button class="nav-btn" data-tab="stats" id="tabStats">
-                <span class="btn-icon">📊</span> System
-            </button>
-        </div>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        
-        <!-- CHAT TAB -->
-        <section class="tab-content active" id="panelChat">
-            <div class="chat-container">
-                <div class="chat-messages" id="chatMessages">
-                    <div class="message assistant">
-                        <div class="message-avatar">✦</div>
-                        <div class="message-content">
-                            <div class="message-text">
-                                <strong>Welcome to TaarYa!</strong> I'm your astronomy research assistant.
-                                I can search the <strong>Gaia DR3 catalog</strong> (1,000 stars loaded), 
-                                explore research papers, and traverse the knowledge graph.
-                                <br><br>
-                                Try asking me something like:
-                                <ul class="suggestions">
-                                    <li onclick="sendSuggestion(this)">Show me bright stars near RA=45, Dec=0.5</li>
-                                    <li onclick="sendSuggestion(this)">How many stars are within 1 degree of RA=45, Dec=0?</li>
-                                    <li onclick="sendSuggestion(this)">Look up star 33328946452480</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+<body class="h-screen overflow-hidden flex font-display selection:bg-primary/30">
+    <aside
+        class="w-80 flex-shrink-0 bg-sidebar-light dark:bg-sidebar-dark border-r border-border-light dark:border-border-dark flex flex-col h-full z-50 transition-colors duration-200">
+        <div class="p-6 border-b border-border-light dark:border-border-dark flex items-center gap-3">
+            <span class="material-icons-round text-primary text-3xl">auto_awesome</span>
+            <span
+                class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent-purple tracking-wide uppercase">TaarYa</span>
+        </div>
+        <div class="flex-grow overflow-y-auto p-5 space-y-8">
+            <nav class="space-y-1">
+                <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 px-2">
+                    Navigation</p>
+                <a class="flex items-center gap-3 px-3 py-2 sidebar-item-active rounded-lg transition-all" href="/">
+                    <span class="material-symbols-outlined text-xl">dashboard</span>
+                    <span class="text-sm font-medium">Dashboard</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-all group"
+                    href="/static/explore.html">
+                    <span class="material-symbols-outlined text-xl group-hover:text-primary">explore</span>
+                    <span class="text-sm font-medium">Explore</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-all group"
+                    href="/static/analysis.html">
+                    <span class="material-symbols-outlined text-xl group-hover:text-primary">query_stats</span>
+                    <span class="text-sm font-medium">System</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-all group"
+                    href="/static/settings.html">
+                    <span class="material-symbols-outlined text-xl group-hover:text-primary">settings</span>
+                    <span class="text-sm font-medium">Settings</span>
+                </a>
+            </nav>
+
+            <hr class="border-border-light dark:border-border-dark" />
+            <div class="mt-4 px-2">
+                <h3 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2">Suggestions</h3>
+                <ul class="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                    <li class="cursor-pointer hover:text-primary transition-colors" onclick="sendSuggestion(this)">Show
+                        me bright stars near RA=45, Dec=0.5</li>
+                    <li class="cursor-pointer hover:text-primary transition-colors" onclick="sendSuggestion(this)">Look
+                        up star 33328946452480</li>
+                </ul>
+            </div>
+
+        </div>
+        <div class="p-4 border-t border-border-light dark:border-border-dark bg-slate-50 dark:bg-slate-900/30">
+            <div class="flex items-center gap-3">
+                <div
+                    class="h-10 w-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-900 border border-slate-300 dark:border-slate-600 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-white relative overflow-hidden">
+                    TY
                 </div>
-                <div class="chat-input-area">
-                    <div class="chat-input-wrapper">
-                        <input type="text" id="chatInput" 
-                               placeholder="Ask about stars, coordinates, or research papers..."
-                               autocomplete="off">
-                        <button id="chatSend" onclick="sendMessage()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                            </svg>
-                        </button>
+                <div class="flex-grow">
+                    <p class="text-xs font-bold text-slate-700 dark:text-white">TaarYa</p>
+                    <p class="text-[10px] text-slate-500 uppercase">System Active</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-grow flex flex-col h-full relative">
+        <!-- Star Background -->
+        <div class="absolute inset-0 z-0 pointer-events-none" id="starsBg"></div>
+
+        <div class="flex-grow flex flex-col z-10 p-8 max-w-5xl mx-auto w-full h-full">
+            <!-- Chat Area -->
+            <div id="chatMessages" class="flex-grow overflow-y-auto space-y-6 pb-20">
+                <!-- Welcome Message -->
+                <div class="message assistant flex gap-4">
+                    <div
+                        class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary border border-primary/30 flex-shrink-0 shadow-lg shadow-primary/10">
+                        ✦
+                    </div>
+                    <div class="message-content">
+                        <p class="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                            <strong>Welcome to TaarYa!</strong> I'm your astronomy research assistant.
+                            I can search the <strong>Gaia DR3 catalog</strong>, find research papers, and help you
+                            explore the cosmos.
+                        </p>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- EXPLORE TAB -->
-        <section class="tab-content" id="panelExplore">
-            <div class="explore-grid">
-                <!-- Spatial Search Card -->
-                <div class="card search-card">
-                    <h2 class="card-title">
-                        <span class="card-icon">🌌</span> Spatial Search
-                    </h2>
-                    <p class="card-desc">Find stars by sky coordinates using Q3C spatial indexing</p>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>RA (deg)</label>
-                            <input type="number" id="searchRA" value="45.0" step="0.1" min="0" max="360">
-                        </div>
-                        <div class="form-group">
-                            <label>Dec (deg)</label>
-                            <input type="number" id="searchDec" value="0.5" step="0.1" min="-90" max="90">
-                        </div>
-                        <div class="form-group">
-                            <label>Radius (deg)</label>
-                            <input type="number" id="searchRadius" value="0.5" step="0.1" min="0.01" max="10">
-                        </div>
-                        <div class="form-group">
-                            <label>Max G-mag</label>
-                            <input type="number" id="searchMag" value="" step="0.5" placeholder="Any">
-                        </div>
-                    </div>
-                    <button class="btn-primary" onclick="runConeSearch()">
-                        Search Stars
+            <!-- Input Area -->
+            <div class="mt-4 pt-4 border-t border-slate-200 dark:border-white/5">
+                <div
+                    class="relative bg-white dark:bg-surface-dark border border-slate-200 dark:border-border-dark rounded-xl flex items-center p-2 shadow-lg focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                    <input id="chatInput" type="text"
+                        class="flex-grow bg-transparent border-none focus:ring-0 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 px-4 py-3"
+                        placeholder="Ask about stars, coordinates, or research papers..." />
+                    <button id="chatSend" onclick="sendMessage()"
+                        class="p-3 bg-primary text-white dark:text-background-dark rounded-lg hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">
+                        <span class="material-symbols-outlined">send</span>
                     </button>
                 </div>
-
-                <!-- Star Lookup Card -->
-                <div class="card lookup-card">
-                    <h2 class="card-title">
-                        <span class="card-icon">⭐</span> Star Lookup
-                    </h2>
-                    <p class="card-desc">Get detailed info on a specific Gaia source</p>
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label>Source ID</label>
-                        <input type="text" id="lookupId" placeholder="e.g. 33328946452480">
-                    </div>
-                    <button class="btn-primary" onclick="runStarLookup()">
-                        Look Up
-                    </button>
-                    <div id="lookupResult" class="result-box"></div>
-                </div>
-
-                <!-- Region Stats Card -->
-                <div class="card count-card">
-                    <h2 class="card-title">
-                        <span class="card-icon">📐</span> Region Density
-                    </h2>
-                    <p class="card-desc">Count stars in a sky region</p>
-                    <div id="regionCount" class="big-stat">—</div>
-                    <p class="stat-label">stars in current search region</p>
-                </div>
             </div>
-
-            <!-- Results Table -->
-            <div class="card results-card" id="resultsCard" style="display: none;">
-                <div class="results-header">
-                    <h2 class="card-title">
-                        <span class="card-icon">📋</span> Search Results
-                    </h2>
-                    <span class="results-count" id="resultsCount"></span>
-                </div>
-                <div class="table-wrapper">
-                    <table id="resultsTable">
-                        <thead>
-                            <tr>
-                                <th>Source ID</th>
-                                <th>RA (°)</th>
-                                <th>Dec (°)</th>
-                                <th>G mag</th>
-                                <th>BP-RP</th>
-                                <th>Parallax (mas)</th>
-                                <th>Distance (°)</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="resultsBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- STATS TAB -->
-        <section class="tab-content" id="panelStats">
-            <div class="stats-grid">
-                <div class="card stat-card postgres-card">
-                    <div class="stat-icon">🐘</div>
-                    <h3>PostgreSQL + Q3C</h3>
-                    <div class="stat-value" id="statPostgres">—</div>
-                    <p class="stat-detail">Total stars in catalog</p>
-                    <div class="stat-status connected" id="statPostgresStatus">Connected</div>
-                </div>
-                <div class="card stat-card qdrant-card">
-                    <div class="stat-icon">🧠</div>
-                    <h3>Qdrant</h3>
-                    <div class="stat-value" id="statQdrant">—</div>
-                    <p class="stat-detail">Paper embeddings</p>
-                    <div class="stat-status" id="statQdrantStatus">Checking...</div>
-                </div>
-                <div class="card stat-card neo4j-card">
-                    <div class="stat-icon">🕸️</div>
-                    <h3>Neo4j</h3>
-                    <div class="stat-value" id="statNeo4j">—</div>
-                    <p class="stat-detail">Knowledge graph nodes</p>
-                    <div class="stat-status" id="statNeo4jStatus">Checking...</div>
-                </div>
-            </div>
-            <div class="card arch-card">
-                <h2 class="card-title"><span class="card-icon">🏗️</span> Architecture</h2>
-                <div class="arch-flow">
-                    <div class="arch-node query-node">User Query</div>
-                    <div class="arch-arrow">→</div>
-                    <div class="arch-node agent-node">TaarYa Agent<br><small>LangChain + Tools</small></div>
-                    <div class="arch-arrow">→</div>
-                    <div class="arch-backends">
-                        <div class="arch-node db-node">PostgreSQL<br><small>Q3C Spatial</small></div>
-                        <div class="arch-node db-node">Qdrant<br><small>Vector Search</small></div>
-                        <div class="arch-node db-node">Neo4j<br><small>Knowledge Graph</small></div>
-                    </div>
-                </div>
-            </div>
-        </section>
+        </div>
     </main>
-
     <script src="/static/app.js"></script>
 </body>
+
 </html>
