@@ -46,8 +46,15 @@ const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
 
 function sendSuggestion(el) {
-    chatInput.value = el.textContent;
-    sendMessage();
+    const text = el.textContent.trim();
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        chatInput.value = text;
+        sendMessage();
+    } else {
+        // Redirect to dashboard with query
+        window.location.href = '/?q=' + encodeURIComponent(text);
+    }
 }
 
 async function sendMessage() {
@@ -332,6 +339,7 @@ function viewStar(sid) {
 
 
 // ---- Stats Tab ----
+// ---- Stats Tab ----
 async function loadStats() {
     const setStatus = (el, active, text) => {
         if (!el) return;
@@ -342,62 +350,142 @@ async function loadStats() {
     };
 
     try {
-        const resp = await fetch(API + '/api/stats');
-        const data = await resp.json();
+        const res = await fetch('/api/stats');
+        const data = await res.json();
 
-        // PostgreSQL
-        if (document.getElementById('statPostgres')) {
-            const pgTotal = data.postgresql?.total_stars || 0;
-            document.getElementById('statPostgres').textContent = pgTotal.toLocaleString();
-            setStatus(document.getElementById('statPostgresStatus'), data.postgresql?.status === 'connected', 'CONNECTED');
+        // Backend returns: { postgresql: { status: 'connected', total_stars: N }, qdrant: { status: 'green', points_count: N }, neo4j: ... }
+
+        const pgData = data.postgresql || {};
+        const qData = data.qdrant || {};
+
+        // Q3C (Uses Postgres Data)
+        const q3cEl = document.getElementById('q3cStatus');
+        if (q3cEl) {
+            const isActive = pgData.status === 'connected';
+            setStatus(q3cEl, isActive, isActive ? 'Active' : 'Error');
+            const rowEl = document.getElementById('q3cRows');
+            if (rowEl) rowEl.textContent = (pgData.total_stars || 0).toLocaleString();
+        }
+
+        // Postgres
+        const pgEl = document.getElementById('pgStatus');
+        if (pgEl) {
+            const isActive = pgData.status === 'connected';
+            setStatus(pgEl, isActive, isActive ? 'Active' : 'Error');
+            const pgMain = document.getElementById('pgMainStatus');
+            if (pgMain) {
+                pgMain.textContent = isActive ? 'Online' : 'Offline';
+                pgMain.className = `text-2xl font-bold mb-1 ${isActive ? 'text-white' : 'text-red-400'}`;
+            }
         }
 
         // Qdrant
-        if (document.getElementById('statQdrant')) {
-            const qCount = data.qdrant?.points_count || (data.qdrant?.exists === false ? 0 : '?');
-            document.getElementById('statQdrant').textContent = qCount.toLocaleString ? qCount.toLocaleString() : qCount;
-            const qActive = data.qdrant?.exists !== false;
-            setStatus(document.getElementById('statQdrantStatus'), qActive, qActive ? 'ACTIVE' : 'EMPTY');
+        const qdrantEl = document.getElementById('qdrantStatus');
+        if (qdrantEl) {
+            // Check for green/yellow status OR valid points count
+            const exists = qData.exists !== false;
+            const isHealthy = qData.status === 'green' || qData.status === 'yellow';
+            const isActive = exists && isHealthy;
+
+            const statusText = isActive ? 'Ready' : (exists ? 'Error' : 'Empty');
+            const statusColor = isActive ? 'green' : (exists ? 'red' : 'yellow');
+
+            setStatus(qdrantEl, isActive, statusText);
+            const qdrantMain = document.getElementById('qdrantMainStatus');
+            if (qdrantMain) {
+                qdrantMain.textContent = statusText;
+                qdrantMain.className = `text-2xl font-bold mb-1 ${isActive ? 'text-white' : (exists ? 'text-red-400' : 'text-yellow-400')}`;
+            }
         }
 
-        // Neo4j
-        if (document.getElementById('statNeo4j')) {
-            const nTotal = (data.neo4j?.stars || 0) + (data.neo4j?.papers || 0) + (data.neo4j?.clusters || 0);
-            document.getElementById('statNeo4j').textContent = nTotal.toLocaleString();
-            setStatus(document.getElementById('statNeo4jStatus'), data.neo4j?.status === 'connected', 'CONNECTED');
-        }
-
-    } catch (err) {
-        console.error('Failed to load stats:', err);
-        ['statPostgresStatus', 'statQdrantStatus', 'statNeo4jStatus'].forEach(id => {
-            setStatus(document.getElementById(id), false, 'ERROR');
+    } catch (e) {
+        console.error("Stats error", e);
+        const els = ['q3cStatus', 'pgStatus', 'qdrantStatus'];
+        els.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) setStatus(el, false, 'Error');
         });
     }
 }
 
-
 // ---- Theme ----
 function initTheme() {
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-    } else {
+    const themeToggle = document.getElementById('themeToggle');
+
+    // Check saved preference or system preference (default to dark)
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark) || (!savedTheme && !prefersDark && true); // Default to dark if undefined? HTML has class="dark".
+    // Actually HTML has class="dark" by default.
+    // Logic: If saved 'light', remove class. Else ensure class.
+
+    if (savedTheme === 'light') {
         document.documentElement.classList.remove('dark');
+        if (themeToggle) themeToggle.checked = false;
+    } else {
+        document.documentElement.classList.add('dark');
+        if (themeToggle) themeToggle.checked = true;
+    }
+
+    // Toggle Listener
+    if (themeToggle) {
+        themeToggle.addEventListener('change', () => {
+            if (themeToggle.checked) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            }
+        });
     }
 }
 
-function toggleTheme() {
-    if (document.documentElement.classList.contains('dark')) {
-        document.documentElement.classList.remove('dark');
-        localStorage.theme = 'light';
-    } else {
-        document.documentElement.classList.add('dark');
-        localStorage.theme = 'dark';
+// ---- Sidebar ----
+function initSidebar() {
+    const sidebar = document.getElementById('mainSidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+
+    if (!sidebar || !toggleBtn) return;
+
+    // Toggle Function
+    function toggle() {
+        const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
+        sidebar.classList.toggle('w-64');
+        sidebar.classList.toggle('w-20');
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+    }
+
+    toggleBtn.addEventListener('click', toggle);
+
+    // Init State
+    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+        sidebar.classList.add('sidebar-collapsed', 'w-20');
+        sidebar.classList.remove('w-64');
     }
 }
 
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', () => {
-    initTheme();
-    initStars();
     initTabs();
+    initSidebar();
+    initTheme();
+
+    // Check for query param
+    const urlParams = new URLSearchParams(window.location.search);
+    const q = urlParams.get('q');
+    if (q) {
+        const chatInput = document.getElementById('chatInput');
+        if (chatInput) {
+            chatInput.value = q;
+            window.history.replaceState({}, document.title, "/");
+            // Small delay to ensure UI is ready
+            setTimeout(() => sendMessage(), 100);
+        }
+    }
+
+    // Load Stats if on System page
+    if (document.getElementById('q3cStatus')) {
+        loadStats();
+    }
 });

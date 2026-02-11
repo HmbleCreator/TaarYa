@@ -4,39 +4,36 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>TaarYa System Analysis</title>
+    <title>TaarYa - System</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap"
         rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
-    <script>
+    <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#50c2f7",
-                        "accent-purple": "#7c4dff",
-                        "background-light": "#f5f7f8",
+                        "primary": "#4fc3f7",
+                        "secondary": "#7c4dff",
                         "background-dark": "#0a0e1a",
-                        "sidebar-light": "#ffffff",
-                        "sidebar-dark": "#0d1424",
-                        "surface-light": "#ffffff",
-                        "surface-dark": "#131b2c",
-                        "border-light": "#e2e8f0",
-                        "border-dark": "#1e293b",
-                        "success": "#00e676",
-                        "warning": "#ffea00",
+                        "surface-dark": "#0d1424",
+                        "surface-glass": "rgba(255, 255, 255, 0.05)",
                     },
                     fontFamily: {
-                        "display": ["Inter", "sans-serif"]
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    backgroundImage: {
+                        'space-gradient': 'radial-gradient(circle at 10% 20%, rgba(124, 77, 255, 0.12) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(79, 195, 247, 0.08) 0%, transparent 40%)',
                     },
                     boxShadow: {
-                        'neon-blue': '0 0 10px rgba(80, 194, 247, 0.3), 0 0 20px rgba(80, 194, 247, 0.1)',
-                        'neon-purple': '0 0 10px rgba(124, 77, 255, 0.3), 0 0 20px rgba(124, 77, 255, 0.1)',
+                        'glow': '0 0 20px rgba(79, 195, 247, 0.15)',
                     }
                 },
             },
@@ -44,256 +41,204 @@
     </script>
     <style type="text/tailwindcss">
         @layer base {
-        body {
-            font-family: 'Inter', sans-serif;
-            @apply bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 transition-colors duration-200;
+            ::-webkit-scrollbar { width: 6px; height: 6px; }
+            ::-webkit-scrollbar-track { background: transparent; }
+            ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+            ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
         }
-    }
-    .glass {
-        @apply bg-white/80 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-white/5;
-    }
-    .glass-card {
-        @apply bg-white/60 dark:bg-slate-800/40 backdrop-blur-sm border border-slate-200/50 dark:border-primary/15;
-    }
-    .bg-grid-pattern {
-        background-image: 
-            linear-gradient(rgba(80, 194, 247, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(80, 194, 247, 0.05) 1px, transparent 1px);
-        background-size: 40px 40px;
-    }
-    .sidebar-item-active {
-        @apply bg-primary/10 text-primary border-r-2 border-primary;
-    }
-    /* Custom scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { @apply bg-slate-300 dark:bg-slate-700 rounded-lg border-2 border-transparent bg-clip-content; }
-    ::-webkit-scrollbar-thumb:hover { @apply bg-primary/50; }
-</style>
+        .star-pattern {
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 1px, transparent 2px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px);
+            background-size: 400px 400px, 250px 250px;
+            background-position: 0 0, 150px 150px;
+        }
+        .sidebar-item-active {
+            @apply bg-blue-50 dark:bg-primary/10 border-l-2 border-primary text-primary;
+        }
+        .sidebar-collapsed .sidebar-text { display: none; }
+        .sidebar-collapsed .sidebar-section-title { display: none; }
+        .sidebar-collapsed .history-list { display: none; }
+    </style>
 </head>
 
-<body class="h-screen overflow-hidden flex font-display selection:bg-primary/30">
+<body
+    class="bg-gray-50 dark:bg-background-dark text-gray-900 dark:text-white font-display h-screen flex overflow-hidden selection:bg-primary/30 transition-colors duration-200">
+    <div class="fixed inset-0 z-0 bg-space-gradient pointer-events-none opacity-50 dark:opacity-100"></div>
+    <div class="fixed inset-0 z-0 star-pattern opacity-10 dark:opacity-20 pointer-events-none"></div>
 
     <!-- Sidebar -->
-    <aside
-        class="w-80 flex-shrink-0 bg-sidebar-light dark:bg-sidebar-dark border-r border-border-light dark:border-border-dark flex flex-col h-full z-50 transition-colors duration-200">
-        <div class="p-6 border-b border-border-light dark:border-border-dark flex items-center gap-3">
-            <span class="material-icons-round text-primary text-3xl">auto_awesome</span>
-            <span
-                class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent-purple tracking-wide uppercase">TaarYa</span>
+    <aside id="mainSidebar"
+        class="w-64 transition-all duration-300 border-r border-gray-200 dark:border-white/5 bg-white/80 dark:bg-surface-dark/60 flex flex-col shrink-0 overflow-hidden relative backdrop-blur-md z-50">
+        <!-- Header / Logo -->
+        <div class="p-4 flex items-center justify-between border-b border-white/5 h-16">
+            <div class="flex items-center gap-3 overflow-hidden whitespace-nowrap">
+                <div
+                    class="w-8 h-8 rounded bg-gradient-to-tr from-secondary to-primary flex items-center justify-center flex-shrink-0 shadow-glow-sm">
+                    <span class="material-icons text-white text-lg">auto_awesome</span>
+                </div>
+                <div class="sidebar-text flex flex-col transition-opacity duration-200">
+                    <h1
+                        class="text-lg font-bold tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-primary to-white">
+                        TaarYa</h1>
+                    <span class="text-[9px] uppercase tracking-widest text-primary/60 font-bold">Astro AI</span>
+                </div>
+            </div>
+            <button id="sidebarToggle" class="text-gray-400 hover:text-white transition-colors p-1">
+                <span class="material-icons text-sm">menu_open</span>
+            </button>
         </div>
 
-        <div class="flex-grow overflow-y-auto p-5 space-y-8">
+        <!-- Navigation -->
+        <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+            <!-- Main Nav -->
             <nav class="space-y-1">
-                <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 px-2">
-                    Navigation</p>
-                <a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-all group"
-                    href="/">
-                    <span class="material-symbols-outlined text-xl group-hover:text-primary">dashboard</span>
-                    <span class="text-sm font-medium">Dashboard</span>
+                <a href="/"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
+                    title="Ask / Dashboard">
+                    <span
+                        class="material-icons text-xl group-hover:text-primary transition-colors">chat_bubble_outline</span>
+                    <span class="text-sm font-medium sidebar-text">Ask</span>
                 </a>
-                <a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-all group"
-                    href="/static/explore.html">
-                    <span class="material-symbols-outlined text-xl group-hover:text-primary">explore</span>
-                    <span class="text-sm font-medium">Explore</span>
+                <a href="/static/explore.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
+                    title="Explore">
+                    <span class="material-icons text-xl group-hover:text-white transition-colors">explore</span>
+                    <span class="text-sm font-medium sidebar-text">Explore</span>
                 </a>
-                <a class="flex items-center gap-3 px-3 py-2 sidebar-item-active rounded-lg transition-all"
-                    href="/static/analysis.html">
-                    <span class="material-symbols-outlined text-xl">query_stats</span>
-                    <span class="text-sm font-medium">System</span>
+                <a href="/static/analysis.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-200 dark:bg-white/5 hover:bg-gray-300 dark:hover:bg-white/10 transition-all group sidebar-item-active"
+                    title="System">
+                    <span class="material-icons text-xl text-primary transition-colors">query_stats</span>
+                    <span class="text-sm font-medium sidebar-text text-black dark:text-primary">System</span>
                 </a>
-                <a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-all group"
-                    href="/static/settings.html">
-                    <span class="material-symbols-outlined text-xl group-hover:text-primary">settings</span>
-                    <span class="text-sm font-medium">Settings</span>
+                <a href="/static/settings.html"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
+                    title="Settings">
+                    <span class="material-icons text-xl group-hover:text-primary transition-colors">settings</span>
+                    <span class="text-sm font-medium sidebar-text">Settings</span>
                 </a>
             </nav>
+
+            <!-- Divider -->
+            <div class="h-[1px] bg-white/5 mx-2"></div>
+
+            <!-- History Section -->
+            <section class="history-list">
+                <h3
+                    class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3 px-2 flex items-center justify-between sidebar-section-title">
+                    System Logs
+                    <span class="material-icons text-[14px]">terminal</span>
+                </h3>
+                <div class="space-y-1">
+                    <div class="px-3 py-2 rounded-md text-xs text-green-400/80 font-mono italic">
+                        All services online
+                    </div>
+                </div>
+            </section>
         </div>
 
-        <div class="p-4 border-t border-border-light dark:border-border-dark bg-slate-50 dark:bg-slate-900/30">
-            <div class="flex items-center gap-3">
-                <div
-                    class="h-10 w-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-900 border border-slate-300 dark:border-slate-600 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-white relative overflow-hidden">
-                    TY
-                </div>
-                <div class="flex-grow">
-                    <p class="text-xs font-bold text-slate-700 dark:text-white">TaarYa</p>
-                    <p class="text-[10px] text-slate-500 uppercase">System Active</p>
-                </div>
+        <!-- User Profile (Bottom) -->
+        <div
+            class="p-4 border-t border-white/5 flex items-center gap-3 overflow-hidden cursor-pointer hover:bg-white/5 transition-colors">
+            <img alt="User" class="w-8 h-8 rounded-full border border-white/20 flex-shrink-0"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPM7Ss5zF4TAMyNXPL8z1Kz7YnLez5acgGS8xFywaltOC-sHxt3rAQlMKC4ipKBeg8R6YHCDgrF_iqTJRpOSiytM_srkiMdDdU8__Dpq3lIjOuE93sNgwi7yRL-IjGJu5XDTwbaCDKoDbd5GrL45gnlMBBBRaF-Z3cq7PpJN322H5xd-ADbYBdsiNgQCe8UhtsD_GGYxSuHtosItTsR9cIwwjSmsIW3L0GTjKzFjuSGegz_8vs_K0X9GXLOPaAVIrBpeRfqbyB8lU" />
+            <div class="sidebar-text">
+                <div class="text-xs font-bold text-white">Researcher</div>
+                <div class="text-[10px] text-primary">Pro Account</div>
             </div>
         </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-grow flex flex-col h-full overflow-y-auto relative p-6 lg:p-8">
-        <!-- Background Effects -->
-        <div class="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none"></div>
-        <div
-            class="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 dark:bg-primary/10 rounded-full blur-[128px] pointer-events-none">
+    <!-- Main Content Area -->
+    <main
+        class="flex-1 overflow-y-auto p-6 lg:px-12 space-y-6 bg-white/50 dark:bg-background-dark/20 transition-colors duration-200">
+        <header class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-green-500 dark:text-green-400 text-2xl">monitoring</span>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">System Status</h2>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div
+                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 p-4 rounded-xl shadow-lg group hover:border-primary/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest">Q3C
+                        Index</span>
+                    <span id="q3cStatus"
+                        class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400">Loading...</span>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1"><span id="q3cRows">-</span> <span
+                        class="text-sm text-gray-500 font-normal">rows</span></div>
+                <div class="h-1 w-full bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
+                    <div class="h-full bg-primary w-3/4 opacity-80 group-hover:w-full transition-all duration-1000">
+                    </div>
+                </div>
+            </div>
+            <div
+                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 p-4 rounded-xl shadow-lg hover:border-secondary/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span
+                        class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest">PostgreSQL</span>
+                    <span id="pgStatus"
+                        class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400">Loading...</span>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1" id="pgMainStatus">...</div>
+            </div>
+            <div
+                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 p-4 rounded-xl shadow-lg hover:border-green-400/30 transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span
+                        class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest">Qdrant
+                        Vector DB</span>
+                    <span id="qdrantStatus"
+                        class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400">Loading...</span>
+                </div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white mb-1" id="qdrantMainStatus">...</div>
+            </div>
         </div>
 
-        <div class="relative z-10 max-w-7xl mx-auto w-full">
-            <!-- Header Section -->
-            <div class="flex justify-between items-end mb-8">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">System Infrastructure</h1>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Real-time status of catalog indexing and
-                        knowledge graph nodes.</p>
-                </div>
-                <div
-                    class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-surface-dark/50 px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/5 shadow-sm">
-                    <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-                    System Operational
-                </div>
+        <!-- Architecture Diagram -->
+        <div
+            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl p-6 shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                <span class="material-icons text-9xl text-gray-900 dark:text-white">hub</span>
             </div>
-
-            <!-- TOP ROW: Status Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <!-- PostgreSQL Card -->
+            <h3 class="text-sm font-bold text-gray-500 dark:text-gray-300 uppercase tracking-widest mb-6">System
+                Architecture</h3>
+            <div class="flex flex-col md:flex-row items-center justify-center gap-8 relative z-10">
                 <div
-                    class="glass-card rounded-xl p-6 relative overflow-hidden group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300 shadow-lg shadow-slate-200/50 dark:shadow-none">
-                    <div
-                        class="absolute top-0 right-0 p-4 opacity-5 dark:opacity-10 group-hover:opacity-10 dark:group-hover:opacity-20 transition-opacity">
-                        <span class="material-icons-round text-6xl text-primary">dns</span>
-                    </div>
-                    <div class="flex justify-between items-start mb-4">
-                        <div
-                            class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                            <span class="material-icons-round text-primary">storage</span>
-                        </div>
-                    </div>
-                    <div class="relative z-10 w-full">
-                        <h3 class="text-3xl font-bold text-primary mb-1 tracking-tight" id="statPostgres">-</h3>
-                        <p class="text-sm font-medium text-slate-700 dark:text-white mb-1">Total stars in catalog</p>
-                        <div class="flex justify-between items-center">
-                            <p class="text-xs text-slate-500 font-mono">PostgreSQL + Q3C</p>
-                            <span id="statPostgresStatus"
-                                class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold">Checking...</span>
-                        </div>
-                    </div>
-                    <!-- Progress bar -->
-                    <div class="mt-4 w-full bg-slate-200 dark:bg-slate-700/30 rounded-full h-1">
-                        <div class="bg-primary h-1 rounded-full w-3/4 shadow-[0_0_10px_rgba(80,194,247,0.5)]"></div>
-                    </div>
+                    class="p-4 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 text-center w-32">
+                    <span class="material-symbols-outlined text-2xl text-primary mb-2">web</span>
+                    <div class="text-xs font-bold text-gray-900 dark:text-white">Frontend</div>
                 </div>
-
-                <!-- Qdrant Card -->
+                <div class="h-8 w-[1px] md:w-8 md:h-[1px] bg-gray-300 dark:bg-white/20"></div>
                 <div
-                    class="glass-card rounded-xl p-6 relative overflow-hidden group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300 shadow-lg shadow-slate-200/50 dark:shadow-none">
-                    <div
-                        class="absolute top-0 right-0 p-4 opacity-5 dark:opacity-10 group-hover:opacity-10 dark:group-hover:opacity-20 transition-opacity">
-                        <span class="material-icons-round text-6xl text-accent-purple">psychology</span>
-                    </div>
-                    <div class="flex justify-between items-start mb-4">
-                        <div
-                            class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
-                            <span class="material-icons-round text-accent-purple">psychology</span>
-                        </div>
-                    </div>
-                    <div class="relative z-10 w-full">
-                        <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight"
-                            id="statQdrant">-</h3>
-                        <p class="text-sm font-medium text-slate-700 dark:text-white mb-1">Paper embeddings</p>
-                        <div class="flex justify-between items-center">
-                            <p class="text-xs text-slate-500 font-mono">Qdrant Vector DB</p>
-                            <span id="statQdrantStatus"
-                                class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold">Checking...</span>
-                        </div>
-                    </div>
-                    <div class="mt-4 w-full bg-slate-200 dark:bg-slate-700/30 rounded-full h-1">
-                        <div class="bg-accent-purple h-1 rounded-full w-1/4 shadow-[0_0_10px_rgba(124,77,255,0.5)]">
-                        </div>
-                    </div>
+                    class="p-4 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 text-center w-32 border-primary/40 shadow-[0_0_15px_rgba(79,195,247,0.1)]">
+                    <span class="material-symbols-outlined text-2xl text-gray-900 dark:text-white mb-2">api</span>
+                    <div class="text-xs font-bold text-gray-900 dark:text-white">FastAPI</div>
                 </div>
-
-                <!-- Neo4j Card -->
-                <div
-                    class="glass-card rounded-xl p-6 relative overflow-hidden group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300 shadow-lg shadow-slate-200/50 dark:shadow-none">
+                <div class="h-8 w-[1px] md:w-8 md:h-[1px] bg-gray-300 dark:bg-white/20"></div>
+                <div class="flex flex-col gap-2">
                     <div
-                        class="absolute top-0 right-0 p-4 opacity-5 dark:opacity-10 group-hover:opacity-10 dark:group-hover:opacity-20 transition-opacity">
-                        <span class="material-icons-round text-6xl text-success">share</span>
+                        class="p-3 bg-gray-50 dark:bg-white/5 rounded border border-gray-200 dark:border-white/10 text-center w-32 text-[10px] flex items-center gap-2 justify-center text-gray-700 dark:text-gray-300">
+                        <span class="material-symbols-outlined text-xs text-blue-500 dark:text-blue-400">database</span>
+                        Postgres
                     </div>
-                    <div class="flex justify-between items-start mb-4">
-                        <div
-                            class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center border border-green-500/20">
-                            <span class="material-icons-round text-success">hub</span>
-                        </div>
-                    </div>
-                    <div class="relative z-10 w-full">
-                        <h3 class="text-3xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight"
-                            id="statNeo4j">-</h3>
-                        <p class="text-sm font-medium text-slate-700 dark:text-white mb-1">Knowledge Nodes</p>
-                        <div class="flex justify-between items-center">
-                            <p class="text-xs text-slate-500 font-mono">Neo4j Graph</p>
-                            <span id="statNeo4jStatus"
-                                class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold">Checking...</span>
-                        </div>
-                    </div>
-                    <div class="mt-4 w-full bg-slate-200 dark:bg-slate-700/30 rounded-full h-1">
-                        <div class="bg-success h-1 rounded-full w-[10%] shadow-[0_0_10px_rgba(34,211,238,0.5)]"></div>
+                    <div
+                        class="p-3 bg-gray-50 dark:bg-white/5 rounded border border-gray-200 dark:border-white/10 text-center w-32 text-[10px] flex items-center gap-2 justify-center text-gray-700 dark:text-gray-300">
+                        <span
+                            class="material-symbols-outlined text-xs text-orange-500 dark:text-orange-400">moving</span>
+                        Qdrant
                     </div>
                 </div>
             </div>
-
-            <!-- Architecture Diagram -->
-            <div
-                class="glass rounded-xl border border-border-light dark:border-white/5 relative overflow-hidden shadow-xl shadow-slate-200/50 dark:shadow-black/50">
-                <div
-                    class="px-6 py-4 border-b border-border-light dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-surface-dark/30">
-                    <div class="flex items-center gap-2">
-                        <span class="material-icons-round text-slate-400 text-sm">schema</span>
-                        <h2 class="text-lg font-semibold text-slate-800 dark:text-white">System Architecture</h2>
-                    </div>
-                    <span
-                        class="inline-flex items-center px-2 py-1 rounded text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">v1.0.0</span>
-                </div>
-
-                <div class="p-8 lg:p-12 relative min-h-[300px] flex flex-col items-center justify-center dark">
-                    <!-- Architecture Nodes (Static Visualization) -->
-                    <div class="flex flex-col items-center gap-8 w-full max-w-2xl">
-                        <!-- Agent -->
-                        <div
-                            class="bg-slate-800 border border-primary/30 px-8 py-4 rounded-lg shadow-neon-blue flex items-center gap-4 z-10 relative">
-                            <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                                <span class="material-icons-round text-primary">smart_toy</span>
-                            </div>
-                            <div>
-                                <h3 class="text-white font-bold">TaarYa Agent</h3>
-                                <p class="text-xs text-slate-400">LangChain Orchestrator</p>
-                            </div>
-                        </div>
-
-                        <!-- Arrow -->
-                        <div class="h-8 w-0.5 bg-slate-600"></div>
-
-                        <!-- Databases -->
-                        <div class="grid grid-cols-3 gap-4 w-full">
-                            <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-lg text-center">
-                                <span class="material-icons-round text-blue-400 block mb-2">storage</span>
-                                <span class="text-xs text-white">PostgreSQL</span>
-                            </div>
-                            <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-lg text-center">
-                                <span class="material-icons-round text-purple-400 block mb-2">psychology</span>
-                                <span class="text-xs text-white">Qdrant</span>
-                            </div>
-                            <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-lg text-center">
-                                <span class="material-icons-round text-green-400 block mb-2">hub</span>
-                                <span class="text-xs text-white">Neo4j</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </main>
 
     <script src="/static/app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            loadStats();
-        });
-    </script>
 </body>
 
 </html>
