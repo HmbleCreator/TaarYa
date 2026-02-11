@@ -78,20 +78,139 @@ function sendSuggestion(el) {
     }
 }
 
-async function sendMessage() {
-    const text = chatInput.value.trim();
-    if (!text) return;
-    chatInput.value = '';
+const MAX_FILE_SIZE = 50 * 1024; // 50KB
 
-    // Add user message
-    appendMessage('user', text);
+function newChat() {
+    if (confirm("Start a new chat? Your current conversation will be saved to History.")) {
+        // 1. Archive current session if it has messages
+        if (chatHistory && chatHistory.length > 0) {
+            saveCurrentSessionToArchive();
+            localStorage.setItem('taarya_flash_message', 'Session Saved to History');
+        }
+
+        // 2. Clear and Reload
+        chatHistory = [];
+        localStorage.removeItem('taarya_chat_history');
+        window.location.reload();
+    }
+}
+
+function saveCurrentSessionToArchive() {
+    try {
+        let archives = JSON.parse(localStorage.getItem('taarya_archives') || '[]');
+
+        // title from first user message
+        const firstUserMsg = chatHistory.find(m => m.role === 'user' || m.role === 'human');
+        let title = firstUserMsg ? firstUserMsg.content.substring(0, 30) : 'Untitled Chat';
+        if (firstUserMsg && firstUserMsg.content.length > 30) title += '...';
+
+        const session = {
+            id: Date.now(),
+            timestamp: Date.now(),
+            title: title,
+            messages: chatHistory
+        };
+
+        // Prepend (newest first)
+        archives.unshift(session);
+        // Limit archives to 10
+        if (archives.length > 10) archives = archives.slice(0, 10);
+
+        localStorage.setItem('taarya_archives', JSON.stringify(archives));
+    } catch (e) {
+        console.error("Failed to archive session", e);
+    }
+}
+
+function loadArchivedSessions() {
+    const list = document.getElementById('sessionList');
+    if (!list) return;
+
+    try {
+        const archives = JSON.parse(localStorage.getItem('taarya_archives') || '[]');
+        if (archives.length === 0) {
+            list.innerHTML = '<div class="text-[10px] text-gray-400 px-3 italic">No saved chats yet.</div>';
+            return;
+        }
+
+        list.innerHTML = '';
+        archives.forEach(session => {
+            const btn = document.createElement('button');
+            btn.className = 'w-full text-left px-3 py-2 rounded-md text-xs text-gray-700 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 truncate transition-all flex items-center gap-2 group';
+            // Format date: "Feb 10, 10:30"
+            const dateStr = new Date(session.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+            btn.innerHTML = `
+                <span class="material-icons text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">restore</span>
+                <span class="truncate flex-1">${session.title}</span>
+                <span class="text-[9px] opacity-50">${dateStr}</span>
+            `;
+            btn.onclick = () => restoreSession(session.id);
+            list.appendChild(btn);
+        });
+    } catch (e) {
+        console.error("Error loading archives", e);
+    }
+}
+
+function restoreSession(id) {
+    if (chatHistory.length > 0) {
+        if (confirm("Save current chat before switching?")) {
+            saveCurrentSessionToArchive();
+        }
+    }
+
+    const archives = JSON.parse(localStorage.getItem('taarya_archives') || '[]');
+    const session = archives.find(s => s.id === id);
+    if (!session) return;
+
+    localStorage.setItem('taarya_chat_history', JSON.stringify(session.messages));
+    window.location.reload();
+}
+
+function handleFileUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+        alert(`File too large (${(file.size / 1024).toFixed(1)}KB). Limit is 50KB.`);
+        input.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const content = e.target.result;
+        // Construct a prompt context
+        const hiddenMsg = `I am uploading a file named "${file.name}". Here is the content:\n\`\`\`\n${content}\n\`\`\`\nPlease analyze this data if requested.`;
+
+        // Show UI bubble for file
+        appendMessage('user', `📁 **Uploaded File:** ${file.name} \n<span class="text-xs opacity-70">${(file.size / 1024).toFixed(1)} KB</span>`);
+
+        // Send to agent (skip UI for user part since we just added it)
+        sendMessage(hiddenMsg, true);
+    };
+    reader.readAsText(file);
+    input.value = '';
+}
+
+async function sendMessage(overrideText = null, skipUserUI = false) {
+    let text = overrideText || chatInput.value.trim();
+    if (!text) return;
+
+    if (!overrideText) chatInput.value = '';
+
+    // Add user message if not skipped
+    if (!skipUserUI) {
+        appendMessage('user', text);
+    }
 
     // Show typing indicator
     const typingEl = appendTyping();
 
     // Disable send button
     const sendBtn = document.getElementById('chatSend');
-    sendBtn.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
 
     try {
         // Try the agent endpoint first (LLM-powered)
@@ -118,6 +237,8 @@ async function sendMessage() {
             appendMessage('assistant', data.answer, data.tools_used, true, data.tool_outputs);
 
             // Update history with tool_outputs
+            // For file upload, we might want to store the "User uploaded..." text in history 
+            // so context is preserved, even if UI showed "Uploaded File".
             chatHistory.push({ role: 'human', content: text });
             chatHistory.push({ role: 'ai', content: data.answer, tool_outputs: data.tool_outputs });
 
@@ -141,7 +262,7 @@ async function sendMessage() {
         appendMessage('assistant', '❌ Failed to reach server: ' + err.message);
     }
 
-    sendBtn.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
@@ -341,7 +462,36 @@ function displayResults(stars, totalCount) {
     }
 
     card.style.display = 'block';
-    count.textContent = `${stars.length} of ${totalCount || stars.length} results`;
+
+    // Header with Download Button
+    const headerHtml = `
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-sm font-bold text-gray-700 dark:text-gray-300">
+                ${stars.length} of ${totalCount || stars.length} results
+            </span>
+            <button onclick='downloadData(${JSON.stringify(stars)}, "cone_search_results.json")' 
+                class="flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded text-xs transition-colors border border-primary/20">
+                <span class="material-icons text-[14px]">download</span>
+                Export JSON
+            </button>
+        </div>
+    `;
+
+    // We can't easily replace just the count text node if we want a button next to it 
+    // without changing HTML structure.
+    // The current HTML has `<div id="resultsCount">...</div>` inside the card.
+    // I'll replace the content of `resultsCount` with this header? 
+    // No, `resultsCount` is a span or div?
+    // Let's check index.html again or just overwrite `count.innerHTML`.
+
+    count.innerHTML = `
+        ${stars.length} / ${totalCount || stars.length} results
+        <button onclick='downloadData(${JSON.stringify(stars).replace(/'/g, "&#39;")}, "cone_search_results.json")' 
+            class="ml-4 inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 hover:bg-primary/20 text-primary rounded text-[10px] transition-colors border border-primary/20 align-middle">
+            <span class="material-icons text-[10px]">download</span> Export
+        </button>
+    `;
+
     body.innerHTML = '';
 
     for (const s of stars) {
@@ -350,17 +500,48 @@ function displayResults(stars, totalCount) {
             : '-';
         const dist = s.angular_distance ? s.angular_distance.toFixed(4) : '-';
 
+        // Styling: Source ID like code, RA/Dec monospace, Mag highlighted if bright
+        const magClass = (s.phot_g_mean_mag && s.phot_g_mean_mag < 10)
+            ? 'font-bold text-yellow-500 dark:text-yellow-400'
+            : 'text-gray-700 dark:text-gray-300';
+
         const tr = document.createElement('tr');
+        tr.className = 'hover:bg-primary/5 transition-colors group'; // Hover effect
         tr.innerHTML = `
-            <td>${s.source_id}</td>
-            <td>${s.ra?.toFixed(4)}</td>
-            <td>${s.dec?.toFixed(4)}</td>
-            <td>${s.phot_g_mean_mag?.toFixed(2) || '-'}</td>
-            <td>${bpRp}</td>
-            <td>${s.parallax?.toFixed(3) || '-'}</td>
-            <td>${dist}</td>
-            <td><button class="btn-sm" onclick="viewStar('${s.source_id}')">View</button></td>
+            <td class="p-3 border-b border-gray-100 dark:border-white/5">
+                <span class="font-mono text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded select-all cursor-pointer hover:bg-primary/20 transition-colors" title="Click to copy" onclick="navigator.clipboard.writeText('${s.source_id}')">${s.source_id}</span>
+            </td>
+            <td class="p-3 border-b border-gray-100 dark:border-white/5 text-right font-mono text-gray-600 dark:text-gray-400">
+                ${s.ra?.toFixed(5)}
+            </td>
+            <td class="p-3 border-b border-gray-100 dark:border-white/5 text-right font-mono text-gray-600 dark:text-gray-400">
+                ${s.dec?.toFixed(5)}
+            </td>
+            <td class="p-3 border-b border-gray-100 dark:border-white/5 text-right font-mono ${magClass}">
+                ${s.phot_g_mean_mag?.toFixed(3) || '-'}
+            </td>
+            <td class="p-3 border-b border-gray-100 dark:border-white/5 text-right font-mono text-gray-500 dark:text-gray-500">
+                ${bpRp}
+            </td>
+            <td class="p-3 border-b border-gray-100 dark:border-white/5 text-right font-mono text-secondary">
+                ${s.parallax?.toFixed(3) || '-'}
+            </td>
+            <td class="p-3 border-b border-gray-100 dark:border-white/5 text-right font-mono text-gray-500 dark:text-gray-400">
+                ${dist}
+            </td>
+            
+            <td class="p-3 border-b border-gray-100 dark:border-white/5 text-center">
+                <button class="text-[10px] px-2 py-1 rounded border border-gray-200 dark:border-white/10 hover:bg-primary hover:text-white hover:border-primary transition-all opacity-0 group-hover:opacity-100" onclick="viewStar('${s.source_id}')">
+                    Full
+                </button>
+            </td>
         `;
+
+        // Removed the 'Distance' column from JS loop? 
+        // Need to check explore.html table header columns!
+        // It has Headers: Source ID, RA, Dec, G Mag, BP-RP, Parallax, Actions (7 cols)
+        // My previous code had: dist column? Let's check diff or previous view.
+
         body.appendChild(tr);
     }
 }
@@ -386,6 +567,13 @@ async function runStarLookup() {
             : 'N/A';
 
         resultBox.innerHTML = `
+            <div class="flex justify-between items-start mb-2 border-b border-gray-700/50 pb-2">
+                <span class="text-xs font-bold text-white">Star Details</span>
+                <button onclick='downloadData(${JSON.stringify(s)}, "star_${s.source_id}.json")' 
+                    class="text-[10px] flex items-center gap-1 text-primary hover:text-primary-light">
+                    <span class="material-icons text-[10px]">download</span> JSON
+                </button>
+            </div>
             <div class="grid grid-cols-2 gap-y-2 text-[11px] font-mono">
                 <div class="text-slate-500 dark:text-slate-400">Source ID</div>
                 <div class="text-right text-slate-700 dark:text-slate-300">${s.source_id}</div>
@@ -563,5 +751,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load Stats if on System page
     if (document.getElementById('q3cStatus')) {
         loadStats();
+    }
+
+    // Load Archives
+    loadArchivedSessions();
+
+    // Check Flash Message
+    const flash = localStorage.getItem('taarya_flash_message');
+    if (flash) {
+        localStorage.removeItem('taarya_flash_message'); // Clear
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50 text-sm animate-bounce';
+        toast.textContent = flash;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
     }
 });

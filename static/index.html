@@ -186,6 +186,13 @@
 
         <!-- Navigation -->
         <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+            <!-- New Chat Button -->
+            <button onclick="newChat()"
+                class="mx-3 mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all border border-primary/20 group">
+                <span class="material-icons text-sm">add</span>
+                <span class="text-sm font-bold sidebar-text">New Chat</span>
+            </button>
+
             <!-- Main Nav -->
             <nav class="space-y-1">
                 <a href="/"
@@ -221,31 +228,12 @@
             <section class="history-list">
                 <h3
                     class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3 px-2 flex items-center justify-between sidebar-section-title">
-                    Recent Queries
+                    Chat History
                     <span class="material-icons text-[14px]">history</span>
                 </h3>
-                <div class="space-y-1">
-                    <button
-                        class="w-full text-left px-3 py-2 rounded-md text-xs text-gray-400 hover:text-white hover:bg-white/5 truncate transition-all flex items-center gap-2 group"
-                        onclick="sendSuggestion(this)">
-                        <span
-                            class="material-icons text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">subdirectory_arrow_right</span>
-                        Gaia DR3 RA=45 Dec=0.5
-                    </button>
-                    <button
-                        class="w-full text-left px-3 py-2 rounded-md text-xs text-gray-400 hover:text-white hover:bg-white/5 truncate transition-all flex items-center gap-2 group"
-                        onclick="sendSuggestion(this)">
-                        <span
-                            class="material-icons text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">subdirectory_arrow_right</span>
-                        Messier 31 Redshift
-                    </button>
-                    <button
-                        class="w-full text-left px-3 py-2 rounded-md text-xs text-gray-400 hover:text-white hover:bg-white/5 truncate transition-all flex items-center gap-2 group"
-                        onclick="sendSuggestion(this)">
-                        <span
-                            class="material-icons text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">subdirectory_arrow_right</span>
-                        High Proper Motion Stats
-                    </button>
+                <div id="sessionList" class="space-y-1">
+                    <!-- Dynamic sessions will appear here -->
+                    <div class="text-[10px] text-gray-400 px-3 italic">No saved chats yet.</div>
                 </div>
             </section>
         </div>
@@ -275,7 +263,7 @@
             </div>
         </header>
 
-        <div id="chatMessages" class="flex-1 overflow-y-auto p-6 lg:px-12 space-y-8 pb-24">
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-6 lg:px-12 space-y-8 pb-36">
             <!-- Welcome Message -->
             <div class="flex gap-4 items-start">
                 <div
@@ -321,9 +309,12 @@
                 </div>
                 <div
                     class="relative bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl flex items-center p-2 focus-within:border-primary/50 transition-all shadow-2xl">
-                    <button class="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white">
+                    <button class="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                        onclick="document.getElementById('fileUpload').click()">
                         <span class="material-icons">add_circle_outline</span>
                     </button>
+                    <input type="file" id="fileUpload" class="hidden" accept=".csv,.json,.txt,.md"
+                        onchange="handleFileUpload(this)" />
                     <input id="chatInput"
                         class="bg-transparent border-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 w-full focus:ring-0 text-sm px-3"
                         placeholder="Analyze coordinates, celestial objects, or research data..." type="text" />

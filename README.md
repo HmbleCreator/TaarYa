@@ -69,41 +69,40 @@ The system is built on a modular pipeline:
 
 ## Installation & Setup
 
+## 🚀 Installation & Setup
+
 ### Prerequisites
--   Python 3.9+
--   PostgreSQL 15+
--   Neo4j 5.x (Community Edition)
+-   **Docker Desktop** (Running) — for Database services.
+-   **Python 3.10+** (Recommend using `uv` for package management).
+-   **Ollama** — for running the `kimi-k2.5:cloud` LLM locally.
 
-### Steps
+### One-Click Startup (Recommended)
 
-1.  **Clone the repo**
-    ```bash
-    git clone https://github.com/yourusername/taarya-ai.git
-    cd taarya-ai
-    ```
+**Windows:**
+Double-click `start_taarya.bat` in the project root.
 
-2.  **Install Python dependencies**
-    ```bash
-    uv pip install -r requirements.txt
-    ```
+**Linux/Mac:**
+Run `./start_taarya.sh` in your terminal.
+```bash
+chmod +x start_taarya.sh
+./start_taarya.sh
+```
 
-3.  **Setup Environment Variables**
-    ```bash
-    export OPENAI_API_KEY="your-key-here"
-    export PINECONE_API_KEY="your-pinecone-key"
-    export NEO4J_URI="bolt://localhost:7687"
-    ```
+These scripts will automatically:
+1.  Start Docker services (PostgreSQL/Q3C, Qdrant).
+2.  Pull the required Ollama model.
+3.  Activate the virtual environment.
+4.  Launch the TaarYa backend server.
 
-4.  **Run the Ingestion Script**
-    ```bash
-    python scripts/ingest_catalogs.py --source gaia --limit 100000
-    python scripts/ingest_papers.py --source arxiv --topic "stellar_population"
-    ```
+Access the interface at: **http://localhost:8000** 🌟
 
-5.  **Start the API Server**
-    ```bash
-    uvicorn main:app --reload
-    ```
+### Manual Setup
+If you prefer manual control:
+
+1.  **Start Services**: `docker compose up -d`
+2.  **Ensure Model**: `ollama pull kimi-k2.5:cloud`
+3.  **Install Deps**: `uv sync` (or `pip install -r requirements.txt`)
+4.  **Run Server**: `uv run python -m src.main`
 
 ---
 
