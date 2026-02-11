@@ -44,8 +44,29 @@ function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 // ---- Chat ----
 const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
+let chatHistory = [];
+
+// Load history from session
+// Load history from session and Render
+try {
+    const saved = localStorage.getItem('taarya_chat_history'); // Switch to localStorage for better persistence
+    if (saved) {
+        chatHistory = JSON.parse(saved);
+        chatHistory.forEach(msg => {
+            // Map 'human' -> 'user', 'ai' -> 'assistant'
+            const role = (msg.role === 'human' || msg.role === 'user') ? 'user' : 'assistant';
+            appendMessage(role, msg.content, null, false); // false = no scroll animation?
+        });
+        // Scroll to bottom
+        setTimeout(() => chatMessages.scrollTop = chatMessages.scrollHeight, 100);
+    }
+} catch (e) { console.error("History load error", e); }
 
 function sendSuggestion(el) {
+    if (el.disabled) return;
+    el.disabled = true;
+    setTimeout(() => el.disabled = false, 1000); // Re-enable after 1s
+
     const text = el.textContent.trim();
     const chatInput = document.getElementById('chatInput');
     if (chatInput) {
@@ -79,7 +100,10 @@ async function sendMessage() {
             const resp = await fetch(API + '/api/agent/ask', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: text }),
+                body: JSON.stringify({
+                    query: text,
+                    chat_history: chatHistory
+                }),
             });
             data = await resp.json();
         } catch (e) {
@@ -89,16 +113,32 @@ async function sendMessage() {
 
         typingEl.remove();
 
-        if (data.answer) {
-            appendMessage('assistant', data.answer, data.tools_used);
-        } else if (data.error) {
+        if (data && data.answer) { // Ensure data exists and has answer
+            // Pass tool_outputs to appendMessage
+            appendMessage('assistant', data.answer, data.tools_used, true, data.tool_outputs);
+
+            // Update history with tool_outputs
+            chatHistory.push({ role: 'human', content: text });
+            chatHistory.push({ role: 'ai', content: data.answer, tool_outputs: data.tool_outputs });
+
+        } else if (data && data.error) {
             appendMessage('assistant', '⚠️ ' + data.error);
         } else {
-            appendMessage('assistant', formatSearchResult(data));
+            // Fallback result display
+            const resultText = formatSearchResult(data);
+            appendMessage('assistant', resultText);
+            // Update history (approximate)
+            chatHistory.push({ role: 'human', content: text });
+            chatHistory.push({ role: 'ai', content: resultText });
         }
+
+        // Limit & Save
+        if (chatHistory.length > 50) chatHistory = chatHistory.slice(-50); // Increased limit
+        localStorage.setItem('taarya_chat_history', JSON.stringify(chatHistory));
+
     } catch (err) {
         typingEl.remove();
-        appendMessage('assistant', '❌ Failed to reach the server. Is it running?\n\n' + err.message);
+        appendMessage('assistant', '❌ Failed to reach server: ' + err.message);
     }
 
     sendBtn.disabled = false;
@@ -126,7 +166,7 @@ async function fallbackSearch(text) {
     return { answer: "I couldn't parse your query. Try providing coordinates like 'RA=45, Dec=0.5' or a star ID." };
 }
 
-function appendMessage(role, text, toolsUsed) {
+function appendMessage(role, text, toolsUsed, animate = true, toolOutputs = null) {
     const div = document.createElement('div');
     div.className = `message ${role}`;
 
@@ -138,25 +178,55 @@ function appendMessage(role, text, toolsUsed) {
     content.className = 'message-content';
 
     const textDiv = document.createElement('div');
-    textDiv.className = 'message-text';
-    textDiv.innerHTML = formatText(text);
+    textDiv.className = 'message-text prose prose-invert max-w-none';
+
+    // Safely parse markdown
+    if (typeof marked !== 'undefined') {
+        textDiv.innerHTML = marked.parse(text);
+    } else {
+        textDiv.innerHTML = formatText(text); // Fallback
+    }
 
     // Show tools used
     if (toolsUsed && toolsUsed.length > 0) {
         const toolsDiv = document.createElement('div');
-        toolsDiv.className = 'tools-used';
-        toolsDiv.innerHTML = 'Tools used: ' + toolsUsed.map(t =>
-            `<span>${t.tool}</span>`
+        toolsDiv.className = 'tools-used mt-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-white/10 pt-2';
+        toolsDiv.innerHTML = 'Tools: ' + toolsUsed.map(t =>
+            `<span class="bg-gray-100 dark:bg-white/5 px-1 rounded mx-1" title="${t.input}">${t.tool}</span>`
         ).join(' ');
         textDiv.appendChild(toolsDiv);
+    }
+
+    // Show download button if tool outputs exist
+    if (toolOutputs && toolOutputs.length > 0) {
+        const starData = toolOutputs.find(t => Array.isArray(t.data) && t.data.length > 0);
+        if (starData) {
+            const btn = document.createElement('button');
+            btn.className = 'mt-3 text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-md hover:bg-primary/20 flex items-center gap-2 transition-colors border border-primary/20';
+            btn.innerHTML = '<span class="material-icons text-[14px]">download</span> Export Data (JSON)';
+            btn.onclick = () => downloadData(starData.data, `taarya_export_${Date.now()}.json`);
+            textDiv.appendChild(btn);
+        }
     }
 
     content.appendChild(textDiv);
     div.appendChild(avatar);
     div.appendChild(content);
     chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (animate) chatMessages.scrollTop = chatMessages.scrollHeight;
     return div;
+}
+
+function downloadData(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function appendTyping() {
@@ -213,13 +283,19 @@ function formatSearchResult(data) {
 }
 
 // Enter key to send
+// Enter key to send
 document.addEventListener('DOMContentLoaded', () => {
-    chatInput?.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
+    // Remove existing listeners if any (by cloning) or just check
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput && !chatInput.dataset.listenerAttached) {
+        chatInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        chatInput.dataset.listenerAttached = 'true';
+    }
 });
 
 

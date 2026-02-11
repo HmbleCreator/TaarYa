@@ -13,6 +13,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
         rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -61,6 +62,98 @@
         .sidebar-collapsed .sidebar-text { display: none; }
         .sidebar-collapsed .sidebar-section-title { display: none; }
         .sidebar-collapsed .history-list { display: none; }
+        
+        /* Markdown Content */
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin: 1em 0;
+        }
+        .prose th {
+            text-align: left;
+            padding: 0.5em;
+            border-bottom: 1px solid rgba(124, 77, 255, 0.2);
+            color: #4fc3f7;
+            font-weight: 600;
+        }
+        .prose td {
+            padding: 0.5em;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .prose tr:last-child td { border-bottom: none; }
+        .prose code {
+            background: rgba(80,191,247,0.1);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            color: #4fc3f7;
+        }
+        .prose pre {
+            background: rgba(0,0,0,0.3);
+            padding: 1em;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 0.5em 0;
+        }
+        .prose ul, .prose ol { margin-left: 1.2em; margin-bottom: 0.5em; }
+        .prose li { margin-bottom: 0.2em; }
+        
+        /* Message Bubbles */
+        .message {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        .message-content {
+            max-width: 80%;
+            padding: 1rem;
+            border-radius: 1rem;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .message.user .message-content {
+            background: linear-gradient(135deg, #4fc3f7, #2196f3);
+            color: #fff;
+            border-top-right-radius: 0;
+        }
+        .message.assistant .message-content {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-top-left-radius: 0;
+            color: #1f2937;
+        }
+        .dark .message.assistant .message-content {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(255,255,255,0.05);
+            color: #e5e7eb;
+        }
+        .message-avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.2rem;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .message.user .message-avatar {
+            background: rgba(79, 195, 247, 0.2);
+            color: #4fc3f7;
+        }
+        .message.assistant .message-avatar {
+            background: rgba(124, 77, 255, 0.2);
+            color: #7c4dff;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 
@@ -211,7 +304,7 @@
                             <button
                                 class="px-3 py-1.5 rounded-md bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[11px] text-primary hover:bg-primary/10 hover:border-primary/30 transition-all"
                                 onclick="sendSuggestion(this)">
-                                Cone Search: 1° at RA=45
+                                Cone Search: 1° around RA=45, Dec=0
                             </button>
                         </div>
                     </div>

@@ -3,14 +3,17 @@ import logging
 import json
 from typing import Optional, Dict, Any
 
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+
 from src.config import settings
 from src.agent.tools import ALL_TOOLS
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are TaarYa, an intelligent astronomy research assistant.
-You have access to tools that query real astronomical databases:
+SYSTEM_PROMPT = """You are TaarYa, an expert and enthusiastic astronomy assistant.
+Your goal is to help users explore the cosmos using real data from Gaia, arXiv, and other sources.
 
+You have access to tools that query real astronomical databases:
 1. **cone_search** — Find stars near a sky coordinate (RA/Dec)
 2. **star_lookup** — Get details about a specific star by its Gaia source ID
 3. **find_nearby_stars** — Find neighbors of a known star
@@ -18,14 +21,19 @@ You have access to tools that query real astronomical databases:
 5. **graph_query** — Explore the knowledge graph for star-paper relationships
 6. **count_stars_in_region** — Count stars in a sky area
 
-Guidelines:
-- When users mention coordinates, use cone_search with those coordinates
-- When users mention a star ID or source_id, use star_lookup first
-- For questions about research or papers, use semantic_search
-- Always interpret magnitudes correctly: lower G-mag = brighter star
-- Be concise but informative. Include relevant numbers from the data.
-- If a tool returns no results, explain why (e.g., collection not populated yet)
-- Coordinates are in degrees: RA ranges 0-360, Dec ranges -90 to +90
+**Guidelines:**
+- **Be Conversational:** Remember previous interactions. If a user says "RA is 45", check if you previously asked for coordinates.
+- **Context Matters:** If the user implies a context from a previous turn, use it.
+- **Smart Queries:** When users mention coordinates, use cone_search. 
+  - If they only give RA, assume Dec=0 (Celestial Equator) and say "Searching around RA=XX, Dec=0...".
+  - If they give a star name, use star_lookup.
+- **Explain Briefly:** Summarize findings clearly. Interpret magnitudes (lower = brighter).
+- **List Results:** If you find 20 or fewer stars, **list ALL of them in a markdown table**. If more, list the top 10 brightest.
+  - Table columns: Source ID, RA, Dec, G-Mag, Dist.
+- **Tool Use:** Use tools whenever real data is needed.
+- **No Results?** Explain why (e.g., "I looked at that spot but didn't see any stars in my current database.").
+
+Coordinates are in degrees (RA: 0-360, Dec: -90 to +90).
 """
 
 
@@ -147,33 +155,68 @@ class AstronomyAgent:
         
         Args:
             query: User's question about astronomy
-            chat_history: Optional list of previous messages
+            chat_history: Optional list of previous messages [{'role': 'human', 'content': '...'}, ...]
             
         Returns:
             Dict with 'answer', 'tools_used', and 'steps'
         """
         self._ensure_agent()
         
+        # Convert chat_history dicts to Message objects
+        history_messages = []
+        if chat_history:
+            for msg in chat_history:
+                role = msg.get('role')
+                content = msg.get('content')
+                if role == 'human' or role == 'user':
+                    history_messages.append(HumanMessage(content=content))
+                elif role == 'ai' or role == 'assistant':
+                    history_messages.append(AIMessage(content=content))
+        
         try:
+            # Pass chat_history to the agent
             result = self._agent.invoke({
                 "input": query,
-                "chat_history": chat_history or [],
+                "chat_history": history_messages,
             })
             
-            # Extract tool usage info
+            # Extract tool usage info and full outputs
             steps = result.get("intermediate_steps", [])
             tools_used = []
+            tool_outputs = []
+            
             for step in steps:
                 if hasattr(step[0], 'tool'):
+                    tool_name = step[0].tool
+                    tool_input = str(step[0].tool_input)
+                    tool_output = step[1]
+                    
                     tools_used.append({
-                        "tool": step[0].tool,
-                        "input": str(step[0].tool_input),
-                        "output_preview": str(step[1])[:200],
+                        "tool": tool_name,
+                        "input": tool_input,
+                        "output_preview": str(tool_output)[:200],
                     })
+                    
+                    # If the output is a list of stars (JSON/dict), keep it for frontend to render/export
+                    if isinstance(tool_output, (list, dict)):
+                        tool_outputs.append({
+                            "tool": tool_name,
+                            "data": tool_output
+                        })
+                    elif isinstance(tool_output, str) and tool_output.strip().startswith('['):
+                        try:
+                            import json
+                            tool_outputs.append({
+                                "tool": tool_name,
+                                "data": json.loads(tool_output)
+                            })
+                        except:
+                            pass
             
             return {
                 "answer": result.get("output", "I couldn't generate a response."),
                 "tools_used": tools_used,
+                "tool_outputs": tool_outputs,
                 "query": query,
             }
             
