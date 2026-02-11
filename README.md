@@ -34,11 +34,12 @@ Given a complex query like *"Find red giants in globular clusters mentioned in r
 
 ## ⚡️ Key Features
 
--   **Agentic Autonomy:** An LLM-powered controller that plans multi-step research strategies.
--   **Hybrid Indexing:** Combines Dense Vectors (Semantics), Q3C (Spatial Geometry), and BM25 (Keywords) for maximum accuracy.
--   **Knowledge Graph:** Maps relationships between Stars, Catalogs, and Papers for multi-hop reasoning.
--   **In-Flight Analysis:** Generates and executes Python code (`Astropy`, `Pandas`) to plot and analyze data subsets on the fly.
--   **Anti-Hallucination Guard:** Cross-references LLM claims against raw database values to ensure scientific rigor.
+-   **Agentic Autonomy:** An LLM-powered controller that plans multi-step research strategies using tools.
+-   **Interactive Dashboard:** A modern, glassmorphism UI with Chat, Explore (Q3C Cone Search), and System Analysis tabs.
+-   **Local & Private:** Runs entirely offline using local LLMs (Ollama) and Dockerized databases.
+-   **Hybrid Indexing:** Combines Dense Vectors (Semantics), Q3C (Spatial Geometry), and BM25 for maximum retrieval accuracy.
+-   **In-Flight Analysis:** capable of generating Python code to analyze data on the fly.
+-   **Anti-Hallucination:** Cross-references LLM claims against raw database values.
 
 ---
 
@@ -58,16 +59,14 @@ The system is built on a modular pipeline:
 
 ## Tech Stack
 
--   **LLM Framework:** LangChain / LlamaIndex
--   **Vector Database:** Qdrant (Open Source) / Pinecone
--   **Graph Database:** Neo4j
--   **Spatial Database:** PostgreSQL with Q3C Extension
--   **Data Science:** Astropy, Pandas, Matplotlib
--   **Backend:** FastAPI, Python 3.9+
+-   **LLM Engine:** Ollama (Local `kimi-k2.5:cloud` or similar) / LangChain
+-   **Vector Database:** Qdrant (Dockerized)
+-   **Spatial Database:** PostgreSQL 15 + Q3C Indexing
+-   **Backend:** FastAPI, Python 3.10+
+-   **Frontend:** Vanilla JS, TailwindCSS (Glassmorphism UI)
+-   **Data Science:** Astropy, Pandas, NumPy
 
 ---
-
-## Installation & Setup
 
 ## 🚀 Installation & Setup
 
@@ -139,10 +138,10 @@ If you prefer manual control:
 
 ## Project Roadmap
 
--   [ ] **Phase 1:** Ingestion Pipeline (Gaia/SIMBAD)
--   [ ] **Phase 2:** Knowledge Graph Construction
--   [ ] **Phase 3:** Agentic Core Implementation
--   [ ] **Phase 4:** Web Interface (React.js)
+-   [x] **Phase 1:** Ingestion Pipeline (Gaia/SIMBAD)
+-   [x] **Phase 2:** Knowledge Graph Construction (Partial)
+-   [x] **Phase 3:** Agentic Core Implementation
+-   [x] **Phase 4:** Web Interface (Interactive Dashboard)
 -   [ ] **Phase 5:** Public Beta Release
 
 ---
