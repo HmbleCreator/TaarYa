@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaarYa - Code &amp; Analysis Console</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Icons -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f2b90d",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#161612", /* Slightly tweaked for better contrast with code blocks */
+                        "surface-dark": "#221e10",
+                        "surface-darker": "#1a1810",
+                        "code-bg": "#0d0d0c",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1810; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444; 
+        }
+
+        /* Syntax Highlighting Simulation */
+        .token-keyword { color: #f2b90d; }
+        .token-function { color: #60a5fa; }
+        .token-string { color: #34d399; }
+        .token-comment { color: #6b7280; font-style: italic; }
+        .token-number { color: #f87171; }
+        .token-class { color: #fcd34d; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-300 font-display h-screen flex flex-col overflow-hidden">
+<!-- Global Navigation Header -->
+<header class="h-14 bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-white/10 flex items-center justify-between px-4 z-20 shrink-0">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-background-dark font-bold text-lg">T</div>
+<span class="font-bold text-lg tracking-tight dark:text-white">TaarYa <span class="text-primary text-xs uppercase tracking-widest font-normal ml-1">Console</span></span>
+</div>
+<div class="h-6 w-px bg-gray-300 dark:bg-white/10"></div>
+<!-- Project Selector -->
+<div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-primary cursor-pointer transition-colors">
+<span class="material-icons-round text-base">folder_open</span>
+<span>Project: NGC-4590 Cluster Analysis</span>
+<span class="material-icons-round text-sm">expand_more</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- Agent Status -->
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+</span>
+<span class="text-xs font-mono font-medium text-primary">AGENT ACTIVE</span>
+</div>
+<button class="p-2 rounded hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400">
+<span class="material-icons-round">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-orange-500 flex items-center justify-center text-white font-bold text-xs" title="User Profile">
+                DR
+            </div>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="flex-1 flex overflow-hidden">
+<!-- Left Sidebar: Notebook Explorer -->
+<aside class="w-64 bg-gray-50 dark:bg-surface-darker border-r border-gray-200 dark:border-white/5 flex flex-col shrink-0">
+<div class="p-3 border-b border-gray-200 dark:border-white/5 flex justify-between items-center">
+<h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Explorer</h3>
+<div class="flex gap-1">
+<button class="p-1 hover:text-primary dark:text-gray-400 transition-colors"><span class="material-icons-round text-sm">add_box</span></button>
+<button class="p-1 hover:text-primary dark:text-gray-400 transition-colors"><span class="material-icons-round text-sm">refresh</span></button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-2 space-y-4 font-mono text-sm">
+<!-- Section: Generated Scripts -->
+<div>
+<div class="flex items-center gap-1 text-gray-500 dark:text-gray-400 mb-2 px-2">
+<span class="material-icons-round text-sm">smart_toy</span>
+<span class="text-xs font-semibold">AGENT SCRIPTS</span>
+</div>
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-2 px-2 py-1.5 rounded bg-primary/20 text-primary border-l-2 border-primary" href="#">
+<span class="material-icons-round text-sm">description</span>
+<span class="truncate">v1.2_gaia_query.py</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400 border-l-2 border-transparent" href="#">
+<span class="material-icons-round text-sm">description</span>
+<span class="truncate opacity-70">v1.1_gaia_query.py</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400 border-l-2 border-transparent" href="#">
+<span class="material-icons-round text-sm">description</span>
+<span class="truncate opacity-70">v1.0_init_search.py</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Section: Reference Data -->
+<div>
+<div class="flex items-center gap-1 text-gray-500 dark:text-gray-400 mb-2 px-2 mt-4">
+<span class="material-icons-round text-sm">storage</span>
+<span class="text-xs font-semibold">DATASETS</span>
+</div>
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400 border-l-2 border-transparent" href="#">
+<span class="material-icons-round text-sm text-blue-400">table_chart</span>
+<span class="truncate">gaia_dr3_subset.csv</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400 border-l-2 border-transparent" href="#">
+<span class="material-icons-round text-sm text-green-400">table_chart</span>
+<span class="truncate">simbad_matches.vot</span>
+</a>
+</li>
+</ul>
+</div>
+</div>
+<!-- Agent Prompt Input Mini -->
+<div class="p-3 border-t border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-surface-dark">
+<div class="relative">
+<input class="w-full bg-white dark:bg-black/20 border border-gray-300 dark:border-white/10 rounded px-3 py-2 text-xs focus:ring-1 focus:ring-primary focus:border-primary text-gray-300 placeholder-gray-500" placeholder="Refine query..." type="text"/>
+<button class="absolute right-2 top-1.5 text-primary hover:text-white"><span class="material-icons-round text-sm">send</span></button>
+</div>
+</div>
+</aside>
+<!-- Center: Code Editor -->
+<section class="flex-1 flex flex-col bg-code-bg relative overflow-hidden">
+<!-- Editor Tabs -->
+<div class="flex items-center bg-surface-darker border-b border-white/5 text-sm font-mono overflow-x-auto no-scrollbar">
+<div class="px-4 py-2 bg-code-bg border-t-2 border-primary text-gray-200 flex items-center gap-2">
+<span class="material-icons-round text-blue-400 text-sm">code</span>
+                    v1.2_gaia_query.py
+                    <button class="hover:text-white ml-2"><span class="material-icons-round text-xs">close</span></button>
+</div>
+<div class="px-4 py-2 text-gray-500 hover:text-gray-300 cursor-pointer flex items-center gap-2">
+<span class="material-icons-round text-yellow-600 text-sm">code</span>
+                    utils_astrometry.py
+                </div>
+<!-- Run Button (Floating Action Style in Header) -->
+<div class="ml-auto flex items-center pr-2">
+<button class="flex items-center gap-2 bg-primary hover:bg-yellow-400 text-black px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all">
+<span class="material-icons-round text-sm">play_arrow</span>
+                        Run Analysis
+                    </button>
+</div>
+</div>
+<!-- Editor Content -->
+<div class="flex-1 overflow-y-auto font-mono text-sm leading-relaxed p-4 relative">
+<!-- Line Numbers -->
+<div class="absolute left-0 top-4 bottom-0 w-10 text-right pr-3 text-gray-600 select-none text-xs">
+                    1<br/>2<br/>3<br/>4<br/>5<br/>6<br/>7<br/>8<br/>9<br/>10<br/>11<br/>12<br/>13<br/>14<br/>15<br/>16<br/>17<br/>18
+                </div>
+<!-- Code Area -->
+<div class="pl-12 text-gray-300">
+<div class="mb-4">
+<span class="token-keyword">import</span> numpy <span class="token-keyword">as</span> np<br/>
+<span class="token-keyword">import</span> astropy.units <span class="token-keyword">as</span> u<br/>
+<span class="token-keyword">from</span> astropy.coordinates <span class="token-keyword">import</span> SkyCoord<br/>
+<span class="token-keyword">from</span> astroquery.gaia <span class="token-keyword">import</span> Gaia<br/>
+</div>
+<div class="mb-4">
+<span class="token-comment"># Define target coordinates for globular cluster NGC 4590 (M68)</span><br/>
+<span class="token-class">target_coord</span> = SkyCoord(ra=<span class="token-number">189.866</span>*u.deg, dec=<span class="token-number">-26.744</span>*u.deg, frame=<span class="token-string">'icrs'</span>)
+                    </div>
+<div class="mb-4">
+<span class="token-keyword">def</span> <span class="token-function">query_gaia_cone</span>(coord, radius_deg=<span class="token-number">0.5</span>):<br/>
+                            <span class="token-string">"""</span><br/>
+                            <span class="token-string">Perform asynchronous cone search on Gaia DR3 source table.</span><br/>
+                            <span class="token-string">Filters for proper motion coherence typical of cluster members.</span><br/>
+                            <span class="token-string">"""</span><br/>
+                            width = u.Quantity(radius_deg, u.deg)<br/>
+                            height = u.Quantity(radius_deg, u.deg)<br/>
+<br/>
+                            <span class="token-comment"># Agent Note: Using async job to handle large dataset return</span><br/>
+                            job = Gaia.launch_job_async(<span class="token-string">f"""</span><br/>
+                            <span class="token-string">SELECT source_id, ra, dec, parallax, pmra, pmdec, phot_g_mean_mag</span><br/>
+                            <span class="token-string">FROM gaiadr3.gaia_source</span><br/>
+                            <span class="token-string">WHERE 1=CONTAINS(</span><br/>
+                                <span class="token-string">POINT('ICRS', ra, dec),</span><br/>
+                                <span class="token-string">CIRCLE('ICRS', {coord.ra.deg}, {coord.dec.deg}, {radius_deg})</span><br/>
+                            <span class="token-string">)</span><br/>
+                            <span class="token-string">AND parallax &gt; 0.1 AND parallax &lt; 5.0</span><br/>
+                            <span class="token-string">"""</span>)<br/>
+<br/>
+                            <span class="token-keyword">return</span> job.get_results()
+                    </div>
+<div>
+<span class="token-comment"># Execute Query</span><br/>
+<span class="token-class">results</span> = <span class="token-function">query_gaia_cone</span>(target_coord)
+                    </div>
+</div>
+</div>
+<!-- Agent Edit Indicator Overlay (Subtle) -->
+<div class="absolute bottom-4 right-4 pointer-events-none">
+<div class="bg-surface-dark border border-primary/30 rounded-lg p-3 shadow-lg flex items-center gap-3 backdrop-blur-md bg-opacity-80">
+<div class="h-2 w-2 bg-primary rounded-full animate-pulse"></div>
+<span class="text-xs text-primary font-mono">Agent optimizing SQL query logic...</span>
+</div>
+</div>
+</section>
+<!-- Right Sidebar Pane -->
+<aside class="w-96 bg-surface-darker border-l border-white/5 flex flex-col shrink-0">
+<!-- Top Right: Variable Inspector -->
+<div class="h-1/2 flex flex-col border-b border-white/5">
+<div class="p-2 bg-surface-dark border-b border-white/5 flex justify-between items-center px-4">
+<h3 class="text-xs font-bold uppercase tracking-wider text-gray-400">Variable Inspector</h3>
+<span class="material-icons-round text-gray-500 text-sm cursor-pointer hover:text-white">more_horiz</span>
+</div>
+<div class="flex-1 overflow-auto p-0">
+<table class="w-full text-left border-collapse">
+<thead class="bg-black/20 text-xs font-mono text-gray-500">
+<tr>
+<th class="px-4 py-2 font-medium">Variable</th>
+<th class="px-4 py-2 font-medium">Type</th>
+<th class="px-4 py-2 font-medium">Size</th>
+<th class="px-4 py-2 font-medium">Value</th>
+</tr>
+</thead>
+<tbody class="font-mono text-xs text-gray-300 divide-y divide-white/5">
+<tr class="hover:bg-white/5 cursor-pointer">
+<td class="px-4 py-2 text-primary">target_coord</td>
+<td class="px-4 py-2 text-gray-500">SkyCoord</td>
+<td class="px-4 py-2 text-gray-500">1</td>
+<td class="px-4 py-2 truncate max-w-[100px] text-gray-400">{ra: 189.8...}</td>
+</tr>
+<tr class="hover:bg-white/5 cursor-pointer bg-primary/5">
+<td class="px-4 py-2 text-primary">results</td>
+<td class="px-4 py-2 text-gray-500">Table</td>
+<td class="px-4 py-2 text-gray-500">12,405</td>
+<td class="px-4 py-2 truncate max-w-[100px] text-gray-400">[DataFrame]</td>
+</tr>
+<tr class="hover:bg-white/5 cursor-pointer">
+<td class="px-4 py-2 text-primary">radius_deg</td>
+<td class="px-4 py-2 text-gray-500">float</td>
+<td class="px-4 py-2 text-gray-500">8 bytes</td>
+<td class="px-4 py-2 text-number">0.5</td>
+</tr>
+<tr class="hover:bg-white/5 cursor-pointer">
+<td class="px-4 py-2 text-primary">pm_mask</td>
+<td class="px-4 py-2 text-gray-500">ndarray</td>
+<td class="px-4 py-2 text-gray-500">(12405,)</td>
+<td class="px-4 py-2 truncate max-w-[100px] text-gray-400">[True, Fals...]</td>
+</tr>
+</tbody>
+</table>
+<!-- DataFrame Preview -->
+<div class="mt-4 px-4">
+<div class="text-xs font-semibold text-gray-500 mb-2 flex justify-between">
+<span>PREVIEW: results</span>
+<span class="text-primary cursor-pointer hover:underline">View Full</span>
+</div>
+<div class="bg-black/30 rounded border border-white/5 p-2 overflow-x-auto">
+<table class="w-full text-xs font-mono text-gray-400">
+<thead>
+<tr class="text-gray-600 border-b border-white/5">
+<th class="pb-1 text-left">source_id</th>
+<th class="pb-1 text-right">ra</th>
+<th class="pb-1 text-right">dec</th>
+<th class="pb-1 text-right">g_mag</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="pt-1">3452...12</td>
+<td class="pt-1 text-right">189.86</td>
+<td class="pt-1 text-right">-26.74</td>
+<td class="pt-1 text-right">14.2</td>
+</tr>
+<tr>
+<td class="pt-1">3452...19</td>
+<td class="pt-1 text-right">189.91</td>
+<td class="pt-1 text-right">-26.71</td>
+<td class="pt-1 text-right">16.8</td>
+</tr>
+<tr>
+<td class="pt-1 text-gray-600 italic">...</td>
+<td class="pt-1 text-right text-gray-600">...</td>
+<td class="pt-1 text-right text-gray-600">...</td>
+<td class="pt-1 text-right text-gray-600">...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Right: Output Console & Plots -->
+<div class="h-1/2 flex flex-col bg-surface-dark">
+<!-- Tabs -->
+<div class="flex border-b border-white/5">
+<button class="px-4 py-2 text-xs font-bold text-primary border-b-2 border-primary bg-white/5">OUTPUT LOG</button>
+<button class="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-300">PLOTS (1)</button>
+<button class="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-300">TERMINAL</button>
+</div>
+<div class="flex-1 p-4 overflow-y-auto font-mono text-xs relative flex flex-col gap-4">
+<!-- Log Stream -->
+<div class="space-y-1">
+<div class="text-gray-500">[14:23:01] Initializing TaarYa Agent v2.4...</div>
+<div class="text-gray-400"><span class="text-blue-400 font-bold">INFO:</span> Connected to Gaia TAP Service (Main).</div>
+<div class="text-gray-400"><span class="text-blue-400 font-bold">INFO:</span> Querying cone search radius=0.5deg around NGC 4590.</div>
+<div class="text-yellow-500"><span class="text-yellow-500 font-bold">WARN:</span> Large dataset expected (&gt;10k rows). Switching to async.</div>
+<div class="text-gray-400"><span class="text-green-400 font-bold">SUCCESS:</span> Job 17294-A finished. Retrieved 12,405 sources.</div>
+<div class="text-gray-400"><span class="text-blue-400 font-bold">INFO:</span> Rendering CMD plot...</div>
+</div>
+<!-- Mini Plot Container (Inline for context) -->
+<div class="mt-2 border border-white/10 rounded bg-black/40 p-2 relative group">
+<div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+<button class="bg-surface-dark hover:bg-white/20 p-1 rounded text-white shadow"><span class="material-icons-round text-sm">open_in_new</span></button>
+<button class="bg-surface-dark hover:bg-white/20 p-1 rounded text-white shadow"><span class="material-icons-round text-sm">download</span></button>
+</div>
+<div class="h-32 w-full rounded flex items-center justify-center overflow-hidden relative">
+<!-- Abstract Representation of a Spectral Graph / CMD Plot -->
+<img class="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay" data-alt="Abstract dark space background representing spectral data visualization" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiyXLDUnp_cdlSaz5vZX3I5tUq8w5rl3nVMKL1hhGPbvth6mt_ZRYatw_1BAhHeTKPQi5yHtZlYRTB0Qy8tuopDpfVuJIBdOfimddum5-11_oT1AKU3otFY5ApU1rYcVYDX7HjaV6Cy1kjuEMgvrLtNp42vftF16riEnJcF_GYcPio_sV8NuOqT2ZKdiKvKOOB-XFKwMiIZvi2vrTZlKsmmA0pzkT73z4jWMqVA95TnCkdi8fsT4jQuesYIp7xcz77zJMle7INXNn3"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+<!-- CSS-only Plot Simulation -->
+<div class="relative w-full h-full p-4 flex items-end justify-between gap-1">
+<!-- Bars/Points simulation -->
+<div class="w-1 bg-primary/40 h-1/3 rounded-t"></div>
+<div class="w-1 bg-primary/50 h-1/2 rounded-t"></div>
+<div class="w-1 bg-primary/70 h-3/4 rounded-t shadow-[0_0_10px_rgba(242,185,13,0.5)]"></div>
+<div class="w-1 bg-primary/60 h-2/3 rounded-t"></div>
+<div class="w-1 bg-primary/40 h-1/4 rounded-t"></div>
+<div class="w-1 bg-primary/30 h-1/5 rounded-t"></div>
+<div class="w-1 bg-primary/20 h-1/6 rounded-t"></div>
+<div class="w-1 bg-primary/80 h-4/5 rounded-t shadow-[0_0_15px_rgba(242,185,13,0.6)]"></div>
+<div class="w-1 bg-primary/40 h-1/3 rounded-t"></div>
+<div class="w-1 bg-primary/50 h-1/2 rounded-t"></div>
+<div class="w-1 bg-primary/70 h-3/4 rounded-t"></div>
+<div class="w-1 bg-primary/60 h-2/3 rounded-t"></div>
+<div class="w-1 bg-primary/40 h-1/4 rounded-t"></div>
+</div>
+<div class="absolute bottom-1 left-2 text-[10px] text-gray-500 font-mono">Wavelength (Å)</div>
+<div class="absolute top-8 left-1 -rotate-90 text-[10px] text-gray-500 font-mono">Flux</div>
+</div>
+<div class="mt-1 flex justify-between items-center px-1">
+<span class="text-[10px] text-gray-400 font-mono uppercase">Fig 1: Spectral Density</span>
+<span class="text-[10px] text-primary font-mono">LIVE UPDATE</span>
+</div>
+</div>
+<!-- Cursor Prompt -->
+<div class="flex items-center gap-2 mt-2">
+<span class="text-primary font-bold">❯</span>
+<div class="h-4 w-2 bg-gray-500 animate-pulse"></div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer Status Bar -->
+<footer class="h-6 bg-primary dark:bg-primary text-background-dark flex items-center justify-between px-3 text-xs font-mono font-medium z-20 shrink-0 select-none">
+<div class="flex gap-4">
+<span class="flex items-center gap-1"><span class="material-icons-round text-sm">code</span> Python 3.9.12</span>
+<span class="flex items-center gap-1"><span class="material-icons-round text-sm">memory</span> RAM: 4.2GB / 16GB</span>
+</div>
+<div class="flex gap-4">
+<span>Ln 18, Col 42</span>
+<span>UTF-8</span>
+<span class="flex items-center gap-1"><span class="material-icons-round text-sm">cloud_queue</span> Connected</span>
+</div>
+</footer>
+</body></html>

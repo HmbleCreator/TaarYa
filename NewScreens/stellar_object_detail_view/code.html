@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaarYa - Sirius Object Detail</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2547f4",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#101322",
+                        "surface-dark": "#181b2e",
+                        "surface-darker": "#0b0d19",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                    boxShadow: {
+                        "glow": "0 0 15px rgba(37, 71, 244, 0.2)",
+                        "glow-sm": "0 0 8px rgba(37, 71, 244, 0.15)",
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-image: radial-gradient(circle at 15% 50%, rgba(37, 71, 244, 0.08) 0%, transparent 25%), 
+                              radial-gradient(circle at 85% 30%, rgba(37, 71, 244, 0.05) 0%, transparent 20%);
+            background-attachment: fixed;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0d19; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2547f4; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #1d36b8; 
+        }
+        .glass-panel {
+            background: rgba(24, 27, 46, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .code-block {
+            font-family: 'Fira Code', 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="w-full h-16 border-b border-white/5 bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-6">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold text-lg">T</div>
+<span class="text-xl font-bold text-white tracking-wide">TaarYa</span>
+</div>
+<div class="h-6 w-px bg-white/10 mx-2"></div>
+<nav class="flex items-center text-sm text-slate-400 gap-2">
+<a class="hover:text-primary transition-colors" href="#">Cosmos</a>
+<span class="text-xs material-icons">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Search</a>
+<span class="text-xs material-icons">chevron_right</span>
+<span class="text-white font-medium">Object View</span>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-icons text-slate-500 text-sm">search</span>
+<input class="bg-surface-darker border border-white/10 rounded-full py-1.5 pl-9 pr-4 text-sm text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-64 transition-all" placeholder="Search SIMBAD..." type="text"/>
+</div>
+<button class="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300">
+<span class="material-icons text-sm">download</span>
+                Export Data
+            </button>
+<div class="w-8 h-8 rounded-full bg-slate-700 overflow-hidden border border-white/10">
+<img alt="User Profile" data-alt="User avatar placeholder" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7wXtad1alr1PAOA3TQ4yUePu1YPhjDkqsylyHDV4lnmp64H4PjekLTXP7dqlI7Cd4zrLfZJVsoe4PycTMrNOt_br9iw-T7zBRJ8PtZQ5ur9gMNO5WBL3E4LhRgnqdGvLrD8eD5NhxLgKgtlqyBMR9GU3gbiAi7dpJkZcbq0HGl7IacT3rZ3WF9w_nhVBcbOEbrhl7M2n9kpdH8y3qrYBxjMty2wbRWKNudmvbMHr6Er3-1Ez0-AVC9IcIBkD9uPkAttqKDDU0YJrS"/>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 p-6 max-w-[1920px] mx-auto w-full">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+<div>
+<div class="flex items-center gap-3 mb-1">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Confirmed</span>
+<span class="text-slate-400 text-sm font-mono">SIMBAD ID: SIRIUS A</span>
+</div>
+<h1 class="text-4xl md:text-5xl font-bold text-white mb-2 flex items-center gap-3">
+                    Sirius (α CMa)
+                    <span class="text-2xl text-slate-500 font-light">Binary System</span>
+</h1>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 rounded bg-surface-dark border border-white/10 text-xs text-slate-300 flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-blue-400"></span> Spectral Type: A1V
+                    </span>
+<span class="px-2 py-1 rounded bg-surface-dark border border-white/10 text-xs text-slate-300">
+                        Distance: 8.60 ly
+                    </span>
+<span class="px-2 py-1 rounded bg-surface-dark border border-white/10 text-xs text-slate-300">
+                        Constellation: Canis Major
+                    </span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-surface-dark hover:bg-surface-dark/80 border border-white/10 rounded-lg text-sm text-white flex items-center gap-2 transition-colors">
+<span class="material-icons text-sm">share</span> Share
+                </button>
+<button class="px-4 py-2 bg-primary hover:bg-blue-600 shadow-glow rounded-lg text-sm text-white flex items-center gap-2 transition-all font-medium">
+<span class="material-icons text-sm">science</span> Analyze Spectrum
+                </button>
+</div>
+</div>
+<!-- 3-Column Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+<!-- LEFT COLUMN: Identity & Coordinates (3 cols) -->
+<div class="lg:col-span-3 flex flex-col gap-6">
+<!-- Visualization Card -->
+<div class="glass-panel rounded-xl p-1 overflow-hidden group">
+<div class="relative h-48 w-full rounded-lg overflow-hidden bg-black">
+<img alt="Sirius Star Visualization" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" data-alt="Deep space nebula and bright star field" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3U2GwyyJ-rDoZ1U3epu-C9_JIebA26aLZ3yB9tp-fbmRSGfFIQdmqFh2op7J6EwYHRFORMMs-A9ov9v0opW2RPVwr5Cd5R6CaPiJbeac2A_EcJ_AGqeRDbzs201fXHzkqL9-6oO-JZ_P8BQIQK933oYZP7xm9O7XDPTOkAj_TNvk1YRK-SGQOLky9HUIJhLRXQZHJCr5pDOkYM6aVTwZ8yKxu8TZyQm11oyUuLWPeGbl11Apr-U_ZowlFNCLsES2OaANBG5VXHpXK"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark to-transparent"></div>
+<div class="absolute bottom-3 left-3">
+<span class="text-xs text-white/60 uppercase tracking-widest">Visual Magnitude</span>
+<div class="text-2xl font-bold text-white">-1.46</div>
+</div>
+</div>
+</div>
+<!-- Coordinates Card -->
+<div class="glass-panel rounded-xl p-5 border-l-2 border-l-primary">
+<h3 class="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+<span class="material-icons text-primary text-sm">my_location</span> Coordinates (J2000)
+                    </h3>
+<div class="grid grid-cols-2 gap-y-4 gap-x-2">
+<div>
+<div class="text-[10px] uppercase text-slate-500 tracking-wider mb-1">Right Ascension</div>
+<div class="text-lg font-mono text-white">06h 45m 08.9s</div>
+</div>
+<div>
+<div class="text-[10px] uppercase text-slate-500 tracking-wider mb-1">Declination</div>
+<div class="text-lg font-mono text-white">-16° 42' 58"</div>
+</div>
+<div class="col-span-2 h-px bg-white/5"></div>
+<div>
+<div class="text-[10px] uppercase text-slate-500 tracking-wider mb-1">Galactic Long.</div>
+<div class="text-sm font-mono text-slate-300">227.2303°</div>
+</div>
+<div>
+<div class="text-[10px] uppercase text-slate-500 tracking-wider mb-1">Galactic Lat.</div>
+<div class="text-sm font-mono text-slate-300">-08.8903°</div>
+</div>
+</div>
+</div>
+<!-- Astrometry Card -->
+<div class="glass-panel rounded-xl p-5">
+<h3 class="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+<span class="material-icons text-amber-500 text-sm">auto_awesome</span> Gaia DR3 Data
+                    </h3>
+<div class="space-y-4">
+<div class="flex justify-between items-end">
+<span class="text-sm text-slate-400">Parallax</span>
+<span class="text-base font-mono text-primary font-medium">379.21 <span class="text-xs text-slate-500">mas</span></span>
+</div>
+<div class="w-full bg-surface-darker rounded-full h-1.5">
+<div class="bg-primary h-1.5 rounded-full shadow-glow-sm" style="width: 85%"></div>
+</div>
+<div class="flex justify-between items-end mt-2">
+<span class="text-sm text-slate-400">Proper Motion (RA)</span>
+<span class="text-base font-mono text-white">-546.01 <span class="text-xs text-slate-500">mas/yr</span></span>
+</div>
+<div class="flex justify-between items-end">
+<span class="text-sm text-slate-400">Proper Motion (Dec)</span>
+<span class="text-base font-mono text-white">-1223.07 <span class="text-xs text-slate-500">mas/yr</span></span>
+</div>
+</div>
+</div>
+<!-- Identifiers -->
+<div class="glass-panel rounded-xl p-5">
+<h3 class="text-sm font-semibold text-slate-300 mb-3">Catalog Identifiers</h3>
+<div class="flex flex-wrap gap-2">
+<span class="bg-white/5 hover:bg-white/10 text-xs px-2 py-1 rounded text-slate-400 font-mono transition-colors cursor-pointer">HIP 32349</span>
+<span class="bg-white/5 hover:bg-white/10 text-xs px-2 py-1 rounded text-slate-400 font-mono transition-colors cursor-pointer">HD 48915</span>
+<span class="bg-white/5 hover:bg-white/10 text-xs px-2 py-1 rounded text-slate-400 font-mono transition-colors cursor-pointer">HR 2491</span>
+<span class="bg-white/5 hover:bg-white/10 text-xs px-2 py-1 rounded text-slate-400 font-mono transition-colors cursor-pointer">TYC 5949-2777-1</span>
+<span class="bg-white/5 hover:bg-white/10 text-xs px-2 py-1 rounded text-slate-400 font-mono transition-colors cursor-pointer">LTT 2638</span>
+</div>
+</div>
+</div>
+<!-- MIDDLE COLUMN: Scientific Insight (6 cols) -->
+<div class="lg:col-span-6 flex flex-col gap-6">
+<!-- Main AI Summary -->
+<div class="glass-panel rounded-xl p-6 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-3">
+<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded border border-primary/30 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wide">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+                            TaarYa AI Insight
+                        </span>
+</div>
+<h2 class="text-xl font-semibold text-white mb-4">Stellar Biography</h2>
+<div class="prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed space-y-4">
+<p>
+<span class="text-white font-medium">Sirius A</span> is a main-sequence star of spectral type A0 or A1, paired with a faint white dwarf companion, <span class="text-white font-medium">Sirius B</span> (spectral type DA2). The distance separating the two varies between 8.2 and 31.5 astronomical units as they orbit every 50 years.
+                        </p>
+<p>
+                            Recent photometric analysis suggests Sirius A is metal-rich, with an iron abundance <span class="text-amber-400">[Fe/H] = 0.50</span>. The system is approximately 200–300 million years old. Originally, the system comprised two bluish stars; however, the more massive Sirius B consumed its resources and became a red giant before shedding its outer layers and collapsing into its current white dwarf state approximately 120 million years ago.
+                        </p>
+<p>
+                            The system is moving closer to the Solar System, so its brightness will slowly increase over the next 60,000 years.
+                        </p>
+</div>
+<div class="mt-6 flex gap-3">
+<button class="text-xs bg-surface-dark border border-white/10 hover:border-primary/50 text-slate-300 px-3 py-1.5 rounded flex items-center gap-2 transition-colors">
+<span class="material-icons text-[14px]">content_copy</span> Copy
+                        </button>
+<button class="text-xs bg-surface-dark border border-white/10 hover:border-primary/50 text-slate-300 px-3 py-1.5 rounded flex items-center gap-2 transition-colors">
+<span class="material-icons text-[14px]">refresh</span> Regenerate
+                        </button>
+</div>
+</div>
+<!-- Key Physical Properties Grid -->
+<div class="grid grid-cols-3 gap-4">
+<!-- Mass -->
+<div class="glass-panel rounded-xl p-4 text-center hover:bg-surface-dark/90 transition-colors">
+<div class="text-[10px] uppercase text-slate-500 tracking-wider mb-2">Mass (M☉)</div>
+<div class="text-2xl font-bold text-white mb-1">2.063</div>
+<div class="text-xs text-green-400 flex justify-center items-center gap-1">
+<span class="material-icons text-[10px]">check_circle</span> ± 0.023
+                        </div>
+</div>
+<!-- Radius -->
+<div class="glass-panel rounded-xl p-4 text-center hover:bg-surface-dark/90 transition-colors">
+<div class="text-[10px] uppercase text-slate-500 tracking-wider mb-2">Radius (R☉)</div>
+<div class="text-2xl font-bold text-white mb-1">1.711</div>
+<div class="text-xs text-green-400 flex justify-center items-center gap-1">
+<span class="material-icons text-[10px]">check_circle</span> ± 0.013
+                        </div>
+</div>
+<!-- Temp -->
+<div class="glass-panel rounded-xl p-4 text-center hover:bg-surface-dark/90 transition-colors">
+<div class="text-[10px] uppercase text-slate-500 tracking-wider mb-2">Teff (K)</div>
+<div class="text-2xl font-bold text-amber-400 mb-1">9,940</div>
+<div class="text-xs text-slate-400">Surface Temp</div>
+</div>
+</div>
+<!-- Bottom Analysis Area (Chart + Code) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+<!-- HR Diagram Placeholder -->
+<div class="glass-panel rounded-xl p-4 flex flex-col">
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-sm font-semibold text-slate-300">H-R Diagram Position</h3>
+<button class="text-xs text-primary hover:text-white">Expand</button>
+</div>
+<div class="flex-1 rounded bg-surface-darker relative border border-white/5 p-2 flex items-center justify-center">
+<!-- Abstract HR Diagram Representation -->
+<div class="w-full h-40 relative overflow-hidden">
+<!-- Main Sequence Line -->
+<div class="absolute w-[120%] h-20 bg-gradient-to-r from-blue-900 via-white/10 to-red-900 blur-xl transform -rotate-45 top-10 -left-10"></div>
+<!-- Sirius A Point -->
+<div class="absolute left-[35%] top-[40%] w-4 h-4 bg-primary rounded-full blur-[2px] animate-pulse"></div>
+<div class="absolute left-[35%] top-[40%] w-2 h-2 bg-white rounded-full border-2 border-primary z-10 shadow-glow" title="Sirius A"></div>
+<!-- Sirius B Point -->
+<div class="absolute left-[20%] bottom-[20%] w-1.5 h-1.5 bg-slate-500 rounded-full border border-white/50 z-10" title="Sirius B"></div>
+<!-- Axis Labels -->
+<div class="absolute bottom-1 left-2 text-[8px] text-slate-600">Temp (K)</div>
+<div class="absolute top-2 left-1 text-[8px] text-slate-600 transform -rotate-90 origin-top-left">Luminosity</div>
+</div>
+</div>
+</div>
+<!-- Code Snippet -->
+<div class="glass-panel rounded-xl p-0 flex flex-col overflow-hidden border border-slate-700/50">
+<div class="bg-surface-darker px-4 py-2 flex justify-between items-center border-b border-white/5">
+<span class="text-xs font-mono text-slate-400">analysis.py</span>
+<div class="flex gap-1.5">
+<div class="w-2.5 h-2.5 rounded-full bg-red-500/20"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-amber-500/20"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-green-500/20"></div>
+</div>
+</div>
+<div class="p-4 bg-[#0d101c] flex-1 overflow-x-auto">
+<pre class="text-[10px] leading-relaxed font-mono text-slate-300"><span class="text-purple-400">from</span> astropy.coordinates <span class="text-purple-400">import</span> SkyCoord
+<span class="text-purple-400">import</span> astropy.units <span class="text-purple-400">as</span> u
+
+<span class="text-slate-500"># Define Sirius Coordinates</span>
+c = SkyCoord(ra=<span class="text-green-400">'06h45m08.9s'</span>, 
+             dec=<span class="text-green-400">'-16d42m58s'</span>, 
+             frame=<span class="text-green-400">'icrs'</span>)
+
+<span class="text-slate-500"># Calculate Distance from Parallax</span>
+parallax = <span class="text-amber-400">379.21</span> * u.mas
+dist = parallax.to(u.parsec, 
+                   equivalencies=u.parallax())
+
+<span class="text-blue-400">print</span>(f<span class="text-green-400">"Distance: {dist:.2f}"</span>)
+</pre>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Related Literature (3 cols) -->
+<div class="lg:col-span-3 flex flex-col h-full overflow-hidden">
+<div class="glass-panel rounded-xl h-full flex flex-col border-l border-white/5">
+<div class="p-5 border-b border-white/5 flex justify-between items-center">
+<h3 class="text-sm font-semibold text-slate-300">Related Literature</h3>
+<span class="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">142</span>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-4">
+<!-- Paper Item 1 -->
+<div class="group p-3 rounded-lg hover:bg-white/5 transition-all border border-transparent hover:border-white/5 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">ArXiv:2301.1029</span>
+<div class="flex items-center gap-1" title="Relevance Score">
+<span class="text-xs font-bold text-emerald-400">98%</span>
+<div class="w-4 h-4 rounded-full border-2 border-emerald-500/30 flex items-center justify-center">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+</div>
+</div>
+</div>
+<h4 class="text-sm font-medium text-slate-200 leading-tight mb-2 group-hover:text-primary transition-colors">The Sirius System and its Astrophysical Parameters</h4>
+<div class="text-xs text-slate-500 mb-3 truncate">Bond, H. E.; Schaefer, G. H.; et al.</div>
+<div class="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="text-[10px] bg-surface-darker hover:bg-primary hover:text-white px-2 py-1 rounded border border-white/10 transition-colors">Abstract</button>
+<button class="text-[10px] bg-surface-darker hover:bg-primary hover:text-white px-2 py-1 rounded border border-white/10 transition-colors">Summarize</button>
+</div>
+</div>
+<!-- Paper Item 2 -->
+<div class="group p-3 rounded-lg hover:bg-white/5 transition-all border border-transparent hover:border-white/5 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">A&amp;A 2021</span>
+<div class="flex items-center gap-1" title="Relevance Score">
+<span class="text-xs font-bold text-emerald-400">85%</span>
+<div class="w-4 h-4 rounded-full border-2 border-emerald-500/30 flex items-center justify-center">
+<div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+</div>
+</div>
+</div>
+<h4 class="text-sm font-medium text-slate-200 leading-tight mb-2 group-hover:text-primary transition-colors">Interferometric observations of the Sirius system</h4>
+<div class="text-xs text-slate-500 mb-3 truncate">Kervella, P.; Thevenin, F.</div>
+<div class="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="text-[10px] bg-surface-darker hover:bg-primary hover:text-white px-2 py-1 rounded border border-white/10 transition-colors">Abstract</button>
+<button class="text-[10px] bg-surface-darker hover:bg-primary hover:text-white px-2 py-1 rounded border border-white/10 transition-colors">Summarize</button>
+</div>
+</div>
+<!-- Paper Item 3 -->
+<div class="group p-3 rounded-lg hover:bg-white/5 transition-all border border-transparent hover:border-white/5 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">MNRAS 2018</span>
+<div class="flex items-center gap-1" title="Relevance Score">
+<span class="text-xs font-bold text-amber-400">64%</span>
+<div class="w-4 h-4 rounded-full border-2 border-amber-500/30 flex items-center justify-center">
+<div class="w-1 h-1 rounded-full bg-amber-500"></div>
+</div>
+</div>
+</div>
+<h4 class="text-sm font-medium text-slate-200 leading-tight mb-2 group-hover:text-primary transition-colors">Abundance analysis of Sirius A</h4>
+<div class="text-xs text-slate-500 mb-3 truncate">Landstreet, J. D.</div>
+<div class="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="text-[10px] bg-surface-darker hover:bg-primary hover:text-white px-2 py-1 rounded border border-white/10 transition-colors">Abstract</button>
+<button class="text-[10px] bg-surface-darker hover:bg-primary hover:text-white px-2 py-1 rounded border border-white/10 transition-colors">Summarize</button>
+</div>
+</div>
+</div>
+<div class="p-4 border-t border-white/5">
+<button class="w-full py-2 text-xs text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded transition-colors">
+                            View All Sources
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Global Data Status Footer (Fixed) -->
+<footer class="bg-surface-darker border-t border-white/10 px-6 py-2 text-[10px] text-slate-500 flex justify-between items-center z-40">
+<div class="flex gap-4">
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> SIMBAD: Connected</span>
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Gaia DR3: Online</span>
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> ArXiv: Syncing...</span>
+</div>
+<div>
+            TaarYa v2.0.4 | Latency: 42ms
+        </div>
+</footer>
+</body></html>
