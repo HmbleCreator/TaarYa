@@ -49,6 +49,8 @@ async def ask_agent_stream(request: AskRequest):
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
+            "Content-Encoding": "identity",
+            "X-Content-Type-Options": "nosniff",
             "X-Accel-Buffering": "no",
         },
     )

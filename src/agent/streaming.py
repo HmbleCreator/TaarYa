@@ -1,9 +1,8 @@
 """Streaming agent — SSE endpoint that emits real-time tool events."""
 import json
 import logging
-import asyncio
-from typing import Optional, List, Any, Dict
-from queue import Queue
+from typing import Optional, List, Any
+from queue import Queue, Empty
 from threading import Thread
 
 from langchain_core.callbacks import BaseCallbackHandler
@@ -31,6 +30,7 @@ class StreamingCallbackHandler(BaseCallbackHandler):
     def __init__(self, event_queue: Queue):
         super().__init__()
         self.queue = event_queue
+        self._tool_by_run_id = {}
 
     def _push(self, event_type: str, data: dict):
         self.queue.put({"type": event_type, "data": data})
@@ -46,6 +46,8 @@ class StreamingCallbackHandler(BaseCallbackHandler):
 
     def on_tool_start(self, serialized, input_str, *, run_id=None, **kwargs):
         tool_name = serialized.get("name", "unknown")
+        if run_id is not None:
+            self._tool_by_run_id[str(run_id)] = tool_name
         self._push("tool_start", {
             "tool": tool_name,
             "input": str(input_str)[:200],
@@ -53,15 +55,17 @@ class StreamingCallbackHandler(BaseCallbackHandler):
 
     def on_tool_end(self, output, *, run_id=None, **kwargs):
         output_str = str(output)
+        tool_name = self._tool_by_run_id.pop(str(run_id), "unknown") if run_id is not None else "unknown"
         self._push("tool_end", {
+            "tool": tool_name,
             "output_preview": output_str[:300],
             "output_length": len(output_str),
         })
 
     def on_agent_action(self, action, **kwargs):
-        self._push("tool_start", {
+        self._push("decision", {
+            "message": action.log[:400] if getattr(action, "log", None) else f"Selecting tool: {action.tool}",
             "tool": action.tool,
-            "input": str(action.tool_input)[:200],
         })
 
     def on_agent_finish(self, finish, **kwargs):
@@ -172,6 +176,7 @@ def run_agent_streaming(query: str, chat_history: Optional[List[dict]] = None):
     """
     event_queue = Queue()
     callback_handler = StreamingCallbackHandler(event_queue)
+    yield f"data: {json.dumps({'type': 'thinking', 'data': {'status': 'Connecting to agent...'}})}\n\n"
 
     # Convert chat_history
     history_messages = []
@@ -206,7 +211,13 @@ def run_agent_streaming(query: str, chat_history: Optional[List[dict]] = None):
 
     # Yield events as they arrive
     while True:
-        event = event_queue.get()
+        try:
+            event = event_queue.get(timeout=0.5)
+        except Empty:
+            # Heartbeat keeps proxies and browsers flushing the stream.
+            yield ": keep-alive\n\n"
+            continue
+
         if event is None:
             break
         yield f"data: {json.dumps(event)}\n\n"
