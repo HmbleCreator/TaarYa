@@ -1,5 +1,8 @@
+import json
 from queue import Queue
 
+from src.agent.agent import build_system_prompt_sync
+from src.agent.tools import cone_search
 from src.agent.streaming import StreamingCallbackHandler
 from src.retrieval.spatial_search import SpatialSearch
 
@@ -68,3 +71,49 @@ def test_spatial_search_dedupes_identical_measurements():
     deduped = search._dedupe_stars(stars, limit=10)
 
     assert [star["source_id"] for star in deduped] == ["1", "3"]
+
+
+def test_cone_search_returns_out_of_coverage_without_hitting_spatial_search(monkeypatch):
+    monkeypatch.setattr(
+        "src.agent.tools.get_catalog_coverage_raw",
+        lambda: {
+            "total_stars": 1000,
+            "ra_min": 43.65,
+            "ra_max": 46.36,
+            "dec_min": 0.02,
+            "dec_max": 2.19,
+            "suggested_search_center": {"ra": 45.01, "dec": 1.11},
+        },
+    )
+
+    def fail_if_called(**kwargs):
+        raise AssertionError("Spatial cone search should not run for out-of-coverage coordinates")
+
+    monkeypatch.setattr("src.agent.tools._spatial.cone_search", fail_if_called)
+
+    result = cone_search.invoke({"ra": 83.82, "dec": -5.39, "radius_deg": 0.5, "limit": 20})
+    payload = json.loads(result)
+
+    assert payload["status"] == "OUT_OF_COVERAGE"
+    assert payload["count"] == 0
+
+
+def test_build_system_prompt_sync_injects_live_coverage(monkeypatch):
+    monkeypatch.setattr(
+        "src.agent.agent.get_catalog_coverage_raw",
+        lambda: {
+            "total_stars": 1000,
+            "ra_min": 43.65,
+            "ra_max": 46.36,
+            "dec_min": 0.02,
+            "dec_max": 2.19,
+            "suggested_search_center": {"ra": 45.01, "dec": 1.11},
+        },
+    )
+
+    prompt = build_system_prompt_sync()
+
+    assert "CURRENT DATABASE STATE" in prompt
+    assert "Stars loaded: 1000" in prompt
+    assert "RA range: 43.65° to 46.36°" in prompt
+    assert "Suggested search center: RA 45.01°, Dec 1.11°" in prompt

@@ -1,18 +1,95 @@
 """LangChain tools wrapping the retrieval layer."""
 import json
 import logging
-from langchain.tools import tool
+from typing import Any, Dict
 
+from langchain.tools import tool
+from sqlalchemy import text
+
+from src.database import postgres_conn
 from src.retrieval.spatial_search import SpatialSearch
 from src.retrieval.vector_search import VectorSearch
 from src.retrieval.graph_search import GraphSearch
 
 logger = logging.getLogger(__name__)
 
+COVERAGE_BUFFER_DEG = 2.0
+
 # Shared instances
 _spatial = SpatialSearch()
 _vector = VectorSearch()
 _graph = GraphSearch()
+
+
+def get_catalog_coverage_raw() -> Dict[str, Any]:
+    """Return the actual RA/Dec bounds of the loaded star catalog."""
+    postgres_conn.connect()
+
+    query = text("""
+        SELECT
+            COUNT(*) AS total_stars,
+            MIN(ra) AS ra_min,
+            MAX(ra) AS ra_max,
+            MIN(dec) AS dec_min,
+            MAX(dec) AS dec_max
+        FROM stars
+    """)
+
+    with postgres_conn.session() as session:
+        row = session.execute(query).mappings().one()
+
+    total_stars = int(row["total_stars"] or 0)
+    if total_stars == 0:
+        return {
+            "total_stars": 0,
+            "ra_min": None,
+            "ra_max": None,
+            "dec_min": None,
+            "dec_max": None,
+            "suggested_search_center": None,
+        }
+
+    ra_min = float(row["ra_min"])
+    ra_max = float(row["ra_max"])
+    dec_min = float(row["dec_min"])
+    dec_max = float(row["dec_max"])
+    return {
+        "total_stars": total_stars,
+        "ra_min": round(ra_min, 2),
+        "ra_max": round(ra_max, 2),
+        "dec_min": round(dec_min, 2),
+        "dec_max": round(dec_max, 2),
+        "suggested_search_center": {
+            "ra": round((ra_min + ra_max) / 2, 2),
+            "dec": round((dec_min + dec_max) / 2, 2),
+        },
+    }
+
+
+def _is_out_of_coverage(ra: float, dec: float, coverage: Dict[str, Any], buffer_deg: float = COVERAGE_BUFFER_DEG) -> bool:
+    """Return True when a query falls outside the loaded footprint plus a small buffer."""
+    if not coverage or not coverage.get("total_stars"):
+        return True
+
+    ra_min = coverage.get("ra_min")
+    ra_max = coverage.get("ra_max")
+    dec_min = coverage.get("dec_min")
+    dec_max = coverage.get("dec_max")
+    if None in (ra_min, ra_max, dec_min, dec_max):
+        return True
+
+    return (
+        ra < ra_min - buffer_deg
+        or ra > ra_max + buffer_deg
+        or dec < dec_min - buffer_deg
+        or dec > dec_max + buffer_deg
+    )
+
+
+@tool
+def get_catalog_coverage() -> Dict[str, Any]:
+    """Return the loaded catalog coverage bounds and a suggested search center."""
+    return get_catalog_coverage_raw()
 
 
 @tool
@@ -29,6 +106,19 @@ def cone_search(ra: float, dec: float, radius_deg: float = 0.5, limit: int = 20)
         limit: Maximum number of results (default 20)
     """
     try:
+        coverage = get_catalog_coverage_raw()
+        if _is_out_of_coverage(ra=ra, dec=dec, coverage=coverage):
+            return json.dumps({
+                "status": "OUT_OF_COVERAGE",
+                "count": 0,
+                "requested": {
+                    "ra": round(ra, 4),
+                    "dec": round(dec, 4),
+                    "radius_deg": radius_deg,
+                },
+                "coverage": coverage,
+            })
+
         stars = _spatial.cone_search(ra=ra, dec=dec, radius_deg=radius_deg, limit=limit)
         if not stars:
             return f"No stars found within {radius_deg}° of RA={ra}, Dec={dec}."
@@ -196,6 +286,7 @@ def count_stars_in_region(ra: float, dec: float, radius_deg: float = 1.0) -> str
 
 # All tools for the agent
 ALL_TOOLS = [
+    get_catalog_coverage,
     cone_search,
     star_lookup,
     find_nearby_stars,

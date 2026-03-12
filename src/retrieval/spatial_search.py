@@ -21,6 +21,7 @@ class SpatialSearch:
         """Collapse obviously duplicated catalog rows before returning them."""
         unique_stars: List[Dict[str, Any]] = []
         seen = set()
+        duplicate_count = 0
 
         for star in stars:
             key = (
@@ -33,15 +34,15 @@ class SpatialSearch:
                 star.get("catalog_source"),
             )
             if key in seen:
+                duplicate_count += 1
                 continue
             seen.add(key)
             unique_stars.append(star)
             if len(unique_stars) >= limit:
                 break
 
-        removed = len(stars) - len(unique_stars)
-        if removed > 0:
-            logger.warning(f"Deduplicated {removed} repeated star rows from query results")
+        if duplicate_count > 0:
+            logger.warning(f"Deduplicated {duplicate_count} repeated star rows from query results")
 
         return unique_stars
     

@@ -9,6 +9,12 @@ from threading import Thread
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import HumanMessage, AIMessage
 
+from src.agent.agent import (
+    MAX_AGENT_EXECUTION_TIME,
+    MAX_AGENT_ITERATIONS,
+    _parse_tool_output,
+    build_system_prompt_sync,
+)
 from src.config import settings
 from src.agent.tools import ALL_TOOLS
 
@@ -163,13 +169,14 @@ def _get_llm():
 def _build_agent(callback_handler):
     """Build a LangChain agent with the streaming callback handler."""
     llm = _get_llm()
+    system_prompt = build_system_prompt_sync()
 
     try:
         from langchain.agents import create_tool_calling_agent, AgentExecutor
         from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
         prompt = ChatPromptTemplate.from_messages([
-            ("system", SYSTEM_PROMPT),
+            ("system", system_prompt),
             MessagesPlaceholder(variable_name="chat_history", optional=True),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
@@ -180,7 +187,8 @@ def _build_agent(callback_handler):
             agent=agent,
             tools=ALL_TOOLS,
             verbose=True,
-            max_iterations=5,
+            max_iterations=MAX_AGENT_ITERATIONS,
+            max_execution_time=MAX_AGENT_EXECUTION_TIME,
             handle_parsing_errors=True,
             return_intermediate_steps=True,
             callbacks=[callback_handler],
@@ -194,11 +202,12 @@ def _build_agent(callback_handler):
         llm=llm,
         agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
         verbose=True,
-        max_iterations=5,
+        max_iterations=MAX_AGENT_ITERATIONS,
+        max_execution_time=MAX_AGENT_EXECUTION_TIME,
         handle_parsing_errors=True,
         return_intermediate_steps=True,
         callbacks=[callback_handler],
-        agent_kwargs={"prefix": SYSTEM_PROMPT},
+        agent_kwargs={"prefix": system_prompt},
     )
 
 
@@ -284,13 +293,9 @@ def run_agent_streaming(query: str, chat_history: Optional[List[dict]] = None):
                     "output_preview": str(tool_output)[:300],
                 })
 
-                if isinstance(tool_output, (list, dict)):
-                    tool_outputs.append({"tool": tool_name, "data": tool_output})
-                elif isinstance(tool_output, str) and tool_output.strip().startswith('['):
-                    try:
-                        tool_outputs.append({"tool": tool_name, "data": json.loads(tool_output)})
-                    except Exception:
-                        pass
+                structured_output = _parse_tool_output(tool_output)
+                if structured_output is not None:
+                    tool_outputs.append({"tool": tool_name, "data": structured_output})
 
         yield f"data: {json.dumps({'type': 'answer', 'data': {'answer': answer, 'tools_used': tools_used, 'tool_outputs': tool_outputs, 'source': 'result'}})}\n\n"
 
