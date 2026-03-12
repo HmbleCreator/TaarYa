@@ -64,10 +64,24 @@
       --shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
+
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .app-layout {
+      height: 100vh;
+      overflow: hidden;
+    }
+
     /* ── Override main-content for full-bleed chat ──────── */
     .main-content {
       padding: 0 !important;
       max-width: 100% !important;
+      height: 100vh;
+      min-height: 0;
       position: relative;
       overflow: hidden;
       display: flex;
@@ -168,11 +182,14 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+      overflow: hidden;
     }
 
     .chat-messages {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 24px 32px;
       scrollbar-width: thin;
       scrollbar-color: var(--accent-dim) transparent;
@@ -494,6 +511,7 @@
 
     /* ── Input Bar ─────────────────────────────────────── */
     .input-area {
+      flex-shrink: 0;
       position: relative;
       z-index: 2;
       padding: 16px 28px 20px;
@@ -857,6 +875,20 @@
       scrollBottom();
     }
 
+    else if (type === 'decision') {
+      const msg = data.message ? data.message.trim() : 'Choosing next action…';
+      if (sublabelEl) sublabelEl.textContent = 'Planning next step';
+      stepsEl.insertAdjacentHTML('beforeend', `
+        <div class="step-item">
+          <div class="step-tool">
+            <span class="material-icons tool-icon">psychology_alt</span>
+            <span class="tool-name">decision</span>
+          </div>
+          <div class="step-input">${escapeHtml(msg.slice(0, 180))}</div>
+        </div>`);
+      scrollBottom();
+    }
+
     else if (type === 'tool_end') {
       if (currentStepEl) {
         currentStepEl.classList.remove('active');
@@ -973,9 +1005,6 @@
         query,
         chatHistory.length > 2 ? chatHistory.slice(-10) : null,
         (event) => {
-          // ── Handle each SSE event in real-time ──
-          handleEvent(thinkingId, event);
-
           if (event.type === 'tool_start') toolCount++;
 
           if (event.type === 'token') {
@@ -1063,7 +1092,7 @@
           }
 
           else if (event.type !== 'answer') {
-            // thinking, tool_start, tool_end, error
+            // thinking, decision, tool_start, tool_end, error
             handleEvent(thinkingId, event);
           }
         }
