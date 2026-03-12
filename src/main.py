@@ -1,8 +1,10 @@
 """FastAPI application entry point."""
+
 import sys
-import io
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+import os
+
+os.environ["PYTHONIOENCODING"] = "utf-8"
+
 import asyncio
 import logging
 from pathlib import Path
@@ -18,6 +20,7 @@ from src.config import settings
 from src.utils.logger import setup_logging
 from src.database import postgres_conn, qdrant_conn, neo4j_conn
 from src.ingestion.seed import seed_catalog
+from src.ingestion.arxiv_ingest import ingest_arxiv_papers
 
 # Setup logging
 setup_logging()
@@ -28,11 +31,24 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = PROJECT_ROOT / "static"
 
 
-async def run_seed_in_background(db):
-    """Run catalog seeding without blocking app startup."""
+async def run_seed_in_background(db, qdrant):
+    """Run catalog seeding and ArXiv ingestion without blocking app startup."""
     loop = asyncio.get_event_loop()
     with ThreadPoolExecutor() as pool:
-        await loop.run_in_executor(pool, seed_catalog, db)
+        try:
+            logger.info("Background task: starting seed_catalog...")
+            await loop.run_in_executor(pool, seed_catalog, db)
+            logger.info("Background task: seed_catalog completed")
+        except Exception as e:
+            logger.error(f"seed_catalog failed: {e}", exc_info=True)
+            # Don't return — still attempt ArXiv ingestion
+
+        try:
+            logger.info("Background task: starting ingest_arxiv_papers...")
+            await loop.run_in_executor(pool, ingest_arxiv_papers, qdrant)
+            logger.info("Background task: ingest_arxiv_papers completed")
+        except Exception as e:
+            logger.error(f"ingest_arxiv_papers failed: {e}", exc_info=True)
 
 
 @asynccontextmanager
@@ -42,14 +58,27 @@ async def lifespan(app: FastAPI):
     try:
         postgres_conn.connect()
         logger.info("PostgreSQL: connected")
-        asyncio.create_task(run_seed_in_background(postgres_conn))
-    except Exception as e:
-        logger.warning(f"PostgreSQL: {e}")
-    try:
         qdrant_conn.connect()
         logger.info("Qdrant: connected")
+
+        if os.getenv("RUN_INGESTION", "").lower() == "true":
+            task = asyncio.create_task(
+                run_seed_in_background(postgres_conn, qdrant_conn)
+            )
+            task.add_done_callback(
+                lambda t: logger.error(
+                    f"Background task failed: {t.exception()}", exc_info=t.exception()
+                )
+                if not t.cancelled() and t.exception()
+                else None
+            )
+        else:
+            logger.info(
+                "Skipping seed and ingestion (set RUN_INGESTION=true to enable)"
+            )
     except Exception as e:
-        logger.warning(f"Qdrant: {e}")
+        logger.error(f"Failed to start background task: {e}", exc_info=True)
+
     try:
         neo4j_conn.connect()
         logger.info("Neo4j: connected")
@@ -62,6 +91,7 @@ async def lifespan(app: FastAPI):
     postgres_conn.close()
     qdrant_conn.close()
     neo4j_conn.close()
+    logger.info("All connections closed")
 
 
 # Create FastAPI app
@@ -102,20 +132,22 @@ from src.api.stars import router as stars_router
 from src.api.papers import router as papers_router
 from src.api.search import router as search_router, stats_router
 from src.api.agent import router as agent_router
+from src.api.sessions import router as sessions_router
 
 app.include_router(stars_router, prefix="/api")
 app.include_router(papers_router, prefix="/api")
 app.include_router(search_router, prefix="/api")
 app.include_router(stats_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
-app.include_router(__import__("src.api.sessions", fromlist=["router"]).router, prefix="/api")
+app.include_router(sessions_router, prefix="/api")
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "src.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True if settings.environment == "development" else False,
+        reload=settings.environment == "development",
     )

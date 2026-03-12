@@ -112,7 +112,9 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         pass  # We handle final answer separately
 
     def on_text(self, text: str, **kwargs):
-        """Ignore verbose scratchpad text for the user-facing stream."""
+        """Ignore verbose scratchpad text for the user-facing stream, but intercept final answer text."""
+        if text.startswith("Final Answer:"):
+            self.final_answer_candidate = self._clean_text(text[len("Final Answer:"):])
         return
 
     def on_llm_error(self, error, **kwargs):
@@ -144,6 +146,24 @@ You have access to tools that query real astronomical databases:
 
 Coordinates are in degrees (RA: 0-360, Dec: -90 to +90).
 """
+
+
+def _build_fallback_answer(steps: list) -> str:
+    """Build a minimal grounded answer from intermediate steps when LLM fails to synthesize."""
+    star_results = []
+    for action, observation in steps:
+        if hasattr(action, 'tool') and action.tool == 'cone_search':
+            obs_str = str(observation)
+            if 'Found' in obs_str:
+                star_results.append(obs_str[:400])
+    if star_results:
+        return (
+            "Here's what I found in the loaded catalog:\n\n" +
+            "\n\n".join(star_results) +
+            "\n\nThe catalog currently covers RA 43–46°, Dec 0–2°. "
+            "Ask me to look up specific stars or search for particular properties."
+        )
+    return "I searched the catalog but found no results for this query in the loaded data region (RA 43–46°, Dec 0–2°)."
 
 
 def _get_llm():
@@ -180,10 +200,10 @@ def _build_agent(callback_handler):
         tools=ALL_TOOLS,
         llm=llm,
         agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=True,
+        verbose=False,
         max_iterations=MAX_AGENT_ITERATIONS,
         max_execution_time=MAX_AGENT_EXECUTION_TIME,
-        handle_parsing_errors=True,
+        handle_parsing_errors=False,
         return_intermediate_steps=True,
         callbacks=[callback_handler],
         agent_kwargs={"prefix": system_prompt},
@@ -271,9 +291,15 @@ def run_agent_streaming(
     elif result_holder["result"]:
         result = result_holder["result"]
         answer = result.get("output", "I couldn't generate a response.")
+        steps = result.get("intermediate_steps", [])
+
+        if answer == "Agent stopped due to iteration limit or time limit." or not answer.strip():
+            if callback_handler.final_answer_candidate:
+                answer = callback_handler.final_answer_candidate
+            else:
+                answer = _build_fallback_answer(steps)
 
         # Extract tool info from intermediate steps
-        steps = result.get("intermediate_steps", [])
         tools_used = []
         tool_outputs = []
 

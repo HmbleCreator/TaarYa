@@ -61,13 +61,6 @@
         ask: (query, chatHistory = null) =>
             _post('/api/agent/ask', { query, chat_history: chatHistory }),
 
-        /**
-         * Stream agent response via SSE.
-         * @param {string} query
-         * @param {Array|null} chatHistory
-         * @param {function} onEvent - called with {type, data} for each event
-         * @returns {Promise<void>} resolves when stream ends
-         */
         askStream: async (query, chatHistory, onEvent) => {
             const r = await fetch(BASE + '/api/agent/ask/stream', {
                 method: 'POST',
@@ -107,6 +100,36 @@
         },
     };
 
+    /* ── Export Helpers ─────────────────────────────────────── */
+    const STAR_COLS = ['source_id', 'ra', 'dec', 'phot_g_mean_mag', 'parallax', 'pmra', 'pmdec'];
+
+    function exportCSV(stars) {
+        const header = STAR_COLS.join(',');
+        const rows = stars.map(s =>
+            STAR_COLS.map(k => {
+                const v = s[k];
+                if (v === null || v === undefined) return '';
+                return typeof v === 'string' && v.includes(',') ? `"${v}"` : v;
+            }).join(',')
+        );
+        const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv' });
+        _triggerDownload(blob, 'taarya_stars.csv');
+    }
+
+    function exportJSON(stars) {
+        const blob = new Blob([JSON.stringify(stars, null, 2)], { type: 'application/json' });
+        _triggerDownload(blob, 'taarya_stars.json');
+    }
+
+    function _triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
     /* ── Render Helpers ─────────────────────────────────────── */
     const render = {
 
@@ -139,10 +162,16 @@
 
         /** Card for a paper */
         paperCard: (paper, { clickable = false } = {}) => {
-            const authors = paper.authors ? paper.authors.split(',').slice(0, 2).join(', ') + (paper.authors.split(',').length > 2 ? ' et al.' : '') : '—';
+            const authorsRaw = Array.isArray(paper.authors)
+                ? paper.authors
+                : (paper.authors || '').split(',');
+            const authors = authorsRaw.slice(0, 2).join(', ') + (authorsRaw.length > 2 ? ' et al.' : '');
             const date = paper.published_date ? paper.published_date.slice(0, 7) : '';
             const score = paper.score != null ? (paper.score * 100).toFixed(0) + '% match' : '';
-            const cats = (paper.categories || '').split(' ').slice(0, 2).map(c =>
+            const catsRaw = Array.isArray(paper.categories)
+                ? paper.categories
+                : (paper.categories || '').split(' ');
+            const cats = catsRaw.slice(0, 2).map(c =>
                 `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(37,71,244,0.18);color:#93c5fd;">${c}</span>`
             ).join(' ');
             return `
@@ -214,32 +243,94 @@
         </div>`;
         },
 
-        /** Inline star data table from agent tool results */
-        resultTable: (stars = [], maxRows = 5) => {
+        /**
+         * Full star results table with scrollable container + export buttons.
+         * Replaces the old truncated resultTable.
+         * @param {Array} stars
+         * @param {number} maxRows - rows shown initially before "Show all" (used in agent context only)
+         */
+        resultTable: (stars = [], maxRows = 25) => {
             if (!stars.length) return '';
-            const shown = stars.slice(0, maxRows);
-            return `<div style="margin-top:10px;overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace;">
-          <thead><tr style="border-bottom:1px solid rgba(255,255,255,.1);">
-            <th style="text-align:left;padding:4px 8px;color:#64748b;">Source ID</th>
-            <th style="text-align:right;padding:4px 8px;color:#64748b;">RA</th>
-            <th style="text-align:right;padding:4px 8px;color:#64748b;">Dec</th>
-            <th style="text-align:right;padding:4px 8px;color:#64748b;">G mag</th>
-            <th style="text-align:right;padding:4px 8px;color:#64748b;">Parallax</th>
-          </tr></thead>
-          <tbody>${shown.map((s, i) => `
-            <tr style="border-bottom:1px solid rgba(255,255,255,.04);${i % 2 === 0 ? 'background:rgba(255,255,255,.02)' : ''}">
-              <td style="padding:4px 8px;color:#94a3b8;font-size:10px;">${s.source_id || '—'}</td>
-              <td style="padding:4px 8px;color:#cbd5e1;text-align:right;">${s.ra?.toFixed(4) ?? '—'}</td>
-              <td style="padding:4px 8px;color:#cbd5e1;text-align:right;">${s.dec?.toFixed(4) ?? '—'}</td>
-              <td style="padding:4px 8px;color:#fbbf24;text-align:right;">${s.phot_g_mean_mag?.toFixed(2) ?? '—'}</td>
-              <td style="padding:4px 8px;color:#6ee7b7;text-align:right;">${s.parallax?.toFixed(3) ?? '—'}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-        ${stars.length > maxRows ? `<div style="font-size:10px;color:#475569;padding:4px 8px;">${stars.length - maxRows} more results…</div>` : ''}
-      </div>`;
-        }
+
+            // Generate a unique id so multiple tables on one page don't collide
+            const uid = 'tbl-' + Math.random().toString(36).slice(2, 7);
+
+            const rowsHTML = stars.map((s, i) => `
+                <tr style="border-bottom:1px solid rgba(255,255,255,.04);${i % 2 === 0 ? 'background:rgba(255,255,255,.015)' : ''}"
+                    class="star-row">
+                  <td style="padding:7px 10px;color:#94a3b8;font-size:11px;white-space:nowrap;">${s.source_id || '—'}</td>
+                  <td style="padding:7px 10px;color:#cbd5e1;text-align:right;white-space:nowrap;">${s.ra?.toFixed(5) ?? '—'}</td>
+                  <td style="padding:7px 10px;color:#cbd5e1;text-align:right;white-space:nowrap;">${s.dec?.toFixed(5) ?? '—'}</td>
+                  <td style="padding:7px 10px;color:#fbbf24;text-align:right;white-space:nowrap;">${s.phot_g_mean_mag?.toFixed(2) ?? '—'}</td>
+                  <td style="padding:7px 10px;color:#6ee7b7;text-align:right;white-space:nowrap;">${s.parallax?.toFixed(3) ?? '—'}</td>
+                  <td style="padding:7px 10px;color:#a5b4fc;text-align:right;white-space:nowrap;">${s.pmra?.toFixed(2) ?? '—'}</td>
+                  <td style="padding:7px 10px;color:#a5b4fc;text-align:right;white-space:nowrap;">${s.pmdec?.toFixed(2) ?? '—'}</td>
+                </tr>`).join('');
+
+            // Store stars on window so export handlers can access them
+            window._taarya_export = window._taarya_export || {};
+            window._taarya_export[uid] = stars;
+
+            return `
+        <div style="margin-top:12px;">
+          <!-- Toolbar -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+            <span style="font-size:11px;color:#64748b;font-family:'JetBrains Mono',monospace;">
+              ${stars.length} star${stars.length !== 1 ? 's' : ''}
+            </span>
+            <div style="display:flex;gap:6px;">
+              <button onclick="window._taarya_export_csv('${uid}')"
+                style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
+                       font-size:11px;font-family:inherit;cursor:pointer;border-radius:5px;
+                       background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+                       color:#94a3b8;transition:all .15s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.color='#e2e8f0';"
+                onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='#94a3b8';">
+                <span class="material-icons" style="font-size:13px;">download</span> CSV
+              </button>
+              <button onclick="window._taarya_export_json('${uid}')"
+                style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
+                       font-size:11px;font-family:inherit;cursor:pointer;border-radius:5px;
+                       background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+                       color:#94a3b8;transition:all .15s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.color='#e2e8f0';"
+                onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='#94a3b8';">
+                <span class="material-icons" style="font-size:13px;">data_object</span> JSON
+              </button>
+            </div>
+          </div>
+
+          <!-- Scrollable table wrapper -->
+          <div style="overflow:auto;max-height:480px;border:1px solid rgba(255,255,255,0.07);
+                      border-radius:8px;background:rgba(255,255,255,0.02);">
+            <table id="${uid}" style="width:100%;border-collapse:collapse;font-size:11px;
+                                      font-family:'JetBrains Mono',monospace;min-width:620px;">
+              <thead>
+                <tr style="position:sticky;top:0;background:#111;z-index:1;border-bottom:1px solid rgba(255,255,255,.12);">
+                  <th style="text-align:left;padding:8px 10px;color:#475569;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;">Source ID</th>
+                  <th style="text-align:right;padding:8px 10px;color:#475569;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;">RA °</th>
+                  <th style="text-align:right;padding:8px 10px;color:#475569;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;">Dec °</th>
+                  <th style="text-align:right;padding:8px 10px;color:#fbbf2488;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;">G mag</th>
+                  <th style="text-align:right;padding:8px 10px;color:#6ee7b788;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;">Parallax mas</th>
+                  <th style="text-align:right;padding:8px 10px;color:#a5b4fc88;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;">pmRA</th>
+                  <th style="text-align:right;padding:8px 10px;color:#a5b4fc88;font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;">pmDec</th>
+                </tr>
+              </thead>
+              <tbody>${rowsHTML}</tbody>
+            </table>
+          </div>
+        </div>`;
+        },
+    };
+
+    /* ── Export handlers (global, called from inline onclick) ── */
+    window._taarya_export_csv = function(uid) {
+        const stars = (window._taarya_export || {})[uid];
+        if (stars) exportCSV(stars);
+    };
+    window._taarya_export_json = function(uid) {
+        const stars = (window._taarya_export || {})[uid];
+        if (stars) exportJSON(stars);
     };
 
     /* ── Navigation helper ──────────────────────────────────── */
@@ -253,6 +344,6 @@
     document.head.appendChild(style);
 
     /* ── Expose globals ─────────────────────────────────────── */
-    global.TaarYa = { api, render, goToStar };
+    global.TaarYa = { api, render, goToStar, exportCSV, exportJSON };
 
 })(window);

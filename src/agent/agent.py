@@ -21,8 +21,8 @@ from src.database import postgres_conn
 
 logger = logging.getLogger(__name__)
 
-MAX_AGENT_ITERATIONS = 3
-MAX_AGENT_EXECUTION_TIME = 30
+MAX_AGENT_ITERATIONS = 5
+MAX_AGENT_EXECUTION_TIME = 90
 
 BASE_SYSTEM_PROMPT = """You are TaarYa, an expert and enthusiastic astronomy assistant.
 Your goal is to help users explore the cosmos using real data from Gaia, arXiv, and other sources.
@@ -50,6 +50,12 @@ Guidelines:
 - If there are no grounded results, say so plainly instead of filling the gap with general astronomy knowledge.
 
 Coordinates are in degrees (RA: 0-360, Dec: -90 to +90).
+
+CRITICAL TOOL USE RULES:
+1. After generating your "Action" JSON block, you MUST immediately STOP generating text. DO NOT generate the "Observation:" block yourself. The system will provide the Observation.
+2. DO NOT hallucinate, invent, or make up data for tool outputs. Only use the real data returned in the explicit Observation.
+3. You MUST call Final Answer as your last action. After gathering data from 2-3 tool calls, always synthesize and call Final Answer — do not keep calling more tools.
+4. Minimize tool calls. Use at most 2 tools before calling Final Answer. For a "surprise me" query, one cone_search is enough — immediately synthesize and respond.
 """
 
 
@@ -292,7 +298,7 @@ class AstronomyAgent:
                 tools=ALL_TOOLS,
                 llm=self._llm,
                 agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-                verbose=True,
+                verbose=False,
                 max_iterations=MAX_AGENT_ITERATIONS,
                 max_execution_time=MAX_AGENT_EXECUTION_TIME,
                 handle_parsing_errors=True,

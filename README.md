@@ -105,6 +105,33 @@ If you prefer manual control:
 
 ---
 
+## 📥 Data Ingestion
+
+By default, the server starts without running Gaia/ArXiv ingestion. You can control this with the `RUN_INGESTION` environment variable:
+
+### Option 1: Run ingestion on server startup
+```bash
+# Windows
+set RUN_INGESTION=true && uv run python -m src.main
+
+# Linux/Mac
+RUN_INGESTION=true uv run python -m src.main
+```
+
+### Option 2: Run ingestion separately (recommended for testing)
+
+```bash
+# Ingest Gaia stellar catalog (PostgreSQL)
+uv run python -m src.ingestion.seed
+
+# Ingest ArXiv papers (Qdrant)
+uv run python -m src.ingestion.arxiv_ingest
+```
+
+The ArXiv ingestion is capped at 300 papers by default. Edit `src/ingestion/arxiv_ingest.py` to adjust the limit.
+
+---
+
 ## Usage Examples
 
 ### Example 1: Semantic + Spatial Query
