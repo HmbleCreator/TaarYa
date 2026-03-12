@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaarYa — Chat</title>
+  <meta name="description" content="Conversational AI agent for astronomy research.">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       TAARYA CHAT — BLACK & WHITE THEME (DARK + LIGHT)
+       ═══════════════════════════════════════════════════════ */
+
+    :root {
+      /* Dark Mode (default) */
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-tertiary: #1a1a1a;
+      --bg-surface: rgba(255,255,255,0.03);
+      --bg-surface-hover: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.15);
+      --text-primary: #f0f0f0;
+      --text-secondary: #a0a0a0;
+      --text-tertiary: #666666;
+      --text-muted: #444444;
+      --accent: #ffffff;
+      --accent-dim: rgba(255,255,255,0.12);
+      --user-bg: rgba(255,255,255,0.06);
+      --user-border: rgba(255,255,255,0.12);
+      --ai-bg: rgba(255,255,255,0.03);
+      --ai-border: rgba(255,255,255,0.06);
+      --success: #a3e635;
+      --error: #f87171;
+      --dot-active: #ffffff;
+      --logo-filter: none;
+      --shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #fafafa;
+      --bg-secondary: #f5f5f5;
+      --bg-tertiary: #eeeeee;
+      --bg-surface: rgba(0,0,0,0.02);
+      --bg-surface-hover: rgba(0,0,0,0.05);
+      --border: rgba(0,0,0,0.08);
+      --border-hover: rgba(0,0,0,0.15);
+      --text-primary: #111111;
+      --text-secondary: #555555;
+      --text-tertiary: #888888;
+      --text-muted: #bbbbbb;
+      --accent: #111111;
+      --accent-dim: rgba(0,0,0,0.08);
+      --user-bg: rgba(0,0,0,0.04);
+      --user-border: rgba(0,0,0,0.08);
+      --ai-bg: rgba(0,0,0,0.02);
+      --ai-border: rgba(0,0,0,0.05);
+      --success: #65a30d;
+      --error: #dc2626;
+      --dot-active: #111111;
+      --logo-filter: invert(1);
+      --shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* ── Override main-content for full-bleed chat ──────── */
+    .main-content {
+      padding: 0 !important;
+      max-width: 100% !important;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-primary);
+    }
+
+    /* ── Top Bar ───────────────────────────────────────── */
+    .chat-topbar {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 28px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .topbar-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      object-fit: contain;
+      filter: var(--logo-filter);
+    }
+
+    .topbar-title {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .topbar-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.7rem;
+      color: var(--text-tertiary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .theme-toggle {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      color: var(--text-secondary);
+    }
+
+    .theme-toggle:hover {
+      background: var(--bg-surface-hover);
+      border-color: var(--border-hover);
+    }
+
+    .theme-toggle .material-icons { font-size: 18px; }
+
+    .query-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    /* ── Chat Area ─────────────────────────────────────── */
+    .chat-area {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent-dim) transparent;
+    }
+
+    .chat-messages::-webkit-scrollbar { width: 3px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--accent-dim); border-radius: 3px; }
+
+    /* ── Welcome Screen ───────────────────────────────── */
+    .welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      text-align: center;
+      animation: fadeInUp 0.6s ease;
+    }
+
+    .welcome-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: contain;
+      margin-bottom: 24px;
+      filter: var(--logo-filter);
+    }
+
+    .welcome-screen h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .welcome-screen p {
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+      max-width: 440px;
+      line-height: 1.7;
+    }
+
+    .welcome-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 28px;
+      justify-content: center;
+    }
+
+    .welcome-chip {
+      padding: 10px 18px;
+      font-size: 0.8rem;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-secondary);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .welcome-chip:hover {
+      background: var(--bg-surface-hover);
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+    }
+
+    /* ── Message Bubbles ──────────────────────────────── */
+    .msg {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 20px;
+      animation: msgSlide 0.35s ease;
+    }
+
+    .msg.user { flex-direction: row-reverse; }
+
+    .msg-avatar {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+
+    .msg.ai .msg-avatar {
+      background: var(--accent);
+    }
+
+    .msg.ai .msg-avatar .material-icons { color: var(--bg-primary); font-size: 16px; }
+
+    .msg.user .msg-avatar {
+      background: var(--accent-dim);
+      border: 1px solid var(--border);
+    }
+
+    .msg.user .msg-avatar .material-icons { color: var(--text-secondary); font-size: 16px; }
+
+    .msg-body {
+      max-width: 70%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .msg.user .msg-body { align-items: flex-end; }
+
+    .msg-sender {
+      font-size: 0.7rem;
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+
+    .msg-bubble {
+      padding: 14px 20px;
+      font-size: 0.87rem;
+      line-height: 1.7;
+      border-radius: 14px;
+      color: var(--text-primary);
+    }
+
+    .msg.ai .msg-bubble {
+      background: var(--ai-bg);
+      border: 1px solid var(--ai-border);
+      border-top-left-radius: 4px;
+    }
+
+    .msg.user .msg-bubble {
+      background: var(--user-bg);
+      border: 1px solid var(--user-border);
+      border-top-right-radius: 4px;
+    }
+
+    /* ── Thinking / Event-Driven Steps ─────────────────── */
+    .thinking-container {
+      margin-bottom: 20px;
+      animation: msgSlide 0.35s ease;
+    }
+
+    .thinking-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .thinking-header .status-ring {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border-hover);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: ringPulse 1.5s ease-in-out infinite;
+    }
+
+    .thinking-header .status-ring .material-icons {
+      font-size: 16px;
+      color: var(--text-secondary);
+    }
+
+    .thinking-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-primary);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 500;
+    }
+
+    .thinking-sublabel {
+      font-size: 0.65rem;
+      color: var(--text-tertiary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Step Timeline ─────────────────────────────────── */
+    .steps-timeline {
+      margin-left: 16px;
+      border-left: 1px solid var(--border);
+      padding-left: 20px;
+    }
+
+    .step-item {
+      position: relative;
+      margin-bottom: 8px;
+      padding: 10px 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      animation: stepFade 0.4s ease;
+    }
+
+    .step-item::before {
+      content: '';
+      position: absolute;
+      left: -26px;
+      top: 15px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      border: 1.5px solid var(--text-muted);
+      background: var(--bg-primary);
+    }
+
+    .step-item.active::before {
+      background: var(--dot-active);
+      border-color: var(--dot-active);
+      box-shadow: 0 0 6px var(--accent-dim);
+      animation: dotPulse 1s ease-in-out infinite;
+    }
+
+    .step-item.done::before {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .step-tool {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    .step-tool .tool-icon { font-size: 14px; color: var(--text-secondary); }
+    .step-tool .tool-name { color: var(--text-primary); font-weight: 600; }
+
+    .step-input {
+      font-size: 0.65rem;
+      color: var(--text-tertiary);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 4px;
+      padding: 3px 8px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .step-output {
+      font-size: 0.62rem;
+      color: var(--success);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── Tool Result Cards ────────────────────────────── */
+    .tool-result-card {
+      margin-top: 10px;
+      padding: 14px 18px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tool-result-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 2px;
+      height: 100%;
+      background: var(--text-secondary);
+    }
+
+    .tool-result-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .tool-result-header .material-icons { font-size: 14px; }
+
+    .tool-result-body {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      overflow-x: auto;
+    }
+
+    .tool-result-body table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+    }
+
+    .tool-result-body th {
+      text-align: left;
+      padding: 6px 10px;
+      color: var(--text-tertiary);
+      font-weight: 500;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tool-result-body td {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    /* ── Input Bar ─────────────────────────────────────── */
+    .input-area {
+      position: relative;
+      z-index: 2;
+      padding: 16px 28px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .input-row input {
+      flex: 1;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 0.87rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .input-row input:focus {
+      border-color: var(--border-hover);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .input-row input::placeholder {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    .send-btn {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover {
+      opacity: 0.85;
+      transform: translateY(-1px);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.2;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .send-btn .material-icons {
+      font-size: 20px;
+      color: var(--bg-primary);
+    }
+
+    .input-hint {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    /* ── Markdown in messages ──────────────────────────── */
+    .msg-bubble strong { color: var(--text-primary); font-weight: 600; }
+    .msg-bubble code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8em;
+      background: var(--accent-dim);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--text-primary);
+    }
+
+    .msg-bubble table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 0.78rem;
+    }
+    .msg-bubble th, .msg-bubble td {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    .msg-bubble th {
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .msg-bubble td {
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+    }
+
+    .msg-bubble h1, .msg-bubble h2, .msg-bubble h3 {
+      color: var(--text-primary);
+      margin: 12px 0 6px;
+    }
+
+    .msg-bubble ul, .msg-bubble ol { margin-left: 16px; margin-top: 6px; }
+    .msg-bubble li { margin-bottom: 4px; }
+
+    /* ── Animations ────────────────────────────────────── */
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    @keyframes ringPulse {
+      0%, 100% { border-color: var(--border); }
+      50% { border-color: var(--border-hover); }
+    }
+
+    @keyframes msgSlide {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes stepFade {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .chat-messages { padding: 16px; }
+      .chat-topbar { padding: 10px 16px; }
+      .input-area { padding: 12px 16px 16px; }
+      .msg-body { max-width: 85%; }
+      .welcome-chips { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <button id="sidebar-toggle" class="sidebar-toggle"></button>
+    <div class="sidebar-brand">
+      <h1>TaarYa</h1>
+      <p>Star Catalog Intelligence</p>
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="/static/dashboard.html">
+        <span class="material-icons">dashboard</span> Dashboard
+      </a></li>
+      <li><a href="/static/explore.html">
+        <span class="material-icons">explore</span> Explore
+      </a></li>
+      <li><a href="/static/chat.html" class="active">
+        <span class="material-icons">smart_toy</span> Chat
+      </a></li>
+    </ul>
+    <div class="sidebar-footer"><span class="version">v0.2.0</span></div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Bar -->
+    <div class="chat-topbar">
+      <div class="topbar-left">
+        <img src="/static/TaarYaLogo.png" alt="TaarYa" class="topbar-logo" id="topbar-logo">
+        <span class="topbar-title">TaarYa Chat</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-status">
+          <div class="status-dot"></div>
+          <span>ONLINE</span>
+        </div>
+        <div class="query-count" id="query-count">0 queries</div>
+        <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">
+          <span class="material-icons">light_mode</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area">
+      <div class="chat-messages" id="chat-messages">
+        <!-- Welcome Screen -->
+        <div class="welcome-screen" id="welcome">
+          <img src="/static/TaarYaLogo.png" alt="TaarYa" class="welcome-logo" id="welcome-logo">
+          <h3>Ask TaarYa anything</h3>
+          <p>Your AI astronomy assistant. I can search stars, find research papers, explore knowledge graphs, and more — in real time.</p>
+          <div class="welcome-chips" id="suggestion-chips">
+            <div class="welcome-chip" data-query="Find stars near RA=83.8, Dec=-5.4">🔭 Stars near Orion</div>
+            <div class="welcome-chip" data-query="Search for papers about exoplanet atmospheres">📚 Exoplanet papers</div>
+            <div class="welcome-chip" data-query="Surprise me with something interesting">✨ Surprise me</div>
+            <div class="welcome-chip" data-query="Find solar twin stars">☀️ Solar twins</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="input-area">
+        <div class="input-row">
+          <input type="text" id="chat-input" placeholder="Ask about stars, papers, coordinates..." autocomplete="off">
+          <button class="send-btn" id="chat-send">
+            <span class="material-icons">arrow_upward</span>
+          </button>
+        </div>
+        <div class="input-hint">Press Enter to send · Agent will show live reasoning</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/static/taarya-api.js"></script>
+<script>
+(function() {
+  'use strict';
+  const { api } = TaarYa;
+
+  const messagesEl = document.getElementById('chat-messages');
+  const inputEl    = document.getElementById('chat-input');
+  const sendBtn    = document.getElementById('chat-send');
+  const welcomeEl  = document.getElementById('welcome');
+  const countEl    = document.getElementById('query-count');
+  const toggleBtn  = document.getElementById('theme-toggle');
+
+  let chatHistory = [];
+  let sending = false;
+  let queryCount = 0;
+
+  // ─── Helpers ────────────────────────────────────────────
+  function scrollBottom() {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function addHTML(html) {
+    if (welcomeEl) welcomeEl.style.display = 'none';
+    messagesEl.insertAdjacentHTML('beforeend', html);
+    scrollBottom();
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatAnswer(text) {
+    let html = escapeHtml(text);
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+    html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+    html = html.replace(/\|(.+)\|/g, (match) => {
+      const cells = match.split('|').filter(c => c.trim());
+      if (cells.every(c => /^[-:]+$/.test(c.trim()))) return '';
+      return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+    });
+    html = html.replace(/\n/g, '<br>');
+    html = html.replace(/<\/ul>\s*<ul>/g, '');
+    return html;
+  }
+
+  // Tool icon & label maps
+  const toolIcons = {
+    'cone_search': 'radar',
+    'star_lookup': 'star',
+    'find_nearby_stars': 'scatter_plot',
+    'semantic_search': 'article',
+    'graph_query': 'hub',
+    'count_stars_in_region': 'grid_on',
+  };
+
+  const toolLabels = {
+    'cone_search': 'Scanning sky coordinates',
+    'star_lookup': 'Querying Gaia catalog',
+    'find_nearby_stars': 'Finding nearby objects',
+    'semantic_search': 'Searching arXiv papers',
+    'graph_query': 'Traversing knowledge graph',
+    'count_stars_in_region': 'Counting objects in region',
+  };
+
+  // ─── Thinking Panel (created once per query) ──────────
+  function addThinking(thinkingId) {
+    const html = `
+      <div class="thinking-container" id="${thinkingId}">
+        <div class="thinking-header">
+          <div class="status-ring">
+            <span class="material-icons">psychology</span>
+          </div>
+          <div>
+            <div class="thinking-label">Processing</div>
+            <div class="thinking-sublabel" id="${thinkingId}-sublabel">Analyzing your query...</div>
+          </div>
+        </div>
+        <div class="steps-timeline" id="${thinkingId}-steps"></div>
+      </div>`;
+    addHTML(html);
+  }
+
+  // ─── SSE Event-Driven Steps ────────────────────────────
+  // Adds/updates steps in the thinking panel in real-time
+  let currentStepEl = null;
+
+  function handleEvent(thinkingId, event) {
+    const stepsEl = document.getElementById(`${thinkingId}-steps`);
+    const sublabelEl = document.getElementById(`${thinkingId}-sublabel`);
+    if (!stepsEl) return;
+
+    const { type, data } = event;
+
+    if (type === 'thinking') {
+      if (sublabelEl) sublabelEl.textContent = data.status || 'Thinking...';
+      // Mark any active step as still active (no change needed)
+    }
+
+    else if (type === 'tool_start') {
+      // Mark previous active step as done
+      if (currentStepEl) {
+        currentStepEl.classList.remove('active');
+        currentStepEl.classList.add('done');
+        const out = currentStepEl.querySelector('.step-output');
+        if (out && !out.dataset.filled) {
+          out.innerHTML = '<span class="material-icons" style="font-size:10px;">check</span> Done';
+        }
+      }
+
+      const toolName = data.tool || 'unknown';
+      const icon = toolIcons[toolName] || 'build';
+      const label = toolLabels[toolName] || toolName;
+      const inputStr = data.input ? (data.input.length > 80 ? data.input.slice(0, 80) + '…' : data.input) : '';
+
+      if (sublabelEl) sublabelEl.textContent = label;
+
+      const stepHtml = `
+        <div class="step-item active">
+          <div class="step-tool">
+            <span class="material-icons tool-icon">${icon}</span>
+            <span class="tool-name">${escapeHtml(toolName)}</span>
+            <span style="color:var(--text-muted);font-size:0.6rem;">— ${escapeHtml(label)}</span>
+          </div>
+          ${inputStr ? `<div class="step-input">→ ${escapeHtml(inputStr)}</div>` : ''}
+          <div class="step-output">Running...</div>
+        </div>`;
+      stepsEl.insertAdjacentHTML('beforeend', stepHtml);
+      currentStepEl = stepsEl.lastElementChild;
+      scrollBottom();
+    }
+
+    else if (type === 'tool_end') {
+      if (currentStepEl) {
+        currentStepEl.classList.remove('active');
+        currentStepEl.classList.add('done');
+        const out = currentStepEl.querySelector('.step-output');
+        if (out) {
+          const preview = data.output_preview
+            ? (data.output_preview.length > 60 ? data.output_preview.slice(0, 60) + '…' : data.output_preview)
+            : 'Done';
+          out.innerHTML = `<span class="material-icons" style="font-size:10px;">check</span> ${escapeHtml(preview)}`;
+          out.dataset.filled = '1';
+        }
+      }
+      scrollBottom();
+    }
+
+    else if (type === 'error') {
+      if (sublabelEl) sublabelEl.textContent = 'Error encountered';
+      stepsEl.insertAdjacentHTML('beforeend', `
+        <div class="step-item" style="border-color:var(--error);">
+          <div class="step-tool" style="color:var(--error);">
+            <span class="material-icons tool-icon" style="color:var(--error);">error</span>
+            <span>${escapeHtml(data.message || 'Unknown error')}</span>
+          </div>
+        </div>`);
+      scrollBottom();
+    }
+  }
+
+  function finishThinking(thinkingId, toolCount) {
+    const container = document.getElementById(thinkingId);
+    if (!container) return;
+
+    // If no tools were used at all, just remove the thinking panel
+    if (toolCount === 0) {
+      container.remove();
+      return;
+    }
+
+    // Mark complete
+    const label = container.querySelector('.thinking-label');
+    const sublabel = container.querySelector('.thinking-sublabel');
+    const ring = container.querySelector('.status-ring');
+
+    if (label) label.textContent = 'COMPLETE';
+    if (sublabel) sublabel.textContent = `${toolCount} tool${toolCount > 1 ? 's' : ''} executed`;
+    if (ring) {
+      ring.style.animation = 'none';
+      ring.style.borderColor = 'var(--success)';
+      ring.querySelector('.material-icons').textContent = 'check_circle';
+      ring.querySelector('.material-icons').style.color = 'var(--success)';
+    }
+
+    // Mark any remaining active step as done
+    if (currentStepEl && currentStepEl.classList.contains('active')) {
+      currentStepEl.classList.remove('active');
+      currentStepEl.classList.add('done');
+    }
+
+    scrollBottom();
+  }
+
+  // ─── User / AI Bubbles ─────────────────────────────────
+  function addUserMsg(text) {
+    addHTML(`
+      <div class="msg user">
+        <div class="msg-avatar"><span class="material-icons">person</span></div>
+        <div class="msg-body">
+          <div class="msg-sender">You</div>
+          <div class="msg-bubble">${escapeHtml(text)}</div>
+        </div>
+      </div>`);
+  }
+
+  function addAIMsg(html) {
+    addHTML(`
+      <div class="msg ai">
+        <div class="msg-avatar"><span class="material-icons">auto_awesome</span></div>
+        <div class="msg-body">
+          <div class="msg-sender">TaarYa</div>
+          <div class="msg-bubble">${html}</div>
+        </div>
+      </div>`);
+  }
+
+  // ─── Send Logic (SSE Stream) ───────────────────────────
+  async function send(overrideQuery) {
+    if (sending) return;
+    const query = overrideQuery || inputEl.value.trim();
+    if (!query) return;
+
+    inputEl.value = '';
+    sending = true;
+    sendBtn.disabled = true;
+    queryCount++;
+    countEl.textContent = `${queryCount} ${queryCount === 1 ? 'query' : 'queries'}`;
+
+    // User bubble
+    addUserMsg(query);
+    chatHistory.push({ role: 'user', content: query });
+
+    // Start thinking panel
+    const thinkingId = 'think-' + Date.now();
+    addThinking(thinkingId);
+    currentStepEl = null;
+
+    let toolCount = 0;
+    let answered = false;
+    let currentBubble = null;
+    let rawAnswer = '';
+
+    try {
+      await api.askStream(
+        query,
+        chatHistory.length > 2 ? chatHistory.slice(-10) : null,
+        (event) => {
+          // ── Handle each SSE event in real-time ──
+          handleEvent(thinkingId, event);
+
+          if (event.type === 'tool_start') toolCount++;
+
+          if (event.type === 'token') {
+            if (!answered) {
+              answered = true;
+              finishThinking(thinkingId, toolCount);
+              
+              const id = 'bubble-' + Date.now();
+              addHTML(`
+                <div class="msg ai">
+                  <div class="msg-avatar"><span class="material-icons">auto_awesome</span></div>
+                  <div class="msg-body">
+                    <div class="msg-sender">TaarYa</div>
+                    <div class="msg-bubble" id="${id}"></div>
+                  </div>
+                </div>`);
+              currentBubble = document.getElementById(id);
+            }
+            if (currentBubble) {
+              rawAnswer += (event.data.text || '');
+              currentBubble.innerHTML = formatAnswer(rawAnswer);
+              scrollBottom();
+            }
+          }
+
+          if (event.type === 'answer') {
+            if (!answered) {
+              answered = true;
+              finishThinking(thinkingId, toolCount);
+              const answer = event.data.answer || 'No response received.';
+              addAIMsg(formatAnswer(answer));
+              chatHistory.push({ role: 'assistant', content: answer });
+            } else {
+              const answer = event.data.answer || rawAnswer;
+              if (currentBubble) {
+                currentBubble.innerHTML = formatAnswer(answer);
+              }
+              chatHistory.push({ role: 'assistant', content: answer });
+            }
+
+            // Rich tool output cards
+            const toolOutputs = event.data.tool_outputs || [];
+            toolOutputs.forEach(to => {
+              if (to.data && Array.isArray(to.data) && to.data.length) {
+                const icon = toolIcons[to.tool] || 'data_array';
+                let bodyHtml = '';
+
+                if (to.tool === 'semantic_search' || to.tool === 'graph_query') {
+                  bodyHtml = to.data.slice(0, 5).map(p =>
+                    `<div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+                      <div style="font-size:0.78rem;color:var(--text-primary);font-weight:500;">${escapeHtml(p.title || p.name || 'Untitled')}</div>
+                      <div style="font-size:0.65rem;color:var(--text-tertiary);margin-top:2px;">${escapeHtml(p.authors || p.category || '')}</div>
+                    </div>`).join('');
+                } else {
+                  bodyHtml = '<table><tr><th>Source ID</th><th>RA</th><th>Dec</th><th>G-Mag</th></tr>';
+                  to.data.slice(0, 8).forEach(s => {
+                    bodyHtml += `<tr>
+                      <td style="color:var(--text-primary);">${s.source_id || s.id || '—'}</td>
+                      <td>${(s.ra || 0).toFixed(4)}°</td>
+                      <td>${(s.dec || 0).toFixed(4)}°</td>
+                      <td>${(s.phot_g_mean_mag || s.gmag || 0).toFixed(2)}</td>
+                    </tr>`;
+                  });
+                  bodyHtml += '</table>';
+                  if (to.data.length > 8) {
+                    bodyHtml += `<div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">+ ${to.data.length - 8} more results</div>`;
+                  }
+                }
+
+                addHTML(`
+                  <div class="tool-result-card">
+                    <div class="tool-result-header">
+                      <span class="material-icons">${icon}</span>
+                      ${to.tool.replace(/_/g, ' ')} · ${to.data.length} results
+                    </div>
+                    <div class="tool-result-body">${bodyHtml}</div>
+                  </div>`);
+              }
+            });
+          }
+
+          else if (event.type === 'done') {
+            // ensure thinking is finalized
+            if (!answered) finishThinking(thinkingId, toolCount);
+          }
+
+          else if (event.type !== 'answer') {
+            // thinking, tool_start, tool_end, error
+            handleEvent(thinkingId, event);
+          }
+        }
+      );
+    } catch (err) {
+      // Fallback to non-streaming API
+      const thinkEl = document.getElementById(thinkingId);
+      if (thinkEl) thinkEl.remove();
+
+      try {
+        const resp = await api.ask(query, chatHistory.length > 2 ? chatHistory.slice(-10) : null);
+        const answer = resp.answer || resp.response || 'No response.';
+        addAIMsg(formatAnswer(answer));
+        chatHistory.push({ role: 'assistant', content: answer });
+      } catch (fallbackErr) {
+        addAIMsg(`<span style="color:var(--error);">⚠ Failed:</span> ${escapeHtml(fallbackErr.message)}`);
+      }
+    }
+
+    sending = false;
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+
+  // ─── Event Listeners ──────────────────────────────────
+  sendBtn.addEventListener('click', () => send());
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+
+  // Suggestion chips
+  document.querySelectorAll('.welcome-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const q = chip.getAttribute('data-query');
+      if (q) send(q);
+    });
+  });
+
+  inputEl.focus();
+})();
+</script>
+<script src="/static/theme.js"></script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaarYa — Dashboard</title>
+  <meta name="description" content="TaarYa astronomy research dashboard — system stats and quick search.">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <button id="sidebar-toggle" class="sidebar-toggle"></button>
+    <div class="sidebar-brand">
+      <img src="/static/TaarYaLogo.png" alt="TaarYa" style="width:36px;height:36px;border-radius:8px;object-fit:contain;filter:var(--logo-filter);margin-bottom:8px;">
+      <h1>TaarYa</h1>
+      <p>Star Catalog Intelligence</p>
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="/static/dashboard.html" class="active">
+        <span class="material-icons">dashboard</span> Dashboard
+      </a></li>
+      <li><a href="/static/explore.html">
+        <span class="material-icons">explore</span> Explore
+      </a></li>
+      <li><a href="/static/chat.html">
+        <span class="material-icons">smart_toy</span> Chat
+      </a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <span class="version">v0.2.0</span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <h2>Dashboard</h2>
+        <p>System overview and quick search</p>
+      </div>
+      <button id="theme-toggle" style="background:var(--bg-surface);border:1px solid var(--border);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);transition:all .2s;"></button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <span class="material-icons stat-icon">star</span>
+        <div class="stat-value" id="stat-stars">—</div>
+        <div class="stat-label">Stars in Database</div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">article</span>
+        <div class="stat-value" id="stat-papers">—</div>
+        <div class="stat-label">Papers Indexed</div>
+      </div>
+      <div class="stat-card">
+        <span class="material-icons stat-icon">hub</span>
+        <div class="stat-value" id="stat-graph">—</div>
+        <div class="stat-label">Graph Nodes</div>
+      </div>
+    </div>
+
+    <!-- Backend Status -->
+    <div class="flex gap-4 mb-4" id="backend-status" style="flex-wrap:wrap;"></div>
+
+    <!-- Quick Search -->
+    <div class="card mt-4">
+      <h3 style="font-size:0.95rem;font-weight:600;margin-bottom:14px;">Quick Search</h3>
+      <form id="quick-search-form" class="flex gap-4" style="align-items:flex-end;">
+        <div class="input-group" style="flex:1;">
+          <label>Search anything</label>
+          <input type="text" id="quick-q" placeholder="e.g. &quot;stellar evolution&quot; or a Gaia Source ID">
+        </div>
+        <button type="submit" class="btn btn-primary" style="height:42px;">
+          <span class="material-icons" style="font-size:18px;">search</span> Search
+        </button>
+      </form>
+      <div id="quick-results" class="mt-4"></div>
+    </div>
+  </main>
+</div>
+
+<script src="/static/taarya-api.js"></script>
+<script src="/static/theme.js"></script>
+<script>
+(function() {
+  'use strict';
+  const { api, render } = TaarYa;
+
+  // Load stats
+  api.stats().then(data => {
+    // PostgreSQL
+    const pg = data.postgresql || {};
+    document.getElementById('stat-stars').textContent =
+      pg.total_stars != null ? Number(pg.total_stars).toLocaleString() : '0';
+
+    // Qdrant
+    const qd = data.qdrant || {};
+    document.getElementById('stat-papers').textContent =
+      (qd.points_count || qd.vectors_count || 0).toLocaleString();
+
+    // Neo4j
+    const neo = data.neo4j || {};
+    const graphTotal = (neo.stars || 0) + (neo.papers || 0) + (neo.clusters || 0);
+    document.getElementById('stat-graph').textContent = graphTotal.toLocaleString();
+
+    // Backend badges
+    const statusEl = document.getElementById('backend-status');
+    statusEl.innerHTML = [
+      badge('PostgreSQL', pg.status),
+      badge('Qdrant', qd.status || (qd.exists === false ? 'offline' : 'connected')),
+      badge('Neo4j', neo.status),
+    ].join('');
+  }).catch(() => {
+    document.getElementById('backend-status').innerHTML =
+      '<span class="badge badge-offline">API Offline</span>';
+  });
+
+  function badge(name, status) {
+    const online = status && status !== 'error' && status !== 'disconnected';
+    const cls = online ? 'badge-online' : 'badge-offline';
+    return `<span class="badge ${cls}">${name}</span>`;
+  }
+
+  // Quick search
+  document.getElementById('quick-search-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = document.getElementById('quick-q').value.trim();
+    if (!q) return;
+
+    const out = document.getElementById('quick-results');
+    out.innerHTML = '<div class="spinner"></div>';
+
+    try {
+      const data = await api.hybridSearch({ q, limit: 10 });
+
+      let html = '';
+      // Semantic results
+      if (data.semantic && data.semantic.papers && data.semantic.papers.length) {
+        html += '<h4 style="font-size:0.8rem;color:var(--text-muted);margin:12px 0 8px;text-transform:uppercase;letter-spacing:1px;">Papers</h4>';
+        data.semantic.papers.forEach(p => {
+          const payload = p.payload || {};
+          html += render.paperCard({
+            title: payload.title || 'Untitled',
+            arxiv_id: payload.arxiv_id,
+            categories: payload.categories || '',
+            score: p.score,
+          });
+        });
+      }
+      // Spatial results
+      if (data.spatial && data.spatial.stars && data.spatial.stars.length) {
+        html += '<h4 style="font-size:0.8rem;color:var(--text-muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:1px;">Stars</h4>';
+        data.spatial.stars.slice(0, 5).forEach(s => {
+          html += render.starCard(s);
+        });
+      }
+      if (!html) html = render.emptyState('No results for "' + q + '"');
+      out.innerHTML = html;
+    } catch (err) {
+      out.innerHTML = render.emptyState('Search failed — ' + err.message);
+    }
+  });
+})();
+</script>
+</body>
+</html>

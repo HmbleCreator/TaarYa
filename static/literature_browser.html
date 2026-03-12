@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TaarYa | Literature &amp; Archive Browser</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="/static/taarya.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "obsidian": "#05060a",
+                        "deep-space": "#0a0c16",
+                        "panel-dark": "#131625",
+                        "primary": "#2547f4",
+                        "star-cyan": "#00f2ff",
+                        "paper-gold": "#ffcc33",
+                        "concept-purple": "#a855f7",
+                        "tag-star": "#e0f2fe",
+                        "tag-star-text": "#0ea5e9",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                    boxShadow: {
+                        "soft": "0 4px 6px -1px rgba(0,0,0,0.05)",
+                        "glow": "0 0 15px rgba(37,71,244,0.25)",
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .dark-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .dark-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .dark-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .dark-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .dark .dark-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .dark-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .dark .dark-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .dark .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: none;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(37, 71, 244, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(37, 71, 244, 0.1);
+        }
+
+        .dark .glass-card:hover {
+            border-color: rgba(37, 71, 244, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .star-bg {
+            background-color: #f8f9fa;
+        }
+
+        .dark .star-bg {
+            background-color: #05060a;
+            background-image:
+                radial-gradient(circle at 50% 50%, rgba(37, 71, 244, 0.05) 0%, transparent 50%),
+                radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0),
+                radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+            background-size: 100% 100%, 40px 40px, 90px 90px;
+            background-position: 0 0, 0 0, 40px 40px;
+        }
+    </style>
+</head>
+
+<body
+    class="h-screen w-screen flex overflow-hidden star-bg text-slate-900 dark:text-slate-200 transition-colors duration-300">
+
+    <!-- Unified Sidebar -->
+    <nav
+        class="ty-sidebar bg-white border-r border-slate-200 dark:bg-panel-dark dark:border-white/5 flex flex-col items-center shadow-sm dark:shadow-none w-20 transition-colors duration-300 z-50 shrink-0">
+        <div class="ty-sidebar-logo w-full flex justify-center py-6 mb-2">
+            <span class="material-icons text-primary dark:text-white">auto_awesome</span>
+        </div>
+        <div class="ty-nav-links flex flex-col gap-6 flex-1 w-full items-center mt-4">
+            <a href="/static/command_center.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Command Center">
+                <span class="material-icons">dashboard</span>
+            </a>
+            <a href="/static/agentic_workspace.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Agentic Workspace">
+                <span class="material-icons">psychology</span>
+            </a>
+            <a href="/static/kg_explorer.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Knowledge Graph">
+                <span class="material-icons">hub</span>
+            </a>
+            <span
+                class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-electric-blue/20 text-primary dark:text-white flex items-center justify-center shadow-sm dark:shadow-none relative group cursor-default"
+                title="Literature Browser">
+                <span class="material-icons">library_books</span>
+            </span>
+            <a href="/static/code_console.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Code Console">
+                <span class="material-icons">terminal</span>
+            </a>
+            <a href="/static/stellar_detail.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Stellar Detail">
+                <span class="material-icons">stars</span>
+            </a>
+        </div>
+        <div class="ty-sidebar-bottom mt-auto flex flex-col gap-4 w-full items-center mb-6">
+            <button onclick="toggleMode()" title="Toggle Mode"
+                class="text-slate-400 hover:text-primary transition-colors w-10 h-10 rounded-lg flex items-center justify-center hover:bg-slate-50 dark:hover:bg-white/5">
+                <span class="material-icons dark:hidden">dark_mode</span>
+                <span class="material-icons hidden dark:block">light_mode</span>
+            </button>
+            <a href="/static/profile.html"
+                class="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-200 dark:border-white/10">
+                <div class="w-full h-full bg-gradient-to-tr from-primary to-purple-600"></div>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Filter Sidebar (Left Panel) -->
+    <aside
+        class="w-72 border-r border-slate-200 dark:border-white/5 bg-slate-50/90 dark:bg-[#0a0c16]/95 flex flex-col z-40 shrink-0 transition-colors">
+        <div class="p-6 pb-2">
+            <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white mb-1 font-display">Literature
+            </h1>
+            <p class="text-xs text-slate-500 font-medium">ArXiv &amp; Archive Browser</p>
+        </div>
+        <div class="px-6 py-4">
+            <div class="relative group">
+                <span
+                    class="absolute inset-y-0 left-3 flex items-center text-slate-400 group-focus-within:text-primary transition-colors"><span
+                        class="material-icons text-[18px]">search</span></span>
+                <input id="ty-search-input"
+                    class="w-full bg-white dark:bg-black/30 border border-slate-300 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
+                    placeholder="Search abstracts..." type="text" />
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto px-6 pb-6 space-y-6 dark-scroll">
+            <div>
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Time Range</h3>
+                <select
+                    class="bg-white dark:bg-black/30 border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 w-full focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 text-slate-700 dark:text-slate-300 text-sm shadow-sm transition-all appearance-none cursor-pointer">
+                    <option>Last 30 Days</option>
+                    <option>Last 6 Months</option>
+                    <option>Year to Date</option>
+                    <option>All Time</option>
+                </select>
+            </div>
+            <div>
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Sources</h3>
+                <div class="space-y-3">
+                    <label class="flex items-center gap-3 cursor-pointer group"><input checked
+                            class="form-checkbox rounded bg-white dark:bg-black/30 border-slate-300 dark:border-white/10 text-primary focus:ring-primary/30"
+                            type="checkbox" /><span
+                            class="text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors font-medium">ArXiv
+                            (astro-ph)</span></label>
+                    <label class="flex items-center gap-3 cursor-pointer group"><input checked
+                            class="form-checkbox rounded bg-white dark:bg-black/30 border-slate-300 dark:border-white/10 text-primary focus:ring-primary/30"
+                            type="checkbox" /><span
+                            class="text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors font-medium">NASA
+                            ADS</span></label>
+                    <label class="flex items-center gap-3 cursor-pointer group"><input
+                            class="form-checkbox rounded bg-white dark:bg-black/30 border-slate-300 dark:border-white/10 text-primary focus:ring-primary/30"
+                            type="checkbox" /><span
+                            class="text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors font-medium">Nature
+                            Astronomy</span></label>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Topic Filters</h3>
+                <div class="flex flex-wrap gap-2" id="ty-topic-pills">
+                    <button
+                        class="text-[11px] font-medium px-3 py-1.5 rounded-full border border-blue-200 dark:border-star-cyan/30 bg-blue-50 dark:bg-star-cyan/10 text-primary dark:text-star-cyan hover:bg-blue-100 dark:hover:bg-star-cyan/20 transition-colors">Exoplanets</button>
+                    <button
+                        class="text-[11px] font-medium px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 transition-colors">Black
+                        Holes</button>
+                    <button
+                        class="text-[11px] font-medium px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 transition-colors">Nebulae</button>
+                    <button
+                        class="text-[11px] font-medium px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 transition-colors">Neutron
+                        Stars</button>
+                    <button
+                        class="text-[11px] font-medium px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 transition-colors">Stellar
+                        Evolution</button>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-[#080a12]">
+            <div class="flex items-center justify-between text-xs text-slate-500 font-medium">
+                <span>Active Filters: 3</span>
+                <button class="text-primary hover:text-blue-700 dark:hover:text-primary-light transition-colors">Clear
+                    All</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Center Panel: Paper Feed -->
+    <main class="flex-1 relative flex flex-col min-w-0 bg-transparent">
+        <div
+            class="h-16 border-b border-slate-200 dark:border-white/5 flex items-center justify-between px-6 bg-white/80 dark:bg-[#0a0c16]/80 backdrop-blur-md sticky top-0 z-30 transition-colors">
+            <div class="flex items-center gap-4">
+                <h2 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider font-display">
+                    Latest Feed</h2>
+                <span
+                    class="px-2 py-0.5 rounded bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 text-[10px] font-bold tracking-wider border border-green-200 dark:border-green-500/30 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> LIVE
+                </span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button
+                    class="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-white transition-colors shadow-sm dark:shadow-none"><span
+                        class="material-icons text-sm">sort</span></button>
+                <button
+                    class="p-2 bg-slate-100 dark:bg-white/5 rounded-lg text-primary dark:text-white transition-colors shadow-sm dark:shadow-none"><span
+                        class="material-icons text-sm">view_agenda</span></button>
+                <button id="ty-search-btn"
+                    class="ml-2 px-3 py-1.5 bg-primary hover:bg-blue-600 text-white rounded-lg text-xs font-bold shadow-md transition-colors hidden pointer-events-none">Search</button>
+            </div>
+        </div>
+
+        <!-- Paper List Container -->
+        <div id="ty-paper-list" class="flex-1 overflow-y-auto p-6 space-y-4 dark-scroll relative">
+            <!-- Mock Fallback Item 1 -->
+            <div
+                class="glass-card rounded-xl p-5 relative group cursor-pointer border-l-4 border-l-paper-gold ty-paper-mock">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="text-xs font-mono font-bold text-yellow-700 dark:text-paper-gold bg-yellow-50 dark:bg-paper-gold/10 px-2 py-0.5 rounded border border-yellow-200 dark:border-paper-gold/20">arXiv:2308.14520</span>
+                        <span class="text-[10px] text-slate-400 font-medium">2 hrs ago</span>
+                    </div>
+                    <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="text-slate-400 hover:text-primary dark:hover:text-white transition-colors"><span
+                                class="material-icons text-[18px]">bookmark_border</span></button>
+                        <button class="text-slate-400 hover:text-primary dark:hover:text-white transition-colors"><span
+                                class="material-icons text-[18px]">share</span></button>
+                    </div>
+                </div>
+                <h3
+                    class="text-lg font-bold text-slate-900 dark:text-white mb-2 leading-snug group-hover:text-primary transition-colors font-display">
+                    Multi-messenger Observations of Proxima Centauri with High-Resolution Spectroscopy
+                </h3>
+                <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3 leading-relaxed">
+                    We present new observations of Proxima Centauri using the ESPRESSO spectrograph. Our analysis
+                    reveals potential signatures of a new low-mass companion within the habitable zone...
+                </p>
+                <div
+                    class="bg-blue-50/50 dark:bg-primary/5 border border-blue-100 dark:border-primary/10 rounded-lg p-3 mb-4 shadow-[inset_0_2px_4px_rgba(37,71,244,0.02)]">
+                    <div class="flex items-center gap-1.5 mb-1.5">
+                        <span class="material-icons text-[14px] text-primary animate-pulse">model_training</span>
+                        <span class="text-[10px] font-bold text-primary uppercase tracking-wider">AI Insight</span>
+                    </div>
+                    <p class="text-[13px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                        Confirms <span class="text-slate-900 dark:text-white font-bold">Proxima d</span> candidate.
+                        Suggests 98% probability of rocky composition based on radial velocity data combined with Gaia
+                        DR3 astrometry.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 mt-2">
+                    <span
+                        class="px-2.5 py-1 rounded bg-blue-50 dark:bg-star-cyan/10 text-primary dark:text-star-cyan border border-blue-200 dark:border-star-cyan/20 text-[10px] font-medium shadow-sm dark:shadow-none">Proxima
+                        Centauri</span>
+                    <span
+                        class="px-2.5 py-1 rounded bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 text-[10px] font-medium shadow-sm dark:shadow-none">Exoplanets</span>
+                    <span
+                        class="px-2.5 py-1 rounded bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 text-[10px] font-medium shadow-sm dark:shadow-none">Spectroscopy</span>
+                </div>
+            </div>
+
+            <!-- Mock Fallback Item 2 -->
+            <div
+                class="glass-card rounded-xl p-5 relative group cursor-pointer border-l-4 border-l-transparent hover:border-l-primary ty-paper-mock">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="text-xs font-mono font-bold text-yellow-700 dark:text-paper-gold bg-yellow-50 dark:bg-paper-gold/10 px-2 py-0.5 rounded border border-yellow-200 dark:border-paper-gold/20">arXiv:2308.11204</span>
+                        <span class="text-[10px] text-slate-400 font-medium">5 hrs ago</span>
+                    </div>
+                </div>
+                <h3
+                    class="text-lg font-bold text-slate-900 dark:text-white mb-2 leading-snug group-hover:text-primary transition-colors font-display">
+                    Revisiting the Galactic Center Flare Rate with Chandra
+                </h3>
+                <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3 leading-relaxed">
+                    A systematic re-analysis of 20 years of Chandra X-ray Observatory data focusing on Sgr A*. We detect
+                    a quasi-periodic oscillation in the flare rate...
+                </p>
+                <div class="flex items-center gap-2 mt-4">
+                    <span
+                        class="px-2.5 py-1 rounded bg-blue-50 dark:bg-star-cyan/10 text-primary dark:text-star-cyan border border-blue-200 dark:border-star-cyan/20 text-[10px] font-medium shadow-sm dark:shadow-none">Sgr
+                        A*</span>
+                    <span
+                        class="px-2.5 py-1 rounded bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 text-[10px] font-medium shadow-sm dark:shadow-none">X-Ray
+                        Astronomy</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Right Panel: Intelligence Sidebar -->
+    <aside
+        class="w-96 border-l border-slate-200 dark:border-white/5 bg-white/95 dark:bg-[#0a0c16]/95 flex flex-col z-40 shrink-0 transition-colors shadow-2xl dark:shadow-none">
+        <div
+            class="p-6 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-gradient-to-b dark:from-[#101423] dark:to-transparent">
+            <div class="flex justify-between items-center mb-4">
+                <span
+                    class="flex items-center gap-2 text-primary text-[11px] font-bold uppercase tracking-wider font-display"><span
+                        class="material-icons text-[16px]">smart_toy</span> Paper Intelligence</span>
+                <span class="flex items-center gap-1.5"><span
+                        class="w-2 h-2 rounded-full bg-success-green shadow-[0_0_10px_rgba(0,255,157,0.4)] animate-pulse"></span>
+                    <span class="text-[9px] text-slate-500 font-bold tracking-widest uppercase">Agent
+                        Ready</span></span>
+            </div>
+            <div
+                class="mb-5 bg-white dark:bg-black/20 p-3 rounded-lg border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                <h4 class="text-[9px] text-slate-400 uppercase font-bold tracking-wider mb-1 font-mono">Focus Context
+                </h4>
+                <p class="text-[13px] font-semibold text-slate-800 dark:text-white truncate">Multi-messenger
+                    Observations of Prox...</p>
+            </div>
+            <div class="flex gap-2">
+                <button
+                    class="flex-1 bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-md transition-all active:scale-95"><span
+                        class="material-icons text-[16px]">chat</span> Chat Setup</button>
+                <button
+                    class="flex-1 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 text-xs font-bold py-2.5 rounded-lg border border-slate-200 dark:border-white/10 flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"><span
+                        class="material-icons text-[16px]">hub</span> Graph</button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-5 dark-scroll" id="ty-lit-chat">
+            <!-- Initial Chat Messages -->
+            <div class="flex gap-3 flex-row-reverse">
+                <div
+                    class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 shadow-sm">
+                    U</div>
+                <div
+                    class="bg-blue-50 dark:bg-primary/20 border border-blue-100 dark:border-primary/20 rounded-2xl rounded-tr-sm p-3 max-w-[85%] shadow-sm">
+                    <p class="text-[13px] text-slate-800 dark:text-slate-200">What spectral lines were used to determine
+                        the radial velocity?</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <div
+                    class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex-shrink-0 flex items-center justify-center shadow-md">
+                    <span class="material-symbols-outlined text-white text-[16px]">auto_awesome</span>
+                </div>
+                <div
+                    class="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl rounded-tl-sm p-3.5 max-w-[90%] shadow-sm dark:shadow-none">
+                    <p class="text-[13px] text-slate-700 dark:text-slate-300 leading-relaxed mb-3">The authors primarily
+                        utilized the <span
+                            class="text-slate-900 dark:text-white font-bold bg-slate-100 dark:bg-black/30 px-1 rounded">H-alpha
+                            (6562.8 Å)</span> and <span
+                            class="text-slate-900 dark:text-white font-bold bg-slate-100 dark:bg-black/30 px-1 rounded">Sodium
+                            D doublet (5890/5896 Å)</span> lines from the ESPRESSO spectra.</p>
+                    <p class="text-[13px] text-slate-700 dark:text-slate-300 leading-relaxed">They also cross-referenced
+                        these with Telluric lines for precise calibration.</p>
+                    <div class="mt-3 pt-3 border-t border-slate-100 dark:border-white/5 flex flex-wrap gap-2">
+                        <button
+                            class="text-[10px] bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-transparent text-slate-600 dark:text-slate-400 font-medium transition-colors">Show
+                            Spectrum Plot</button>
+                        <button
+                            class="text-[10px] bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-transparent text-slate-600 dark:text-slate-400 font-medium transition-colors">Citation
+                            Source</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extracted Entities -->
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-white/5">
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Extracted Entities</h4>
+                    <button
+                        class="text-[10px] text-primary hover:text-blue-700 font-medium transition-colors flex items-center gap-0.5"><span
+                            class="material-icons text-[12px]">download</span> Export</button>
+                </div>
+                <div class="space-y-2">
+                    <div
+                        class="group flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 border border-slate-200 dark:border-transparent hover:border-slate-300 dark:hover:border-white/10 cursor-pointer shadow-sm dark:shadow-none transition-all">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-2 h-2 rounded-full bg-primary dark:bg-star-cyan dark:shadow-[0_0_8px_rgba(0,242,255,0.8)]">
+                            </div>
+                            <div>
+                                <div
+                                    class="text-xs text-slate-900 dark:text-white font-bold group-hover:text-primary dark:group-hover:text-star-cyan transition-colors">
+                                    Proxima Centauri</div>
+                                <div class="text-[10px] text-slate-500 font-medium font-mono mt-0.5">Star (M5.5Ve)</div>
+                            </div>
+                        </div>
+                        <span
+                            class="material-icons text-slate-400 text-sm opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
+                    </div>
+                    <div
+                        class="group flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 border border-slate-200 dark:border-transparent hover:border-slate-300 dark:hover:border-white/10 cursor-pointer shadow-sm dark:shadow-none transition-all">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-2 h-2 rounded-full bg-purple-500 dark:bg-concept-purple dark:shadow-[0_0_8px_rgba(168,85,247,0.8)]">
+                            </div>
+                            <div>
+                                <div
+                                    class="text-xs text-slate-900 dark:text-white font-bold group-hover:text-purple-600 dark:group-hover:text-concept-purple transition-colors">
+                                    ESPRESSO</div>
+                                <div class="text-[10px] text-slate-500 font-medium font-mono mt-0.5">Instrument</div>
+                            </div>
+                        </div>
+                        <span
+                            class="material-icons text-slate-400 text-sm opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
+                    </div>
+                    <div
+                        class="group flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 border border-slate-200 dark:border-transparent hover:border-slate-300 dark:hover:border-white/10 cursor-pointer shadow-sm dark:shadow-none transition-all">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-2 h-2 rounded-full bg-yellow-500 dark:bg-paper-gold dark:shadow-[0_0_8px_rgba(255,204,51,0.8)]">
+                            </div>
+                            <div>
+                                <div
+                                    class="text-xs text-slate-900 dark:text-white font-bold group-hover:text-yellow-600 dark:group-hover:text-paper-gold transition-colors">
+                                    Radial Velocity</div>
+                                <div class="text-[10px] text-slate-500 font-medium font-mono mt-0.5">Method</div>
+                            </div>
+                        </div>
+                        <span
+                            class="material-icons text-slate-400 text-sm opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 dark:bg-panel-dark border-t border-slate-200 dark:border-white/5 transition-colors">
+            <div class="relative group">
+                <input
+                    class="w-full bg-white dark:bg-black/30 border border-slate-300 dark:border-white/10 rounded-xl pl-4 pr-12 py-3 text-[13px] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm placeholder-slate-400"
+                    placeholder="Ask agent about this paper..." type="text" />
+                <button
+                    class="absolute right-1.5 top-1.5 p-1.5 bg-primary hover:bg-blue-600 text-white rounded-lg shadow-md transition-all active:scale-95"><span
+                        class="material-icons text-[18px]">send</span></button>
+            </div>
+        </div>
+    </aside>
+
+    <script src="/static/taarya-api.js"></script>
+    <script>
+        function toggleMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        (function () {
+            // Remove mock items before fetching real API data
+            function clearMocks() {
+                document.querySelectorAll('.ty-paper-mock').forEach(e => e.remove());
+            }
+
+            function showPapers(container, papers) {
+                clearMocks();
+                if (!papers || !papers.length) {
+                    container.innerHTML = TaarYa.render.emptyState('No papers found — try a different query');
+                    return;
+                }
+                container.innerHTML = papers.map(p => TaarYa.render.paperCard(p, { clickable: true })).join('');
+                container.querySelectorAll('.ty-paper-card').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const id = el.dataset.arxivId;
+                        if (id) window.open('https://arxiv.org/abs/' + id, '_blank');
+                        const chatPanel = document.getElementById('ty-lit-chat');
+                        if (chatPanel) {
+                            const title = el.querySelector('.font-bold')?.textContent || 'this paper';
+                            const focusTitle = chatPanel.parentElement.querySelector('h4 + p');
+                            if (focusTitle) focusTitle.textContent = title;
+                            // Optionally ask agent API right away or just set context
+                        }
+                    });
+                });
+            }
+
+            async function loadInitial() {
+                const list = document.getElementById('ty-paper-list');
+                if (!list) return;
+                // keep mocks temporarily, but replace if we have real API response
+                try {
+                    const res = await TaarYa.api.searchPapers('astronomy stellar', 15);
+                    if (res && res.results && res.results.length > 0) {
+                        showPapers(list, res.results);
+                    }
+                } catch (e) { console.warn('Backend unavailable, using mock data.'); }
+            }
+
+            function wireSearch() {
+                const input = document.getElementById('ty-search-input');
+                const list = document.getElementById('ty-paper-list');
+                const searchBtn = document.getElementById('ty-search-btn');
+                if (!input || !list) return;
+
+                async function doSearch() {
+                    const q = input.value.trim();
+                    if (!q) return loadInitial();
+                    list.innerHTML = TaarYa.render.spinner();
+                    try {
+                        const res = await TaarYa.api.searchPapers(q, 20);
+                        if (res && res.results) {
+                            showPapers(list, res.results);
+                        } else {
+                            list.innerHTML = TaarYa.render.emptyState('No results found for your query.');
+                        }
+                    } catch (e) { list.innerHTML = TaarYa.render.emptyState('Search error. Backend might be down.'); }
+                }
+
+                input.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+                if (searchBtn) searchBtn.addEventListener('click', doSearch);
+            }
+
+            function wireTopicPills() {
+                const list = document.getElementById('ty-paper-list');
+                if (!list) return;
+                document.querySelectorAll('#ty-topic-pills button').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const originalHtml = list.innerHTML;
+                        list.innerHTML = TaarYa.render.spinner();
+                        try {
+                            const kw = btn.textContent.trim();
+                            const res = await TaarYa.api.papersByTopic(kw, 20);
+                            if (res && res.papers && res.papers.length > 0) {
+                                showPapers(list, res.papers);
+                            } else {
+                                list.innerHTML = TaarYa.render.emptyState(`No papers found for topic: ${kw}`);
+                            }
+                        } catch (e) {
+                            console.warn('API error', e);
+                            list.innerHTML = TaarYa.render.emptyState('Error fetching topics.');
+                        }
+                    });
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                wireSearch();
+                wireTopicPills();
+                loadInitial();
+            });
+        })();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TaarYa | Stellar Object Detail</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="/static/taarya.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "obsidian": "#05060a",
+                        "deep-space": "#0a0c16",
+                        "panel-dark": "#131625",
+                        "primary": "#2547f4",
+                        "star-cyan": "#00f2ff",
+                        "paper-gold": "#ffcc33",
+                        "concept-purple": "#a855f7",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .dark-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .dark-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .dark-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .dark-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .dark .dark-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .dark .dark-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .dark .dark-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .dark .glass-panel {
+            background: rgba(19, 22, 37, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(37, 71, 244, 0.1);
+            border-color: rgba(37, 71, 244, 0.3);
+        }
+
+        .dark .card-glow:hover {
+            box-shadow: 0 0 25px rgba(37, 71, 244, 0.2);
+            border-color: rgba(37, 71, 244, 0.4);
+        }
+
+        .star-bg {
+            background-color: #f8f9fa;
+        }
+
+        .dark .star-bg {
+            background-color: #05060a;
+            background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #00f2ff, #2547f4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hr-diagram-dot {
+            transition: all 0.3s ease;
+        }
+
+        .hr-diagram-dot:hover {
+            filter: drop-shadow(0 0 4px white);
+            transform: scale(1.5);
+            transform-origin: center;
+        }
+    </style>
+</head>
+
+<body
+    class="h-screen w-screen flex overflow-hidden star-bg text-slate-900 dark:text-slate-200 transition-colors duration-300">
+
+    <!-- Unified Sidebar -->
+    <nav
+        class="ty-sidebar bg-white border-r border-slate-200 dark:bg-panel-dark dark:border-white/5 flex flex-col items-center shadow-sm dark:shadow-none w-20 transition-colors duration-300 z-50 shrink-0">
+        <div class="ty-sidebar-logo w-full flex justify-center py-6 mb-2">
+            <span class="material-icons text-primary dark:text-white">auto_awesome</span>
+        </div>
+        <div class="ty-nav-links flex flex-col gap-6 flex-1 w-full items-center mt-4">
+            <a href="/static/command_center.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Command Center">
+                <span class="material-icons">dashboard</span>
+            </a>
+            <a href="/static/agentic_workspace.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Agentic Workspace">
+                <span class="material-icons">psychology</span>
+            </a>
+            <a href="/static/kg_explorer.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Knowledge Graph">
+                <span class="material-icons">hub</span>
+            </a>
+            <a href="/static/literature_browser.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Literature Browser">
+                <span class="material-icons">library_books</span>
+            </a>
+            <a href="/static/code_console.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Code Console">
+                <span class="material-icons">terminal</span>
+            </a>
+            <span
+                class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-electric-blue/20 text-primary dark:text-white flex items-center justify-center shadow-sm dark:shadow-none relative group cursor-default"
+                title="Stellar Detail">
+                <span class="material-icons">stars</span>
+            </span>
+        </div>
+        <div class="ty-sidebar-bottom mt-auto flex flex-col gap-4 w-full items-center mb-6">
+            <button onclick="toggleMode()" title="Toggle Mode"
+                class="text-slate-400 hover:text-primary transition-colors w-10 h-10 rounded-lg flex items-center justify-center hover:bg-slate-50 dark:hover:bg-white/5">
+                <span class="material-icons dark:hidden">dark_mode</span>
+                <span class="material-icons hidden dark:block">light_mode</span>
+            </button>
+            <a href="/static/profile.html"
+                class="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-200 dark:border-white/10">
+                <div class="w-full h-full bg-gradient-to-tr from-primary to-purple-600"></div>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content Flow -->
+    <main
+        class="flex-1 flex flex-col relative overflow-hidden bg-gradient-to-b from-white via-slate-50 to-slate-100 dark:from-deep-space dark:via-[#0f1221] dark:to-obsidian transition-colors duration-300">
+        <!-- Header -->
+        <header
+            class="w-full p-6 z-40 flex justify-between items-start border-b border-slate-200 dark:border-white/5 bg-white/50 dark:bg-deep-space/50 backdrop-blur-md transition-colors shrink-0">
+            <div>
+                <div class="flex items-center gap-3 mb-1">
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3 font-display"
+                        id="ty-star-name">
+                        <span
+                            class="animate-pulse w-3 h-3 bg-slate-300 dark:bg-slate-700 rounded-full inline-block"></span>
+                        Loading...
+                    </h1>
+                    <span
+                        class="px-2.5 py-1 rounded-md bg-blue-50 dark:bg-primary/20 text-primary text-[10px] sm:text-xs font-bold border border-blue-200 dark:border-primary/30 uppercase tracking-widest shadow-sm dark:shadow-none"
+                        id="ty-star-type">Stellar Object</span>
+                </div>
+                <p
+                    class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 font-medium">
+                    <span class="material-icons text-sm text-green-600 dark:text-green-500">check_circle</span>
+                    <span id="ty-star-id">Source ID: Pending</span>
+                </p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:flex -space-x-2">
+                    <div
+                        class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-background-dark flex items-center justify-center text-[10px] text-slate-700 dark:text-white font-bold shadow-sm">
+                        G</div>
+                    <div
+                        class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-paper-gold border-2 border-white dark:border-background-dark flex items-center justify-center text-[10px] text-yellow-800 dark:text-black font-bold shadow-sm">
+                        A</div>
+                    <div
+                        class="w-8 h-8 rounded-full bg-purple-100 dark:bg-concept-purple border-2 border-white dark:border-background-dark flex items-center justify-center text-[10px] text-purple-800 dark:text-white font-bold shadow-sm">
+                        S</div>
+                </div>
+                <button
+                    class="bg-white dark:bg-primary/10 hover:bg-slate-50 dark:hover:bg-primary/20 border border-slate-200 dark:border-primary/30 text-primary px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition-all">
+                    <span class="material-icons text-sm">download</span><span class="hidden sm:inline">Export
+                        Data</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable Grid Layout -->
+        <div class="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 dark-scroll relative">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 max-w-[1600px] mx-auto pb-10">
+                <!-- Left Column (Astrometry, Photometry, Identifiers) -->
+                <div class="col-span-12 md:col-span-5 lg:col-span-3 xl:col-span-3 space-y-6 flex flex-col">
+                    <!-- Astrometry Card -->
+                    <div class="glass-panel p-5 rounded-xl card-glow relative overflow-hidden group">
+                        <div
+                            class="absolute top-0 right-0 p-3 opacity-[0.03] dark:opacity-10 group-hover:opacity-[0.05] dark:group-hover:opacity-20 transition-opacity">
+                            <span class="material-icons text-6xl text-primary dark:text-star-cyan">stars</span>
+                        </div>
+                        <h3
+                            class="text-[11px] font-bold text-primary dark:text-star-cyan uppercase tracking-widest mb-4 flex items-center gap-2 font-display">
+                            <span class="material-symbols-outlined text-[16px]">satellite_alt</span>Astrometry
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Parallax
+                                </p>
+                                <div class="flex items-baseline gap-2"><span
+                                        class="text-2xl font-bold text-slate-900 dark:text-white font-mono"
+                                        id="ty-val-parallax">--</span><span
+                                        class="text-[11px] text-slate-500 font-mono">mas</span></div>
+                                <div
+                                    class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                                    <div class="bg-primary dark:bg-star-cyan h-full w-[40%] rounded-full opacity-80"
+                                        id="ty-val-plx-bar"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Distance
+                                </p>
+                                <div class="flex items-baseline gap-2"><span
+                                        class="text-xl font-bold text-slate-900 dark:text-white font-mono"
+                                        id="ty-val-distance">--</span><span
+                                        class="text-[11px] text-slate-500 font-mono">parsecs</span></div>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Proper
+                                    Motion</p>
+                                <div
+                                    class="flex justify-between items-center bg-slate-50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-white/5">
+                                    <div class="text-center">
+                                        <span class="text-[10px] text-slate-400 font-bold mb-0.5 block">RA</span>
+                                        <span
+                                            class="text-[13px] text-slate-800 dark:text-slate-300 font-mono font-medium"
+                                            id="ty-val-pmra">--</span>
+                                        <span class="text-[9px] text-slate-500 font-mono block">mas/yr</span>
+                                    </div>
+                                    <div class="h-8 w-px bg-slate-200 dark:bg-white/10"></div>
+                                    <div class="text-center">
+                                        <span class="text-[10px] text-slate-400 font-bold mb-0.5 block">DEC</span>
+                                        <span
+                                            class="text-[13px] text-slate-800 dark:text-slate-300 font-mono font-medium"
+                                            id="ty-val-pmdec">--</span>
+                                        <span class="text-[9px] text-slate-500 font-mono block">mas/yr</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">
+                                    Coordinates (ICRS)</p>
+                                <div class="text-xs text-slate-800 dark:text-slate-300 font-mono p-2 bg-slate-50 dark:bg-black/20 rounded border border-slate-100 dark:border-white/5"
+                                    id="ty-val-coords">RA: -- / DEC: --</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Photometry Card -->
+                    <div class="glass-panel p-5 rounded-xl card-glow">
+                        <h3
+                            class="text-[11px] font-bold text-yellow-600 dark:text-paper-gold uppercase tracking-widest mb-4 flex items-center gap-2 font-display">
+                            <span class="material-symbols-outlined text-[16px]">flare</span>Photometry
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div
+                                class="bg-slate-50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-white/5 text-center">
+                                <p class="text-[10px] text-slate-500 font-bold mb-1">G Mag</p>
+                                <p class="text-lg font-bold text-slate-900 dark:text-white font-mono" id="ty-val-gmag">
+                                    --</p>
+                            </div>
+                            <div
+                                class="bg-slate-50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-white/5 text-center">
+                                <p class="text-[10px] text-slate-500 font-bold mb-1">BP Mag</p>
+                                <p class="text-lg font-bold text-slate-900 dark:text-white font-mono" id="ty-val-bpmag">
+                                    --</p>
+                            </div>
+                            <div
+                                class="bg-slate-50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-white/5 text-center">
+                                <p class="text-[10px] text-slate-500 font-bold mb-1">RP Mag</p>
+                                <p class="text-lg font-bold text-slate-900 dark:text-white font-mono" id="ty-val-rpmag">
+                                    --</p>
+                            </div>
+                            <div
+                                class="bg-slate-50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-white/5 text-center">
+                                <p class="text-[10px] text-slate-500 font-bold mb-1">BP-RP Color</p>
+                                <p class="text-lg font-bold text-slate-900 dark:text-white font-mono" id="ty-val-color">
+                                    --</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center Column (Visualization, Biography, HR Diagram) -->
+                <div class="col-span-12 md:col-span-7 lg:col-span-6 xl:col-span-6 space-y-6 flex flex-col">
+                    <!-- 3D Viewport Placeholder -->
+                    <div
+                        class="w-full aspect-video rounded-xl border border-slate-200 dark:border-primary/20 relative overflow-hidden group shadow-md dark:shadow-2xl bg-white dark:bg-black flex items-center justify-center shrink-0">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-transparent to-purple-50/80 dark:from-blue-900/40 dark:via-transparent dark:to-purple-900/30">
+                        </div>
+                        <!-- Mock stars -->
+                        <div
+                            class="absolute top-1/4 left-[40%] w-4 h-4 bg-primary dark:bg-star-cyan rounded-full shadow-[0_0_20px_rgba(37,71,244,0.5)] dark:shadow-[0_0_20px_#00f2ff] animate-pulse z-10">
+                        </div>
+                        <div
+                            class="absolute top-1/3 left-[55%] w-2 h-2 bg-slate-300 dark:bg-white rounded-full opacity-80 shadow-[0_0_10px_rgba(255,255,255,0.8)]">
+                        </div>
+                        <div
+                            class="absolute top-[20%] left-[30%] w-1.5 h-1.5 bg-yellow-400 dark:bg-paper-gold rounded-full shadow-[0_0_8px_#ffcc33]">
+                        </div>
+
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent dark:from-background-dark dark:via-transparent dark:to-transparent">
+                        </div>
+                        <div class="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6">
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <h2
+                                        class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-1 font-display">
+                                        Stellar Neighborhood</h2>
+                                    <p
+                                        class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-300 max-w-sm font-medium">
+                                        Visualization of local interstellar environment based on retrieved context.</p>
+                                </div>
+                                <button
+                                    class="bg-white/80 dark:bg-black/50 hover:bg-slate-100 dark:hover:bg-primary/80 backdrop-blur-md border border-slate-200 dark:border-white/20 p-2 sm:p-2.5 rounded-full text-slate-700 dark:text-white shadow-sm transition-colors group-hover:shadow-md"><span
+                                        class="material-icons">3d_rotation</span></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Biography Summary -->
+                    <div class="glass-panel p-5 sm:p-6 rounded-xl border-l-4 border-l-primary relative">
+                        <div class="absolute top-4 right-4 flex gap-2">
+                            <span
+                                class="text-[9px] font-bold px-2 py-1 rounded bg-purple-50 dark:bg-concept-purple/20 text-purple-700 dark:text-concept-purple border border-purple-200 dark:border-concept-purple/30 uppercase tracking-widest shadow-sm dark:shadow-none">AI
+                                Generated</span>
+                        </div>
+                        <h3
+                            class="text-sm sm:text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2 font-display">
+                            <span class="material-icons text-primary text-[18px]">auto_awesome</span>Scientific
+                            Assessment
+                        </h3>
+                        <div class="text-slate-700 dark:text-slate-300 text-[13px] sm:text-sm leading-relaxed"
+                            id="ty-bio-text">
+                            <p class="mb-3 animate-pulse">Synthesizing data profile from parameters...</p>
+                        </div>
+                    </div>
+
+                    <!-- HR Diagram -->
+                    <div class="glass-panel p-1 rounded-xl overflow-hidden relative h-48 sm:h-56 shrink-0">
+                        <div
+                            class="absolute inset-0 bg-slate-50 dark:bg-gradient-to-br dark:from-blue-900/20 dark:to-red-900/10">
+                        </div>
+                        <div class="p-4 relative z-10 h-full flex flex-col">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-display">
+                                    Hertzsprung–Russell Positioning</h3>
+                                <span class="text-[9px] text-slate-400 font-bold uppercase">Color-Magnitude</span>
+                            </div>
+                            <div
+                                class="flex-1 relative border-l border-b border-slate-300 dark:border-white/10 ml-2 mb-2">
+                                <svg class="absolute inset-0 w-full h-full p-2" preserveAspectRatio="none"
+                                    viewBox="0 0 100 100">
+                                    <!-- Background scatter (mock context) -->
+                                    <circle class="fill-slate-300 dark:fill-white/20" cx="20" cy="70" r="0.8" />
+                                    <circle class="fill-slate-300 dark:fill-white/20" cx="50" cy="50" r="0.8" />
+                                    <circle class="fill-slate-300 dark:fill-white/20" cx="80" cy="20" r="0.8" />
+                                    <!-- Main sequence line approx -->
+                                    <path d="M 10 10 Q 30 50 90 90" fill="none" stroke="currentColor"
+                                        class="text-slate-200 dark:text-[rgba(255,255,255,0.05)]" stroke-width="8" />
+
+                                    <!-- Target Star -->
+                                    <circle class="hr-diagram-dot fill-primary dark:fill-star-cyan" cx="40" cy="40"
+                                        r="3" id="ty-hr-target">
+                                        <title>Target Object</title>
+                                    </circle>
+                                    <!-- Sun reference -->
+                                    <circle class="hr-diagram-dot fill-yellow-500 dark:fill-paper-gold" cx="60" cy="60"
+                                        r="1.5">
+                                        <title>Sun (Reference)</title>
+                                    </circle>
+                                </svg>
+                            </div>
+                            <div
+                                class="flex justify-between text-[9px] text-slate-500 font-bold uppercase tracking-wider pl-2">
+                                <span>Hot / Blue (BP-RP < 0)</span>
+                                        <span>Cool / Red (BP-RP > 2)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column (Citations, Interrogate) -->
+                <div class="col-span-12 lg:col-span-3 xl:col-span-3 flex flex-col gap-6 h-full">
+
+                    <!-- Nearest Neighbors -->
+                    <div class="glass-panel flex flex-col overflow-hidden rounded-xl max-h-[300px] shrink-0">
+                        <div
+                            class="p-3 border-b border-slate-200 dark:border-white/5 bg-slate-50/80 dark:bg-white/5 backdrop-blur-md">
+                            <h3
+                                class="text-[10px] font-bold text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-1.5 font-display">
+                                <span class="material-icons text-[14px] text-primary">groups</span>Local Cluster</h3>
+                        </div>
+                        <div class="overflow-y-auto p-2 space-y-1.5 dark-scroll" id="ty-neighbors-list">
+                            <div class="p-3 text-center text-xs text-slate-500">Querying neighbors...</div>
+                        </div>
+                    </div>
+
+                    <!-- Cited In Research -->
+                    <div class="glass-panel flex flex-col overflow-hidden rounded-xl max-h-[300px] shrink-0">
+                        <div
+                            class="p-3 border-b border-slate-200 dark:border-white/5 bg-slate-50/80 dark:bg-white/5 backdrop-blur-md">
+                            <h3
+                                class="text-[10px] font-bold text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-1.5 font-display">
+                                <span
+                                    class="material-icons text-[14px] text-yellow-600 dark:text-paper-gold">menu_book</span>Literature
+                                Citations</h3>
+                        </div>
+                        <div class="overflow-y-auto p-2 space-y-1.5 dark-scroll" id="ty-citation-list">
+                            <div class="p-3 text-center text-xs text-slate-500">Scanning ArXiv context...</div>
+                        </div>
+                    </div>
+
+                    <!-- Embedded Agent Chat -->
+                    <div
+                        class="glass-panel flex-1 rounded-xl flex flex-col overflow-hidden min-h-[300px] shadow-lg dark:shadow-none">
+                        <div
+                            class="p-3 border-b border-blue-100 dark:border-primary/20 bg-blue-50/80 dark:bg-gradient-to-r dark:from-primary/10 dark:to-transparent">
+                            <h3
+                                class="text-[11px] font-bold text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 font-display">
+                                <span class="material-icons text-[16px] text-primary">smart_toy</span>Object Oracle
+                            </h3>
+                        </div>
+                        <div class="flex-1 p-3 overflow-y-auto space-y-3 dark-scroll flex flex-col" id="ty-detail-chat">
+                            <div class="flex items-start gap-2">
+                                <div
+                                    class="w-6 h-6 rounded-full bg-blue-100 dark:bg-primary/20 flex items-center justify-center shrink-0">
+                                    <span class="material-icons text-[12px] text-primary">auto_awesome</span>
+                                </div>
+                                <div
+                                    class="bg-slate-50 dark:bg-white/5 p-2.5 rounded-lg rounded-tl-none border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                    <p class="text-[11px] sm:text-xs text-slate-700 dark:text-slate-300">I have loaded
+                                        the parameters for this object. What would you like to analyze?</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="p-2 sm:p-3 border-t border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-black/20">
+                            <div class="relative group">
+                                <input id="ty-chat-input"
+                                    class="w-full bg-white dark:bg-black/40 border border-slate-300 dark:border-white/10 rounded-lg pl-3 pr-9 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder-slate-400 shadow-sm transition-all"
+                                    placeholder="Ask about this star..." type="text" />
+                                <button id="ty-chat-send"
+                                    class="absolute right-1 top-1 p-1 text-slate-400 hover:text-primary transition-colors"><span
+                                        class="material-icons text-[18px]">send</span></button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/taarya-api.js"></script>
+    <script>
+        function toggleMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        (function () {
+            let currentStar = null;
+
+            function parseParams() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('id');
+            }
+
+            function updateUIWithStar(star) {
+                if (!star) return;
+                currentStar = star;
+
+                document.getElementById('ty-star-name').innerHTML = `Source ${star.source_id.substring(0, 8)}...`;
+                document.getElementById('ty-star-id').textContent = `ID: ${star.source_id} | Catalog: ${star.catalog_source || 'Unknown'}`;
+
+                document.getElementById('ty-val-coords').textContent = `RA: ${star.ra?.toFixed(6) || '--'}° / DEC: ${star.dec?.toFixed(6) || '--'}°`;
+                document.getElementById('ty-val-parallax').textContent = star.parallax ? star.parallax.toFixed(4) : '--';
+
+                if (star.parallax && star.parallax > 0) {
+                    const distPc = 1000 / star.parallax;
+                    document.getElementById('ty-val-distance').textContent = distPc.toFixed(2);
+
+                    // Update Parallax Bar visually (capped at 100 for dramatic effect)
+                    const pBar = document.getElementById('ty-val-plx-bar');
+                    if (pBar) {
+                        let pct = Math.min((star.parallax / 10) * 100, 100);
+                        pBar.style.width = pct + '%';
+                    }
+                }
+
+                document.getElementById('ty-val-pmra').textContent = star.pmra?.toFixed(2) || '--';
+                document.getElementById('ty-val-pmdec').textContent = star.pmdec?.toFixed(2) || '--';
+
+                document.getElementById('ty-val-gmag').textContent = star.phot_g_mean_mag?.toFixed(3) || '--';
+                document.getElementById('ty-val-bpmag').textContent = star.phot_bp_mean_mag?.toFixed(3) || '--';
+                document.getElementById('ty-val-rpmag').textContent = star.phot_rp_mean_mag?.toFixed(3) || '--';
+
+                const bpRp = (star.phot_bp_mean_mag && star.phot_rp_mean_mag)
+                    ? (star.phot_bp_mean_mag - star.phot_rp_mean_mag).toFixed(3)
+                    : '--';
+                document.getElementById('ty-val-color').textContent = bpRp;
+
+                // Adjust HR Diagram target dot (Rough mapping)
+                // Color mapping: BP-RP from -0.5 to 3.5 mapped to cx 10 to 90
+                // Mag mapping: G mag from -5 to 20 mapped to cy 10 to 90
+                const dot = document.getElementById('ty-hr-target');
+                if (dot && bpRp !== '--' && star.phot_g_mean_mag) {
+                    let cx = ((parseFloat(bpRp) + 0.5) / 4.0) * 80 + 10;
+                    let cy = ((star.phot_g_mean_mag + 5) / 25) * 80 + 10;
+                    cx = Math.max(5, Math.min(95, cx));
+                    cy = Math.max(5, Math.min(95, cy));
+                    dot.setAttribute('cx', cx);
+                    dot.setAttribute('cy', cy);
+                }
+
+                // AI Bio Generation (mock basic generation if real agent call is omitted to save time)
+                generateBio(star);
+            }
+
+            async function generateBio(star) {
+                const bioEl = document.getElementById('ty-bio-text');
+                try {
+                    // Try to ask the agent to summarize
+                    const prompt = `Write a very short (2 sentence) scientific profile for star with RA ${star.ra}, DEC ${star.dec}, Parallax ${star.parallax} mas.`;
+                    const res = await TaarYa.api.ask(prompt);
+                    const text = res.answer || res.response || res.result;
+                    bioEl.innerHTML = `<p>${text}</p>`;
+                } catch (e) {
+                    bioEl.innerHTML = `<p>This object is located at right ascension ${star.ra?.toFixed(3)}° and declination ${star.dec?.toFixed(3)}°. Base astrometry indicates a proper motion of [${star.pmra?.toFixed(2)}, ${star.pmdec?.toFixed(2)}] mas/yr. Further spectroscopic follow-up may be required to determine precise metallicity attributes.</p>`;
+                }
+            }
+
+            function renderNeighborCard(s) {
+                const distStr = s.angular_distance ? ` | Δ ${s.angular_distance.toFixed(4)}°` : '';
+                return `
+                <div class="p-2.5 hover:bg-white dark:hover:bg-white/5 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-white/10 cursor-pointer group transition-all" onclick="window.location.href='?id=${s.source_id}'">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] text-slate-800 dark:text-white font-mono font-medium truncate">${s.source_id.substring(0, 10)}...</span>
+                        <span class="text-[9px] text-slate-500 font-bold bg-slate-100 dark:bg-black/40 px-1 rounded">${s.phot_g_mean_mag?.toFixed(2) || '?'} G${distStr}</span>
+                    </div>
+                </div>`;
+            }
+
+            function renderCitationCard(p) {
+                return `
+                <div class="p-2.5 hover:bg-white dark:hover:bg-white/5 rounded-lg border border-transparent hover:border-slate-200 dark:hover:border-white/10 cursor-pointer group transition-all" onclick="window.open('https://arxiv.org/abs/${p.arxiv_id}', '_blank')">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] text-yellow-700 dark:text-paper-gold font-mono bg-yellow-50 dark:bg-paper-gold/10 px-1 rounded font-bold">arXiv:${p.arxiv_id || 'ID'}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-700 dark:text-slate-300 font-medium leading-snug group-hover:text-primary dark:group-hover:text-primary transition-colors line-clamp-2">${p.title}</p>
+                </div>`;
+            }
+
+            async function loadRelations(id) {
+                const nList = document.getElementById('ty-neighbors-list');
+                const cList = document.getElementById('ty-citation-list');
+
+                try {
+                    const nRes = await TaarYa.api.nearbyStar(id, 0.5);
+                    if (nRes && nRes.neighbors && nRes.neighbors.length > 0) {
+                        nList.innerHTML = nRes.neighbors.slice(0, 5).map(renderNeighborCard).join('');
+                    } else {
+                        nList.innerHTML = `<div class="p-3 text-center text-xs text-slate-500">No close neighbors mapped.</div>`;
+                    }
+                } catch (e) { nList.innerHTML = `<div class="p-3 text-center text-xs text-slate-500">Error loading neighbors.</div>`; }
+
+                try {
+                    const cRes = await TaarYa.api.papersByStar(id);
+                    if (cRes && cRes.papers && cRes.papers.length > 0) {
+                        cList.innerHTML = cRes.papers.slice(0, 4).map(renderCitationCard).join('');
+                    } else {
+                        cList.innerHTML = `<div class="p-3 text-center text-xs text-slate-500">No literature mappings found.</div>`;
+                    }
+                } catch (e) { cList.innerHTML = `<div class="p-3 text-center text-xs text-slate-500">No semantic matches found.</div>`; } // Normal fallback
+            }
+
+            async function init() {
+                const id = parseParams();
+                if (!id) {
+                    // Provide a default mock ID if none provided, or show a notice
+                    document.getElementById('ty-star-name').textContent = "No Target Selected";
+                    document.getElementById('ty-star-id').textContent = "Please select a star from the Explorer";
+                    return;
+                }
+
+                try {
+                    const res = await TaarYa.api.lookupStar(id);
+                    if (res && res.star) {
+                        updateUIWithStar(res.star);
+                        loadRelations(id);
+                    } else {
+                        document.getElementById('ty-star-name').textContent = "Object Not Found";
+                    }
+                } catch (e) {
+                    document.getElementById('ty-star-name').textContent = "API Error";
+                    console.error("Lookup failed:", e);
+                }
+            }
+
+            // Chat behavior
+            const input = document.getElementById('ty-chat-input');
+            const chatBox = document.getElementById('ty-detail-chat');
+            const sendBtn = document.getElementById('ty-chat-send');
+
+            async function handleChat() {
+                const q = input.value.trim();
+                if (!q) return;
+                input.value = '';
+
+                chatBox.innerHTML += `
+                <div class="flex items-start gap-2 flex-row-reverse mt-2">
+                    <div class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                        <span class="text-[10px] text-slate-600 dark:text-white font-bold">U</span>
+                    </div>
+                    <div class="bg-blue-50 dark:bg-primary/20 p-2.5 rounded-lg rounded-tr-none border border-blue-100 dark:border-primary/20 shadow-sm dark:shadow-none">
+                        <p class="text-[11px] sm:text-xs text-slate-800 dark:text-white">${q}</p>
+                    </div>
+                </div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                let ctx = currentStar ? `Regarding star ID ${currentStar.source_id} (RA: ${currentStar.ra}, Dec: ${currentStar.dec}): ` : '';
+
+                try {
+                    const aiRes = await TaarYa.api.ask(ctx + q);
+                    const ans = aiRes.answer || aiRes.response || aiRes.result || "Could not generate response.";
+
+                    chatBox.innerHTML += `
+                    <div class="flex items-start gap-2 mt-2">
+                        <div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-primary/20 flex items-center justify-center shrink-0">
+                            <span class="material-icons text-[12px] text-primary">auto_awesome</span>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-white/5 p-2.5 rounded-lg rounded-tl-none border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                            <p class="text-[11px] sm:text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${ans}</p>
+                        </div>
+                    </div>`;
+                } catch (e) {
+                    chatBox.innerHTML += `<div class="text-xs text-red-500 text-center mt-2">Error connecting to intelligence backend.</div>`;
+                }
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            input.addEventListener('keydown', e => { if (e.key === 'Enter') handleChat(); });
+            sendBtn.addEventListener('click', handleChat);
+
+            document.addEventListener('DOMContentLoaded', init);
+        })();
+    </script>
+</body>
+
+</html>

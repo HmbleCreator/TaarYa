@@ -174,9 +174,17 @@ class AstronomyAgent:
                     history_messages.append(AIMessage(content=content))
         
         try:
-            # Pass chat_history to the agent
+            # For the ReAct agent, chat_history in the dict might be ignored by the default prompt.
+            # To ensure context is ALWAYS passed, we append a summary to the query if history exists.
+            context_query = query
+            if history_messages and hasattr(self._agent, 'agent') and not hasattr(self._agent.agent, 'runnable'):
+                # It's likely the old ReAct agent which ignores 'chat_history' arg
+                history_text = "\n".join([f"{'User' if isinstance(m, HumanMessage) else 'Assistant'}: {m.content}" for m in history_messages[-6:]]) # Last 3 turns
+                context_query = f"Previous Conversation:\n{history_text}\n\nCurrent Question: {query}"
+
+            # Pass both the context-enriched query and the raw chat_history (for modern agents)
             result = self._agent.invoke({
-                "input": query,
+                "input": context_query,
                 "chat_history": history_messages,
             })
             

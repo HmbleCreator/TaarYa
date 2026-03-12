@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TaarYa | Research Command Center</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="/static/taarya.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "obsidian": "#05060a",
+                        "deep-space": "#0a0c16",
+                        "navy-accent": "#1a1f35",
+                        "electric-blue": "#2547f4",
+                        "holo-cyan": "#00f2ff",
+                        "alert-red": "#ff3366",
+                        "success-green": "#00ff9d",
+                        "star-gold": "#ffcc33",
+                        "primary": "#2547f4",
+                        "primary-light": "#3b82f6",
+                        "background-light": "#f8f9fa",
+                        "text-main": "#1e293b",
+                        "text-secondary": "#64748b",
+                        "accent-teal": "#0d9488",
+                        "accent-gold": "#d97706",
+                        "border-subtle": "#e2e8f0",
+                        "panel-dark": "#131625"
+                    },
+                    fontFamily: { "display": ["Space Grotesk", "sans-serif"] },
+                    boxShadow: {
+                        "soft": "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)",
+                        "glow": "0 0 15px rgba(37,71,244,0.25)",
+                        "card": "0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06)",
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* ── Dark mode styles ── */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .dark .glass-panel {
+            background: rgba(10, 12, 22, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .holo-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark .holo-card {
+            background: rgba(26, 31, 53, 0.4);
+            border: 1px solid rgba(0, 242, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.05);
+        }
+
+        .dark .holo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.5), transparent);
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 242, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+            animation: scan 4s linear infinite;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .dark .scan-line {
+            opacity: 0.3;
+        }
+
+        @keyframes scan {
+            0% {
+                top: -10%;
+            }
+
+            100% {
+                top: 110%;
+            }
+        }
+
+        .galaxy-spin {
+            animation: spin-slow 60s linear infinite;
+        }
+
+        @keyframes spin-slow {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .star-bg {
+            background-color: #f8f9fa;
+        }
+
+        .dark .star-bg {
+            background-color: #05060a;
+            background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.15) 1px, transparent 0);
+            background-size: 50px 50px;
+        }
+
+        .command-bar-glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .dark .command-bar-glow {
+            box-shadow: 0 0 40px -10px rgba(37, 71, 244, 0.15);
+            border: 1px solid rgba(37, 71, 244, 0.3);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .dark ::-webkit-scrollbar-track {
+            background: #0a0c16;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #1a1f35;
+            border-radius: 3px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #2547f4;
+        }
+    </style>
+</head>
+
+<body
+    class="h-screen w-screen flex overflow-hidden bg-background-light text-text-main dark:bg-obsidian dark:text-slate-200 transition-colors duration-300">
+
+    <!-- Unified Sidebar -->
+    <nav
+        class="ty-sidebar bg-white border-r border-border-subtle dark:bg-panel-dark dark:border-white/5 flex flex-col items-center shadow-sm dark:shadow-none w-20 transition-colors duration-300 z-50">
+        <div class="ty-sidebar-logo w-full flex justify-center py-6 mb-2">
+            <span class="material-icons text-primary dark:text-white">auto_awesome</span>
+        </div>
+        <div class="ty-nav-links flex flex-col gap-6 flex-1 w-full items-center mt-4">
+            <span
+                class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-electric-blue/20 text-primary dark:text-white flex items-center justify-center shadow-sm dark:shadow-none relative group cursor-default"
+                title="Command Center">
+                <span class="material-icons">dashboard</span>
+            </span>
+            <a href="/static/agentic_workspace.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Agentic Workspace">
+                <span class="material-icons">psychology</span>
+            </a>
+            <a href="/static/kg_explorer.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Knowledge Graph">
+                <span class="material-icons">hub</span>
+            </a>
+            <a href="/static/literature_browser.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Literature Browser">
+                <span class="material-icons">auto_stories</span>
+            </a>
+            <a href="/static/code_console.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Code Console">
+                <span class="material-icons">terminal</span>
+            </a>
+            <a href="/static/stellar_detail.html"
+                class="w-10 h-10 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-white/5 flex items-center justify-center transition-colors group relative"
+                title="Stellar Detail">
+                <span class="material-icons">stars</span>
+            </a>
+        </div>
+        <div class="ty-sidebar-bottom mt-auto flex flex-col gap-4 w-full items-center mb-6">
+            <button onclick="toggleMode()" title="Toggle Mode"
+                class="text-slate-400 hover:text-primary transition-colors w-10 h-10 rounded-lg flex items-center justify-center hover:bg-slate-50 dark:hover:bg-white/5">
+                <span class="material-icons dark:hidden">dark_mode</span>
+                <span class="material-icons hidden dark:block">light_mode</span>
+            </button>
+            <a href="/static/profile.html"
+                class="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-200 dark:border-white/10">
+                <div class="w-full h-full bg-gradient-to-tr from-primary to-purple-600"></div>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative overflow-hidden star-bg transition-colors duration-300">
+        <!-- Glow effects (visible in dark mode only) -->
+        <div
+            class="absolute top-0 right-0 w-[800px] h-[800px] bg-electric-blue/5 rounded-full blur-[120px] pointer-events-none translate-x-1/2 -translate-y-1/2 hidden dark:block">
+        </div>
+        <div
+            class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-purple-900/10 rounded-full blur-[100px] pointer-events-none -translate-x-1/4 translate-y-1/4 hidden dark:block">
+        </div>
+
+        <!-- Header -->
+        <header
+            class="flex justify-between items-center px-8 py-6 z-10 border-b border-border-subtle bg-white/80 dark:bg-transparent dark:border-white/5 backdrop-blur-sm transition-colors duration-300">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+                    COMMAND CENTER
+                    <span
+                        class="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-50 text-primary border border-blue-100 dark:bg-electric-blue/20 dark:text-electric-blue dark:border-electric-blue/30 tracking-widest hidden md:inline-block"
+                        id="ty-status-badges">SYS.ONLINE</span>
+                </h1>
+                <p
+                    class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono tracking-wider flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-success-green animate-pulse"></span>
+                    TAARYA AUTONOMOUS RAG CO-PILOT V2.4
+                </p>
+            </div>
+            <div class="flex items-center gap-6">
+                <div
+                    class="flex items-center gap-3 px-4 py-2 bg-slate-50 dark:bg-navy-accent/50 rounded-full border border-slate-200 dark:border-white/5">
+                    <span
+                        class="material-icons text-primary dark:text-success-green text-sm flex items-center justify-center">cloud_queue</span>
+                    <span class="text-xs font-mono text-slate-600 dark:text-slate-300 pt-0.5">AGENT: <span
+                            class="text-slate-900 dark:text-white font-bold" id="ty-agent-status">ONLINE</span></span>
+                </div>
+                <!-- System Load -->
+                <div class="flex items-center gap-3 text-right hidden lg:flex">
+                    <div class="text-xs">
+                        <div class="text-slate-500 dark:text-slate-400">System Load</div>
+                        <div class="text-primary dark:text-holo-cyan font-mono">14%</div>
+                    </div>
+                    <div class="w-24 h-1 bg-slate-200 dark:bg-navy-accent rounded-full overflow-hidden">
+                        <div
+                            class="h-full bg-primary dark:bg-holo-cyan w-[14%] dark:shadow-[0_0_10px_rgba(0,242,255,0.8)]">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col gap-6 relative z-10">
+            <!-- Top Stat Cards (from Light Mode) -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 shrink-0">
+                <div
+                    class="bg-white dark:bg-panel-dark/60 p-5 rounded-xl shadow-soft border border-slate-100 dark:border-white/5 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span
+                            class="material-icons text-6xl text-primary">article</span></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">ArXiv Papers</p>
+                        <h3 class="text-3xl font-bold text-slate-800 dark:text-white mt-1">2,481</h3>
+                    </div>
+                    <div
+                        class="flex items-center text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 w-fit px-2 py-1 rounded">
+                        <span class="material-icons text-[14px] mr-1">trending_up</span>+12% this week
+                    </div>
+                </div>
+                <div
+                    class="bg-white dark:bg-panel-dark/60 p-5 rounded-xl shadow-soft border border-slate-100 dark:border-white/5 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span
+                            class="material-icons text-6xl text-accent-teal">stars</span></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Star Objects</p>
+                        <h3 class="text-3xl font-bold text-slate-800 dark:text-white mt-1" id="ty-star-count">...</h3>
+                    </div>
+                    <div class="text-xs font-medium text-slate-500">Gaia DR3 + SIMBAD</div>
+                </div>
+                <div
+                    class="bg-white dark:bg-panel-dark/60 p-5 rounded-xl shadow-soft border border-slate-100 dark:border-white/5 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><span
+                            class="material-icons text-6xl text-accent-gold">hub</span></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Graph Nodes</p>
+                        <h3 class="text-3xl font-bold text-slate-800 dark:text-white mt-1">8,205</h3>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div class="bg-accent-gold h-full rounded-full w-3/4"></div>
+                    </div>
+                </div>
+                <div
+                    class="bg-gradient-to-br from-primary to-blue-600 p-5 rounded-xl shadow-lg shadow-blue-200 dark:shadow-none text-white flex flex-col justify-between h-32 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 opacity-20"><span
+                            class="material-icons text-8xl">auto_awesome</span></div>
+                    <div>
+                        <p class="text-xs font-bold text-blue-100 uppercase tracking-wider">System Status</p>
+                        <h3 class="text-xl font-bold mt-1">All Systems Optimal</h3>
+                    </div>
+                    <button
+                        class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-xs font-bold py-1.5 px-3 rounded w-fit transition-colors">Run
+                        Diagnostics</button>
+                </div>
+            </div>
+
+            <!-- Command Bar (from Dark Mode) -->
+            <div class="w-full shrink-0">
+                <div
+                    class="glass-panel command-bar-glow p-1 rounded-2xl flex items-center relative overflow-hidden group bg-white dark:bg-transparent">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-blue-50 via-transparent to-blue-50/50 dark:from-electric-blue/10 dark:via-transparent dark:to-electric-blue/5 pointer-events-none">
+                    </div>
+                    <div class="pl-6 pr-4 py-4 flex-1">
+                        <label
+                            class="block text-[10px] font-bold text-primary dark:text-electric-blue uppercase tracking-widest mb-1">Target
+                            Query / Mission Directive</label>
+                        <input id="ty-mission-input"
+                            class="w-full bg-transparent border-none text-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-0 p-0 font-display"
+                            placeholder="Initiate research sequence: exoplanet atmospheres in sectors 4-9..."
+                            type="text" />
+                    </div>
+                    <div class="pr-2 flex items-center gap-2">
+                        <button
+                            class="p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"><span
+                                class="material-icons">mic</span></button>
+                        <button id="ty-engage-btn"
+                            class="bg-primary hover:bg-blue-600 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 dark:shadow-[0_0_20px_rgba(37,71,244,0.4)] transition-all hover:scale-105 active:scale-95">
+                            <span class="material-icons text-sm">rocket_launch</span>ENGAGE
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Layout: 3 Columns -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[400px]">
+                <!-- Left: Active Missions -->
+                <div class="col-span-1 lg:col-span-4 flex flex-col gap-4">
+                    <h2
+                        class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-icons text-sm">memory</span> Active Missions
+                    </h2>
+                    <div class="holo-card p-5 rounded-xl">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-electric-blue/20 text-primary dark:text-electric-blue flex items-center justify-center border border-blue-100 dark:border-electric-blue/30">
+                                    <span class="material-symbols-outlined">database</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-slate-800 dark:text-white">Gaia DR3 Ingestion</h3>
+                                    <p class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">TASK-ID: #8821-A
+                                    </p>
+                                </div>
+                            </div>
+                            <span
+                                class="text-[10px] bg-blue-50 dark:bg-electric-blue/20 text-primary dark:text-electric-blue px-2 py-1 rounded border border-blue-100 dark:border-electric-blue/20 animate-pulse font-bold">PROCESSING</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                                <span>Cross-referencing parallaxes</span><span>78%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 dark:bg-navy-accent h-1.5 rounded-full overflow-hidden">
+                                <div
+                                    class="h-full bg-primary bg-gradient-to-r dark:from-electric-blue dark:to-holo-cyan w-[78%] dark:shadow-[0_0_10px_rgba(0,242,255,0.5)]">
+                                </div>
+                            </div>
+                            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono">ETA: 04m 12s</span>
+                        </div>
+                    </div>
+                    <div class="holo-card p-5 rounded-xl">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-100 dark:border-purple-500/30">
+                                    <span class="material-symbols-outlined">psychology</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-slate-800 dark:text-white">Semantic Linking</h3>
+                                    <p class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">TASK-ID: #9902-C
+                                    </p>
+                                </div>
+                            </div>
+                            <span
+                                class="text-[10px] bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 px-2 py-1 rounded border border-slate-200 dark:border-white/5 font-bold">QUEUED</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400"><span>ArXiv
+                                    Abstract Analysis</span><span>Waiting...</span></div>
+                            <div class="w-full bg-slate-100 dark:bg-navy-accent h-1.5 rounded-full overflow-hidden">
+                                <div class="h-full bg-slate-300 dark:bg-slate-600 w-[0%]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center: Stellar Cartography (always dark visual) -->
+                <div class="col-span-1 lg:col-span-4 flex flex-col gap-4">
+                    <div class="flex justify-between items-end">
+                        <h2 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                            Stellar Cartography</h2>
+                        <div class="flex gap-2">
+                            <button
+                                class="px-2 py-1 text-[10px] bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded text-slate-600 dark:text-slate-300 transition-colors">MW-GALAXY</button>
+                            <button
+                                class="px-2 py-1 text-[10px] bg-blue-50 dark:bg-electric-blue/20 rounded text-primary dark:text-electric-blue border border-blue-100 dark:border-electric-blue/30 font-bold">LOCAL-CLUSTER</button>
+                        </div>
+                    </div>
+                    <div
+                        class="flex-1 rounded-2xl border border-slate-200 dark:border-white/10 bg-black relative overflow-hidden group shadow-[inset_0_0_40px_rgba(0,0,0,0.8)] min-h-[300px]">
+                        <div class="absolute inset-0 flex items-center justify-center galaxy-spin opacity-60">
+                            <div
+                                class="w-[300px] lg:w-[500px] h-[300px] lg:h-[500px] rounded-full bg-gradient-to-tr from-transparent via-electric-blue/20 to-transparent blur-xl">
+                            </div>
+                            <div
+                                class="w-[200px] lg:w-[400px] h-[100px] lg:h-[200px] border border-white/5 rounded-[50%] absolute transform rotate-45">
+                            </div>
+                            <div
+                                class="w-[200px] lg:w-[400px] h-[100px] lg:h-[200px] border border-white/5 rounded-[50%] absolute transform -rotate-45">
+                            </div>
+                        </div>
+                        <div
+                            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full blur-[10px] z-10">
+                        </div>
+                        <div
+                            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white rounded-full z-20">
+                        </div>
+                        <div
+                            class="absolute top-[30%] left-[60%] flex flex-col items-center group/point cursor-pointer z-30">
+                            <div class="w-2 h-2 bg-star-gold rounded-full shadow-[0_0_10px_#ffcc33] animate-pulse">
+                            </div>
+                            <div
+                                class="absolute top-3 left-1/2 -translate-x-1/2 bg-black/80 border border-star-gold/30 px-2 py-1 rounded text-[9px] text-star-gold whitespace-nowrap opacity-0 group-hover/point:opacity-100 transition-opacity pointer-events-none">
+                                PROXIMA B</div>
+                        </div>
+                        <div class="absolute bottom-[25%] left-[35%] z-30">
+                            <div class="w-1.5 h-1.5 bg-holo-cyan rounded-full shadow-[0_0_10px_#00f2ff]"></div>
+                        </div>
+                        <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center z-40">
+                            <div class="flex gap-2">
+                                <button
+                                    class="p-1.5 rounded-lg bg-black/50 border border-white/10 text-slate-400 hover:text-white"><span
+                                        class="material-icons text-sm">zoom_in</span></button>
+                                <button
+                                    class="p-1.5 rounded-lg bg-black/50 border border-white/10 text-slate-400 hover:text-white"><span
+                                        class="material-icons text-sm">zoom_out</span></button>
+                            </div>
+                            <div class="text-[10px] font-mono text-slate-400">FOV: 45°</div>
+                        </div>
+                        <div class="scan-line"></div>
+                    </div>
+                </div>
+
+                <!-- Right: Discovery Feed -->
+                <div class="col-span-1 lg:col-span-4 flex flex-col gap-4">
+                    <div class="flex justify-between items-center">
+                        <h2
+                            class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-icons text-sm text-accent-gold dark:text-star-gold">rss_feed</span>
+                            Discovery Feed
+                        </h2>
+                        <button
+                            class="text-[10px] font-bold text-primary dark:text-electric-blue hover:text-blue-700 dark:hover:text-white transition-colors">VIEW
+                            ALL</button>
+                    </div>
+                    <div id="ty-discovery-feed" class="flex-1 overflow-y-auto pr-1 space-y-3">
+                        <!-- Populated by JS -->
+                        <div class="text-sm text-slate-500 text-center py-8">Loading papers...</div>
+                    </div>
+                    <div
+                        class="p-4 rounded-xl glass-panel mt-auto border-t-2 border-t-alert-red dark:border-t-alert-red bg-white dark:bg-transparent">
+                        <h3 class="text-[10px] font-bold text-alert-red uppercase tracking-widest mb-2">System Alert
+                        </h3>
+                        <div class="flex items-start gap-3">
+                            <span class="material-icons text-alert-red text-lg">warning</span>
+                            <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-tight">New discrepancy
+                                found in Star ID 4421 between SIMBAD and recent ArXiv preprint.<br />
+                                <button
+                                    class="text-primary dark:text-electric-blue underline mt-1 hover:text-blue-700 dark:hover:text-white font-medium">Review
+                                    Diff</button>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function toggleMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+    </script>
+
+    <!-- TaarYa API wiring -->
+    <script src="/static/taarya-api.js"></script>
+    <script>
+        (function () {
+            // Stats bar
+            async function loadStats() {
+                try {
+                    const stats = await TaarYa.api.stats();
+                    const pgStar = document.getElementById('ty-star-count');
+                    const statusBadges = document.getElementById('ty-status-badges');
+                    if (pgStar && stats.postgresql && stats.postgresql.total_stars != null)
+                        pgStar.textContent = stats.postgresql.total_stars.toLocaleString();
+                    if (statusBadges) {
+                        statusBadges.innerHTML =
+                            TaarYa.render.statusBadge('DB', stats.postgresql) + ' ' +
+                            TaarYa.render.statusBadge('Qdrant', stats.qdrant) + ' ' +
+                            TaarYa.render.statusBadge('Neo4j', stats.neo4j);
+                    }
+                } catch (e) { console.warn('Stats error:', e); }
+            }
+
+            // Discovery Feed 
+            async function loadFeed() {
+                const feed = document.getElementById('ty-discovery-feed');
+                if (!feed) return;
+                feed.innerHTML = TaarYa.render.spinner();
+                try {
+                    const res = await TaarYa.api.searchPapers('stellar evolution exoplanet', 5);
+                    if (!res.results || !res.results.length) {
+                        feed.innerHTML = TaarYa.render.emptyState('No papers indexed yet');
+                        return;
+                    }
+                    // For the command center feed, we want small styled cards
+                    feed.innerHTML = res.results.map(p => {
+                        const payload = p.payload || p; // Handle both nested payload and flat structure
+                        const authors = payload.authors?.split(',').slice(0, 2).join(', ') ?? 'Unknown';
+                        const title = payload.title || 'Untitled Paper';
+                        const arxivId = payload.arxiv_id || 'Unknown';
+                        const pubDate = payload.published_date ? new Date(payload.published_date).toLocaleDateString() : '';
+
+                        return `
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 hover:border-accent-gold/50 dark:hover:border-star-gold/50 transition-all cursor-pointer group" onclick="window.open('https://arxiv.org/abs/${arxivId}', '_blank')">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[10px] font-mono font-bold text-accent-gold dark:text-star-gold bg-accent-gold/10 dark:bg-star-gold/10 px-1.5 py-0.5 rounded">arXiv:${arxivId}</span>
+                                <span class="text-[9px] text-slate-400">${pubDate}</span>
+                            </div>
+                            <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200 leading-snug group-hover:text-slate-900 dark:group-hover:text-white mb-2 line-clamp-2">${title}</h4>
+                            <div class="flex gap-2 items-center"><span class="w-1.5 h-1.5 rounded-full bg-primary dark:bg-holo-cyan"></span><span class="text-[9px] text-slate-500 dark:text-slate-400">${authors}...</span></div>
+                        </div>`;
+                    }).join('');
+                } catch (e) { feed.innerHTML = TaarYa.render.emptyState('Backend unavailable'); }
+            }
+
+            // ENGAGE button → Agentic Workspace
+            function wireEngageButton() {
+                const btn = document.getElementById('ty-engage-btn');
+                const input = document.getElementById('ty-mission-input');
+                if (!btn || !input) return;
+                btn.addEventListener('click', () => {
+                    const q = input.value.trim();
+                    if (!q) return;
+                    // Navigate to agentic_workspace instead of research_chat
+                    window.location.href = '/static/agentic_workspace.html?q=' + encodeURIComponent(q);
+                });
+                input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+            }
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', () => {
+                loadStats();
+                loadFeed();
+                wireEngageButton();
+            });
+        })();
+    </script>
+</body>
+
+</html>

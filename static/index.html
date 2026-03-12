@@ -195,29 +195,89 @@
 
             <!-- Main Nav -->
             <nav class="space-y-1">
-                <a href="/"
+                <a href="/static/command_center.html"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-200 dark:bg-white/5 hover:bg-gray-300 dark:hover:bg-white/10 transition-all group sidebar-item-active"
-                    title="Ask / Dashboard">
-                    <span class="material-icons text-xl text-primary transition-colors">chat_bubble_outline</span>
-                    <span class="text-sm font-medium sidebar-text text-black dark:text-primary">Ask</span>
+                    title="Research Command Center">
+                    <span class="material-icons text-xl text-primary transition-colors">dashboard</span>
+                    <span class="text-sm font-medium sidebar-text text-black dark:text-primary">Command Center</span>
                 </a>
-                <a href="/static/explore.html"
+                <a href="/static/agentic_workspace.html"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
-                    title="Explore">
-                    <span class="material-icons text-xl group-hover:text-primary transition-colors">explore</span>
-                    <span class="text-sm font-medium sidebar-text">Explore</span>
+                    title="Agentic Workspace">
+                    <span class="material-icons text-xl group-hover:text-primary transition-colors">psychology</span>
+                    <span class="text-sm font-medium sidebar-text">Agentic Workspace</span>
                 </a>
-                <a href="/static/analysis.html"
+            </nav>
+
+            <!-- Divider -->
+            <div class="h-[1px] bg-white/5 mx-2"></div>
+
+            <!-- Research Tools Section -->
+            <section>
+                <h3
+                    class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2 px-2 sidebar-section-title flex items-center gap-1">
+                    <span class="material-icons text-xs">science</span>
+                    <span class="sidebar-text">Research Tools</span>
+                </h3>
+                <nav class="space-y-1">
+                    <a href="/static/command_center.html"
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
+                        title="Research Command Center">
+                        <span class="material-icons text-lg group-hover:text-primary transition-colors">dashboard</span>
+                        <span class="text-xs font-medium sidebar-text">Command Center</span>
+                    </a>
+                    <a href="/static/agentic_workspace.html"
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
+                        title="Agentic Workspace Sandbox">
+                        <span
+                            class="material-icons text-lg group-hover:text-primary transition-colors">psychology</span>
+                        <span class="text-xs font-medium sidebar-text">Agentic Workspace</span>
+                    </a>
+                    <a href="/static/kg_explorer.html"
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
+                        title="Knowledge Graph Explorer">
+                        <span class="material-icons text-lg group-hover:text-primary transition-colors">hub</span>
+                        <span class="text-xs font-medium sidebar-text">Knowledge Graph</span>
+                    </a>
+                    <a href="/static/literature_browser.html"
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
+                        title="Literature & Archive Browser">
+                        <span
+                            class="material-icons text-lg group-hover:text-primary transition-colors">auto_stories</span>
+                        <span class="text-xs font-medium sidebar-text">Literature Browser</span>
+                    </a>
+                    <a href="/static/code_console.html"
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
+                        title="Code & Analysis Console">
+                        <span class="material-icons text-lg group-hover:text-primary transition-colors">terminal</span>
+                        <span class="text-xs font-medium sidebar-text">Code Console</span>
+                    </a>
+                    <a href="/static/stellar_detail.html"
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
+                        title="Stellar Object Detail View">
+                        <span class="material-icons text-lg group-hover:text-primary transition-colors">stars</span>
+                        <span class="text-xs font-medium sidebar-text">Stellar Detail</span>
+                    </a>
+                </nav>
+            </section>
+
+            <!-- Divider -->
+            <div class="h-[1px] bg-white/5 mx-2"></div>
+
+            <!-- Profile & More -->
+            <nav class="space-y-1">
+                <a href="/static/profile.html"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
-                    title="System">
-                    <span class="material-icons text-xl group-hover:text-primary transition-colors">query_stats</span>
-                    <span class="text-sm font-medium sidebar-text">System</span>
+                    title="Profile & Credentials">
+                    <span
+                        class="material-icons text-xl group-hover:text-primary transition-colors">account_circle</span>
+                    <span class="text-sm font-medium sidebar-text">Profile</span>
                 </a>
-                <a href="/static/settings.html"
+                <a href="/static/onboarding.html"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
-                    title="Settings">
-                    <span class="material-icons text-xl group-hover:text-primary transition-colors">settings</span>
-                    <span class="text-sm font-medium sidebar-text">Settings</span>
+                    title="Get Started / Onboarding">
+                    <span class="material-icons text-xl group-hover:text-primary transition-colors">rocket_launch</span>
+                    <span class="text-sm font-medium sidebar-text">Get Started</span>
                 </a>
             </nav>
 

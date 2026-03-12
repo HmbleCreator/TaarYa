@@ -1,0 +1,250 @@
+/* ═══════════════════════════════════════════════════════════
+   TaarYa — Shared Design System
+   Import this in every screen: <link rel="stylesheet" href="/static/taarya.css">
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Design Tokens ─────────────────────────────────────── */
+:root {
+    /* Brand */
+    --ty-primary: #2547f4;
+    --ty-star-cyan: #00f2ff;
+    --ty-paper-gold: #ffcc33;
+    --ty-agent-amber: #ffb703;
+    --ty-success: #10b981;
+
+    /* Dark surfaces */
+    --ty-bg-dark: #0a0c16;
+    --ty-bg-panel: #131625;
+    --ty-bg-nav: #080a12;
+    --ty-bg-ide: #0d1117;
+    --ty-border-dark: rgba(255, 255, 255, 0.05);
+    --ty-border-primary: rgba(37, 71, 244, 0.2);
+
+    /* Light surfaces */
+    --ty-bg-light: #ffffff;
+    --ty-bg-subtle: #f8fafc;
+    --ty-border-light: #e2e8f0;
+    --ty-text-main: #0f172a;
+    --ty-text-muted: #64748b;
+
+    /* Type */
+    --ty-font-display: 'Space Grotesk', sans-serif;
+    --ty-font-body: 'Inter', sans-serif;
+    --ty-font-mono: 'Fira Code', 'JetBrains Mono', monospace;
+
+    /* Radii */
+    --ty-radius-sm: 6px;
+    --ty-radius-md: 10px;
+    --ty-radius-lg: 16px;
+
+    /* Shadows */
+    --ty-shadow-neon-cyan: 0 0 15px rgba(0, 242, 255, 0.25);
+    --ty-shadow-neon-blue: 0 0 15px rgba(37, 71, 244, 0.3);
+    --ty-shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* ─── Base Reset ─────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--ty-font-display);
+    overflow: hidden;
+    margin: 0;
+}
+
+/* ─── Scrollbars ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ty-primary);
+}
+
+.ty-light-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+}
+
+.ty-light-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ─── Shared Sidebar ─────────────────────────────────────── */
+.ty-sidebar {
+    width: 64px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 0;
+    background: var(--ty-bg-nav);
+    border-right: 1px solid var(--ty-border-primary);
+    z-index: 50;
+}
+
+.ty-sidebar-logo {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, rgba(37, 71, 244, 0.25), rgba(37, 71, 244, 0.05));
+    border: 1px solid rgba(37, 71, 244, 0.5);
+    border-radius: var(--ty-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: var(--ty-shadow-neon-blue);
+    margin-bottom: 32px;
+}
+
+.ty-sidebar-logo .material-icons {
+    color: var(--ty-primary);
+    font-size: 20px;
+}
+
+.ty-nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 1;
+    align-items: center;
+}
+
+.ty-nav-link {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--ty-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+    text-decoration: none;
+    transition: color 0.2s, background 0.2s;
+}
+
+.ty-nav-link:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.ty-nav-link.active {
+    color: var(--ty-primary);
+    background: rgba(37, 71, 244, 0.1);
+    border: 1px solid rgba(37, 71, 244, 0.25);
+}
+
+.ty-nav-link .material-icons {
+    font-size: 20px;
+}
+
+.ty-sidebar-bottom {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+}
+
+.ty-mode-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--ty-radius-sm);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+    transition: color 0.2s, background 0.2s;
+}
+
+.ty-mode-btn:hover {
+    color: var(--ty-star-cyan);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.ty-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, var(--ty-primary));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: block;
+}
+
+/* ─── Glassmorphism util ─────────────────────────────────── */
+.ty-glass-dark {
+    background: rgba(13, 16, 28, 0.80);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ty-glass-light {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--ty-border-light);
+}
+
+/* ─── Star-field background ──────────────────────────────── */
+.ty-star-bg {
+    background-color: #05060a;
+    background-image:
+        radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.045) 1px, transparent 0);
+    background-size: 38px 38px;
+}
+
+/* ─── Light grid background ──────────────────────────────── */
+.ty-grid-light {
+    background-color: #f8fafc;
+    background-image:
+        linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+        linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+/* ─── Badge / status dot ─────────────────────────────────── */
+.ty-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ty-success);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    animation: ty-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ty-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* ─── Transitions ────────────────────────────────────────── */
+.ty-transition {
+    transition: all 0.2s ease;
+}
+
+.ty-transition-slow {
+    transition: all 0.35s ease;
+}

@@ -1,282 +1,248 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
-
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>TaarYa - Explore</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#4fc3f7",
-                        "secondary": "#7c4dff",
-                        "background-dark": "#0a0e1a",
-                        "surface-dark": "#0d1424",
-                        "surface-glass": "rgba(255, 255, 255, 0.05)",
-                    },
-                    fontFamily: {
-                        "display": ["Inter", "sans-serif"],
-                        "mono": ["JetBrains Mono", "monospace"],
-                    },
-                    backgroundImage: {
-                        'space-gradient': 'radial-gradient(circle at 10% 20%, rgba(124, 77, 255, 0.12) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(79, 195, 247, 0.08) 0%, transparent 40%)',
-                    },
-                    boxShadow: {
-                        'glow': '0 0 20px rgba(79, 195, 247, 0.15)',
-                    }
-                },
-            },
-        }
-    </script>
-    <style type="text/tailwindcss">
-        @layer base {
-            ::-webkit-scrollbar { width: 6px; height: 6px; }
-            ::-webkit-scrollbar-track { background: transparent; }
-            ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-            ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
-        }
-        .star-pattern {
-            background-image: 
-                radial-gradient(white, rgba(255,255,255,.2) 1px, transparent 2px),
-                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px);
-            background-size: 400px 400px, 250px 250px;
-            background-position: 0 0, 150px 150px;
-        }
-        .sidebar-item-active {
-            @apply bg-blue-50 dark:bg-primary/10 border-l-2 border-primary text-primary;
-        }
-        .sidebar-collapsed .sidebar-text { display: none; }
-        .sidebar-collapsed .sidebar-section-title { display: none; }
-        .sidebar-collapsed .history-list { display: none; }
-        .glass-input {
-            @apply bg-gray-50 dark:bg-surface-dark/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all rounded-lg;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaarYa — Explore</title>
+  <meta name="description" content="Search stars and papers in the TaarYa astronomy catalog.">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 </head>
+<body>
+<div class="app-layout">
 
-<body
-    class="bg-gray-50 dark:bg-background-dark text-gray-900 dark:text-white font-display h-screen flex overflow-hidden selection:bg-primary/30 transition-colors duration-200">
-    <div class="fixed inset-0 z-0 bg-space-gradient pointer-events-none opacity-50 dark:opacity-100"></div>
-    <div class="fixed inset-0 z-0 star-pattern opacity-10 dark:opacity-20 pointer-events-none"></div>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <button id="sidebar-toggle" class="sidebar-toggle"></button>
+    <div class="sidebar-brand">
+      <img src="/static/TaarYaLogo.png" alt="TaarYa" style="width:36px;height:36px;border-radius:8px;object-fit:contain;filter:var(--logo-filter);margin-bottom:8px;">
+      <h1>TaarYa</h1>
+      <p>Star Catalog Intelligence</p>
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="/static/dashboard.html">
+        <span class="material-icons">dashboard</span> Dashboard
+      </a></li>
+      <li><a href="/static/explore.html" class="active">
+        <span class="material-icons">explore</span> Explore
+      </a></li>
+      <li><a href="/static/chat.html">
+        <span class="material-icons">smart_toy</span> Chat
+      </a></li>
+    </ul>
+    <div class="sidebar-footer"><span class="version">v0.2.0</span></div>
+  </aside>
 
-    <!-- Sidebar -->
-    <aside id="mainSidebar"
-        class="w-64 transition-all duration-300 border-r border-gray-200 dark:border-white/5 bg-white/80 dark:bg-surface-dark/60 flex flex-col shrink-0 overflow-hidden relative backdrop-blur-md z-50">
-        <!-- Header / Logo -->
-        <div class="p-4 flex items-center justify-between border-b border-white/5 h-16">
-            <div class="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-                <div
-                    class="w-8 h-8 rounded bg-gradient-to-tr from-secondary to-primary flex items-center justify-center flex-shrink-0 shadow-glow-sm">
-                    <span class="material-icons text-white text-lg">auto_awesome</span>
-                </div>
-                <div class="sidebar-text flex flex-col transition-opacity duration-200">
-                    <h1
-                        class="text-lg font-bold tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-primary to-white">
-                        TaarYa</h1>
-                    <span class="text-[9px] uppercase tracking-widest text-primary/60 font-bold">Astro AI</span>
-                </div>
-            </div>
-            <button id="sidebarToggle" class="text-gray-400 hover:text-white transition-colors p-1">
-                <span class="material-icons text-sm">menu_open</span>
-            </button>
-        </div>
+  <!-- Main -->
+  <main class="main-content">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <h2>Explore</h2>
+        <p>Search the star catalog &amp; paper database</p>
+      </div>
+      <button id="theme-toggle" style="background:var(--bg-surface);border:1px solid var(--border);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);transition:all .2s;"></button>
+    </div>
 
-        <!-- Navigation -->
-        <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-            <!-- Main Nav -->
-            <nav class="space-y-1">
-                <a href="/"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
-                    title="Ask / Dashboard">
-                    <span
-                        class="material-icons text-xl group-hover:text-primary transition-colors">chat_bubble_outline</span>
-                    <span class="text-sm font-medium sidebar-text">Ask</span>
-                </a>
-                <a href="/static/explore.html"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-200 dark:bg-white/5 hover:bg-gray-300 dark:hover:bg-white/10 transition-all group sidebar-item-active"
-                    title="Explore">
-                    <span class="material-icons text-xl text-primary transition-colors">explore</span>
-                    <span class="text-sm font-medium sidebar-text text-black dark:text-primary">Explore</span>
-                </a>
-                <a href="/static/analysis.html"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
-                    title="System">
-                    <span class="material-icons text-xl group-hover:text-primary transition-colors">query_stats</span>
-                    <span class="text-sm font-medium sidebar-text">System</span>
-                </a>
-                <a href="/static/settings.html"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
-                    title="Settings">
-                    <span class="material-icons text-xl group-hover:text-primary transition-colors">settings</span>
-                    <span class="text-sm font-medium sidebar-text">Settings</span>
-                </a>
-            </nav>
+    <!-- Tabs -->
+    <div class="tabs" id="explore-tabs">
+      <button class="tab active" data-tab="stars">
+        <span class="material-icons" style="font-size:16px;">star</span> Stars
+      </button>
+      <button class="tab" data-tab="papers">
+        <span class="material-icons" style="font-size:16px;">article</span> Papers
+      </button>
+    </div>
 
-            <!-- Divider -->
-            <div class="h-[1px] bg-white/5 mx-2"></div>
+    <!-- ───── Stars Panel ───── -->
+    <div class="tab-panel active" id="panel-stars">
 
-            <!-- History Section -->
-            <section class="history-list">
-                <h3
-                    class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3 px-2 flex items-center justify-between sidebar-section-title">
-                    Saved Regions
-                    <span class="material-icons text-[14px]">bookmarks</span>
-                </h3>
-                <div class="space-y-1">
-                    <button
-                        class="w-full text-left px-3 py-2 rounded-md text-xs text-gray-400 hover:text-white hover:bg-white/5 truncate transition-all flex items-center gap-2 group">
-                        <span
-                            class="material-icons text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">place</span>
-                        Region 45, 0.5
-                    </button>
-                </div>
-            </section>
-        </div>
+      <!-- Cone search form -->
+      <div class="card" id="cone-form-card">
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:14px;">Cone Search</h3>
+        <form id="cone-form" class="flex gap-4" style="flex-wrap:wrap;align-items:flex-end;">
+          <div class="input-group">
+            <label>RA (°)</label>
+            <input type="number" id="cone-ra" step="any" placeholder="0–360" required>
+          </div>
+          <div class="input-group">
+            <label>Dec (°)</label>
+            <input type="number" id="cone-dec" step="any" placeholder="-90–90" required>
+          </div>
+          <div class="input-group">
+            <label>Radius (°)</label>
+            <input type="number" id="cone-radius" step="any" value="0.5" min="0.001" max="10" required>
+          </div>
+          <div class="input-group">
+            <label>Mag limit</label>
+            <input type="number" id="cone-mag" step="any" placeholder="optional">
+          </div>
+          <div class="input-group">
+            <label>Limit</label>
+            <input type="number" id="cone-limit" value="100" min="1" max="1000">
+          </div>
+          <button type="submit" class="btn btn-primary" style="height:42px;">Search</button>
+        </form>
+      </div>
 
-        <!-- User Profile (Bottom) -->
-        <div
-            class="p-4 border-t border-white/5 flex items-center gap-3 overflow-hidden cursor-pointer hover:bg-white/5 transition-colors">
-            <img alt="User" class="w-8 h-8 rounded-full border border-white/20 flex-shrink-0"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPM7Ss5zF4TAMyNXPL8z1Kz7YnLez5acgGS8xFywaltOC-sHxt3rAQlMKC4ipKBeg8R6YHCDgrF_iqTJRpOSiytM_srkiMdDdU8__Dpq3lIjOuE93sNgwi7yRL-IjGJu5XDTwbaCDKoDbd5GrL45gnlMBBBRaF-Z3cq7PpJN322H5xd-ADbYBdsiNgQCe8UhtsD_GGYxSuHtosItTsR9cIwwjSmsIW3L0GTjKzFjuSGegz_8vs_K0X9GXLOPaAVIrBpeRfqbyB8lU" />
-            <div class="sidebar-text">
-                <div class="text-xs font-bold text-white">Researcher</div>
-                <div class="text-[10px] text-primary">Pro Account</div>
-            </div>
-        </div>
-    </aside>
+      <!-- Star lookup -->
+      <div class="card mt-4">
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:14px;">Star Lookup</h3>
+        <form id="lookup-form" class="flex gap-4" style="align-items:flex-end;">
+          <div class="input-group" style="flex:1;">
+            <label>Gaia Source ID</label>
+            <input type="text" id="lookup-id" placeholder="e.g. 5933505984897003392" required>
+          </div>
+          <button type="submit" class="btn btn-secondary" style="height:42px;">Lookup</button>
+        </form>
+      </div>
 
-    <!-- Main Content Area -->
-    <main
-        class="flex-1 flex flex-col min-w-0 bg-white/50 dark:bg-background-dark/20 relative p-6 lg:px-12 space-y-6 overflow-y-auto transition-colors duration-200">
-        <header
-            class="flex items-center justify-between h-16 shrink-0 border-b border-gray-200 dark:border-white/5 bg-white/80 dark:bg-transparent -mx-6 px-6 lg:-mx-12 lg:px-12 sticky top-0 z-40 backdrop-blur-sm mb-6">
-            <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-2xl">blur_on</span>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Spatial Explorer</h2>
-            </div>
-            <div class="flex gap-2">
-                <span
-                    class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold border border-primary/20"
-                    id="resultsCount">0 RESULTS</span>
-            </div>
-        </header>
+      <!-- Results -->
+      <div id="stars-results" class="mt-4"></div>
+    </div>
 
-        <!-- Forms -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Cone Search -->
-            <div
-                class="lg:col-span-2 bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl p-5 shadow-lg">
-                <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">Cone
-                    Search Parameters</h3>
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div>
-                        <label
-                            class="block text-[10px] font-bold text-gray-700 dark:text-gray-500 mb-1 px-1 uppercase">RA
-                            (deg)</label>
-                        <input id="searchRA" class="glass-input w-full px-3 py-2 text-sm font-mono" placeholder="0.0"
-                            type="text" value="45.0" />
-                    </div>
-                    <div>
-                        <label
-                            class="block text-[10px] font-bold text-gray-700 dark:text-gray-500 mb-1 px-1 uppercase">Dec
-                            (deg)</label>
-                        <input id="searchDec" class="glass-input w-full px-3 py-2 text-sm font-mono" placeholder="0.0"
-                            type="text" value="0.5" />
-                    </div>
-                    <div>
-                        <label
-                            class="block text-[10px] font-bold text-gray-700 dark:text-gray-500 mb-1 px-1 uppercase">Radius
-                            (deg)</label>
-                        <input id="searchRadius" class="glass-input w-full px-3 py-2 text-sm font-mono" type="number"
-                            value="1.0" />
-                    </div>
-                    <div>
-                        <label
-                            class="block text-[10px] font-bold text-gray-700 dark:text-gray-500 mb-1 px-1 uppercase">G-mag
-                            Limit</label>
-                        <input id="searchMag" class="glass-input w-full px-3 py-2 text-sm font-mono" type="number"
-                            placeholder="Any" />
-                    </div>
-                </div>
-                <button onclick="runConeSearch()"
-                    class="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white font-bold text-xs py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-                    <span class="material-symbols-outlined text-lg">travel_explore</span>
-                    SEARCH REGION
-                </button>
-            </div>
+    <!-- ───── Papers Panel ───── -->
+    <div class="tab-panel" id="panel-papers">
 
-            <!-- Star Lookup -->
-            <div
-                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl p-5 shadow-lg">
-                <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">Single
-                    Star Lookup</h3>
-                <div class="flex gap-2 mb-4">
-                    <input id="lookupId" class="glass-input flex-grow px-3 py-2 text-sm font-mono"
-                        placeholder="Gaia Source ID..." type="text" />
-                    <button onclick="runStarLookup()"
-                        class="bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-900 dark:text-white p-2.5 rounded-lg border border-gray-200 dark:border-white/10 transition-colors">
-                        <span class="material-icons text-sm">search</span>
-                    </button>
-                </div>
-                <div id="lookupResult"
-                    class="bg-gray-50 dark:bg-background-dark/50 rounded-lg p-3 border border-gray-200 dark:border-white/5 hidden text-xs font-mono">
-                </div>
-            </div>
-        </div>
+      <!-- Semantic search -->
+      <div class="card">
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:14px;">Semantic Search</h3>
+        <form id="paper-search-form" class="flex gap-4" style="align-items:flex-end;">
+          <div class="input-group" style="flex:1;">
+            <label>Query</label>
+            <input type="text" id="paper-q" placeholder="e.g. exoplanet transit spectroscopy" required>
+          </div>
+          <div class="input-group" style="width:80px;">
+            <label>Limit</label>
+            <input type="number" id="paper-limit" value="10" min="1" max="50">
+          </div>
+          <button type="submit" class="btn btn-primary" style="height:42px;">Search</button>
+        </form>
+      </div>
 
-        <!-- Results Table -->
-        <div id="resultsCard"
-            class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl flex flex-col flex-1 overflow-hidden shadow-xl min-h-[400px]">
-            <div class="overflow-auto flex-1">
-                <table class="w-full text-left text-xs text-gray-700 dark:text-gray-300">
-                    <thead class="bg-gray-50 dark:bg-white/5 sticky top-0 backdrop-blur-md">
-                        <tr>
-                            <th
-                                class="p-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-white/10">
-                                Source ID</th>
-                            <th
-                                class="p-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-white/10 text-right">
-                                RA</th>
-                            <th
-                                class="p-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-white/10 text-right">
-                                Dec</th>
-                            <th
-                                class="p-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-white/10 text-right">
-                                G Mag</th>
-                            <th
-                                class="p-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-white/10 text-right">
-                                BP-RP</th>
-                            <th
-                                class="p-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-white/10 text-right">
-                                Parallax</th>
-                            <th
-                                class="p-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-white/10 text-right">
-                                Dist (deg)</th>
-                            <th
-                                class="p-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-white/10 text-center">
-                                Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsBody" class="divide-y divide-gray-100 dark:divide-white/5 font-mono">
-                        <!-- Filled by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
+      <!-- Topic search -->
+      <div class="card mt-4">
+        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:14px;">Topic / Keyword</h3>
+        <form id="topic-form" class="flex gap-4" style="align-items:flex-end;">
+          <div class="input-group" style="flex:1;">
+            <label>Keyword</label>
+            <input type="text" id="topic-kw" placeholder="e.g. magnetar" required>
+          </div>
+          <button type="submit" class="btn btn-secondary" style="height:42px;">Find</button>
+        </form>
+      </div>
 
-    <script src="/static/app.js"></script>
+      <!-- Results -->
+      <div id="papers-results" class="mt-4"></div>
+    </div>
+  </main>
+</div>
+
+<script src="/static/taarya-api.js"></script>
+<script src="/static/theme.js"></script>
+<script>
+(function() {
+  'use strict';
+  const { api, render } = TaarYa;
+
+  /* ── Tab switching ── */
+  document.querySelectorAll('#explore-tabs .tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#explore-tabs .tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ── Star — Cone Search ── */
+  document.getElementById('cone-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const out = document.getElementById('stars-results');
+    out.innerHTML = render.spinner();
+
+    const ra   = parseFloat(document.getElementById('cone-ra').value);
+    const dec  = parseFloat(document.getElementById('cone-dec').value);
+    const rad  = parseFloat(document.getElementById('cone-radius').value);
+    const mag  = document.getElementById('cone-mag').value ? parseFloat(document.getElementById('cone-mag').value) : undefined;
+    const lim  = parseInt(document.getElementById('cone-limit').value) || 100;
+
+    try {
+      const data = await api.coneSearch(ra, dec, rad, { magLimit: mag, limit: lim });
+      const stars = data.stars || [];
+      if (!stars.length) { out.innerHTML = render.emptyState('No stars found in this region.'); return; }
+      out.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">' + data.count + ' star(s) found</div>' +
+        render.resultTable(stars, 25);
+    } catch (err) {
+      out.innerHTML = render.emptyState('Search failed — ' + err.message);
+    }
+  });
+
+  /* ── Star — Lookup ── */
+  document.getElementById('lookup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('lookup-id').value.trim();
+    if (!id) return;
+    const out = document.getElementById('stars-results');
+    out.innerHTML = render.spinner();
+
+    try {
+      const star = await api.lookupStar(id);
+      out.innerHTML = '<div style="max-width:500px;">' + render.starCard(star) + '</div>';
+    } catch (err) {
+      out.innerHTML = render.emptyState('Star not found — ' + err.message);
+    }
+  });
+
+  /* ── Paper — Semantic Search ── */
+  document.getElementById('paper-search-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = document.getElementById('paper-q').value.trim();
+    if (!q) return;
+    const limit = parseInt(document.getElementById('paper-limit').value) || 10;
+    const out = document.getElementById('papers-results');
+    out.innerHTML = render.spinner();
+
+    try {
+      const data = await api.searchPapers(q, limit);
+      const papers = data.results || [];
+      if (!papers.length) { out.innerHTML = render.emptyState('No papers matched "' + q + '".'); return; }
+      out.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">' + data.count + ' paper(s)</div>' +
+        papers.map(p => {
+          const payload = p.payload || p;
+          return render.paperCard({
+            title: payload.title,
+            authors: payload.authors,
+            arxiv_id: payload.arxiv_id,
+            categories: payload.categories,
+            abstract: payload.abstract,
+            published_date: payload.published_date,
+            score: p.score,
+          });
+        }).join('');
+    } catch (err) {
+      out.innerHTML = render.emptyState('Search failed — ' + err.message);
+    }
+  });
+
+  /* ── Paper — Topic / Keyword ── */
+  document.getElementById('topic-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const kw = document.getElementById('topic-kw').value.trim();
+    if (!kw) return;
+    const out = document.getElementById('papers-results');
+    out.innerHTML = render.spinner();
+
+    try {
+      const data = await api.papersByTopic(kw);
+      const papers = data.papers || [];
+      if (!papers.length) { out.innerHTML = render.emptyState('No papers about "' + kw + '".'); return; }
+      out.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">' + data.count + ' paper(s)</div>' +
+        papers.map(p => render.paperCard(p)).join('');
+    } catch (err) {
+      out.innerHTML = render.emptyState('Topic search failed — ' + err.message);
+    }
+  });
+})();
+</script>
 </body>
-
 </html>

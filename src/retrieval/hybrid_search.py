@@ -218,7 +218,19 @@ class HybridSearch:
         
         # PostgreSQL
         try:
-            count = self.spatial.count_in_region(0, 0, 360)
+            # Use a fast standard count count instead of a 360-degree Q3C query
+            # Since Q3C radial query with 360 radius might be invalid or very slow
+            try:
+                from src.database.postgres import postgres_conn
+                from sqlalchemy import text
+                postgres_conn.connect()
+                with postgres_conn.session() as session:
+                    count = session.execute(text("SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname='stars';")).scalar()
+                    if count is None or count < 100:
+                        count = session.execute(text("SELECT COUNT(*) FROM stars")).scalar()
+            except Exception:
+                count = 0
+                
             stats["postgresql"] = {"total_stars": count, "status": "connected"}
         except Exception as e:
             stats["postgresql"] = {"status": "error", "error": str(e)}
