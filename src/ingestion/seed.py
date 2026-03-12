@@ -1,12 +1,17 @@
 """Seed a few well-known sky regions into the local catalog."""
 
 import logging
-import socket
+from datetime import datetime, timezone
 from typing import Dict, List
 
-from astroquery.gaia import Gaia
-from sqlalchemy import text
+from sqlalchemy import text, select
 
+from src.database import postgres_conn
+from src.ingestion.gaia_query import query_gaia_region
+from src.models import Region
+from src.utils.logger import setup_logging
+
+setup_logging()
 logger = logging.getLogger(__name__)
 
 SEED_REGIONS: List[Dict[str, float]] = [
@@ -16,12 +21,38 @@ SEED_REGIONS: List[Dict[str, float]] = [
 ]
 
 
+def _upsert_region(
+    db, name: str, ra: float, dec: float, radius_deg: float, star_count: int
+) -> None:
+    """Insert or update a region record."""
+    from sqlalchemy.dialects.postgresql import insert
+    from src.models import Region
+
+    with db.session() as session:
+        stmt = insert(Region).values(
+            name=name,
+            ra=ra,
+            dec=dec,
+            radius_deg=radius_deg,
+            star_count=star_count,
+            ingested_at=datetime.now(timezone.utc),
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["name"],
+            set_={
+                "ra": stmt.excluded.ra,
+                "dec": stmt.excluded.dec,
+                "radius_deg": stmt.excluded.radius_deg,
+                "star_count": stmt.excluded.star_count,
+                "ingested_at": stmt.excluded.ingested_at,
+            },
+        )
+        session.execute(stmt)
+        session.commit()
+
+
 def seed_catalog(db) -> None:
     """Seed a few famous regions if they are not already present."""
-    Gaia.ROW_LIMIT = 2000
-    Gaia.MAIN_GAIA_TABLE = "gaiadr3.gaia_source"
-    Gaia.TIMEOUT = 30
-
     count_query = text("""
         SELECT COUNT(*)
         FROM stars
@@ -39,108 +70,64 @@ def seed_catalog(db) -> None:
         ON CONFLICT (source_id) DO NOTHING
     """)
 
-    for region in SEED_REGIONS:
-        logger.info(f"Seed region {region['name']}: checking if already loaded...")
-        with db.session() as session:
-            existing = (
-                session.execute(
-                    count_query,
-                    {
-                        "ra": region["ra"],
-                        "dec": region["dec"],
-                        "radius": region["radius_deg"],
-                    },
-                ).scalar()
-                or 0
-            )
+    # Get existing region counts from regions table
+    with db.session() as session:
+        existing_regions = {
+            r.name: r.star_count
+            for r in session.execute(select(Region)).scalars().all()
+        }
 
-        if existing > 0:
-            logger.info(
-                f"Seed region {region['name']}: already loaded ({existing} stars), skipping"
-            )
-            continue
+    for region in SEED_REGIONS:
+        # Get existing star count for this region
+        existing = existing_regions.get(region["name"], 0)
+        offset = existing
+
+        logger.info(
+            f"Seed region {region['name']}: existing={existing}, fetching from offset {offset}..."
+        )
 
         logger.info(f"Seed region {region['name']}: starting Gaia query...")
-        gaia_query = f"""
-            SELECT TOP 2000
-                source_id, ra, dec, parallax, pmra, pmdec, phot_g_mean_mag, bp_rp
-            FROM gaiadr3.gaia_source
-            WHERE CONTAINS(
-                POINT('ICRS', ra, dec),
-                CIRCLE('ICRS', {region["ra"]}, {region["dec"]}, {region["radius_deg"]})
-            ) = 1
-              AND parallax > 0
-              AND phot_g_mean_mag < 18
-        """
 
         try:
-            logger.info(f"Seed region {region['name']}: launching Gaia query...")
-            job = Gaia.launch_job(gaia_query, verbose=False)
-            table = job.get_results()
-            logger.info(
-                f"Seed region {region['name']}: received {len(table)} results from Gaia"
+            rows = query_gaia_region(
+                region["ra"],
+                region["dec"],
+                region["radius_deg"],
+                max_stars=5000,
+                offset=offset,
             )
-        except (socket.timeout, TimeoutError, OSError, Exception) as e:
+        except Exception as e:
             logger.warning(
                 f"Seed region {region['name']}: Gaia query failed ({e}), skipping"
             )
             continue
 
-        rows = []
-        for record in table:
-            try:
-                # Try to access source_id with case-insensitive fallback
-                source_id = None
-                if "source_id" in record.colnames:
-                    source_id = record["source_id"]
-                elif "SOURCE_ID" in record.colnames:
-                    source_id = record["SOURCE_ID"]
-                else:
-                    logger.warning(
-                        f"Seed region {region['name']}: missing source_id column in record, skipping"
-                    )
-                    continue
-
-                rows.append(
-                    {
-                        "source_id": str(source_id),
-                        "ra": float(record["ra"]),
-                        "dec": float(record["dec"]),
-                        "parallax": float(record["parallax"])
-                        if record["parallax"] is not None
-                        else None,
-                        "pmra": float(record["pmra"])
-                        if record["pmra"] is not None
-                        else None,
-                        "pmdec": float(record["pmdec"])
-                        if record["pmdec"] is not None
-                        else None,
-                        "phot_g_mean_mag": float(record["phot_g_mean_mag"])
-                        if record["phot_g_mean_mag"] is not None
-                        else None,
-                        "catalog_source": "GAIA",
-                    }
-                )
-            except (KeyError, ValueError, TypeError) as e:
-                logger.warning(
-                    f"Seed region {region['name']}: error processing record (row {len(rows)}): {e}, skipping"
-                )
-                continue
-
         inserted = 0
         if rows:
             with db.session() as session:
                 for row in rows:
+                    row["catalog_source"] = "GAIA"
                     result = session.execute(insert_query, row)
                     inserted += result.rowcount or 0
                 session.commit()
 
-        logger.info(f"Seed region {region['name']}: inserted {inserted} rows")
+        total_count = existing + inserted
+        logger.info(
+            f"Seed region {region['name']}: inserted {inserted} rows (total: {total_count})"
+        )
+
+        # Upsert region record
+        _upsert_region(
+            db,
+            region["name"],
+            region["ra"],
+            region["dec"],
+            region["radius_deg"],
+            total_count,
+        )
 
 
 if __name__ == "__main__":
-    from src.database import postgres_conn
-
     postgres_conn.connect()
     seed_catalog(postgres_conn)
     postgres_conn.close()

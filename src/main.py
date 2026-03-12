@@ -21,6 +21,7 @@ from src.utils.logger import setup_logging
 from src.database import postgres_conn, qdrant_conn, neo4j_conn
 from src.ingestion.seed import seed_catalog
 from src.ingestion.arxiv_ingest import ingest_arxiv_papers
+from src.api import regions as regions_router
 
 # Setup logging
 setup_logging()
@@ -58,6 +59,14 @@ async def lifespan(app: FastAPI):
     try:
         postgres_conn.connect()
         logger.info("PostgreSQL: connected")
+
+        # Ensure regions table exists
+        from src.models import Base, Region
+        from sqlalchemy import text
+
+        Base.metadata.create_all(postgres_conn.engine)
+        logger.info("Database tables: ensured")
+
         qdrant_conn.connect()
         logger.info("Qdrant: connected")
 
@@ -140,6 +149,7 @@ app.include_router(search_router, prefix="/api")
 app.include_router(stats_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
+app.include_router(regions_router.router, prefix="/api")
 
 
 if __name__ == "__main__":

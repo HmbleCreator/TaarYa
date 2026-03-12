@@ -32,7 +32,8 @@
 
     /* ── API Layer ──────────────────────────────────────────── */
     const api = {
-        stats: () => _get('/api/stats'),
+        stats:   () => _get('/api/stats'),
+        regions: () => _get('/api/regions'),
 
         // Stars
         coneSearch: (ra, dec, radius, { magLimit, minParallax, limit = 100 } = {}) =>
