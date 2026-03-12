@@ -332,13 +332,17 @@
     .thinking-container {
       margin-bottom: 20px;
       animation: msgSlide 0.35s ease;
+      padding: 14px 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
     }
 
     .thinking-header {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
     .thinking-header .status-ring {
@@ -369,6 +373,17 @@
       font-size: 0.65rem;
       color: var(--text-tertiary);
       font-family: 'JetBrains Mono', monospace;
+    }
+
+    .thinking-snapshot {
+      margin: 0 0 12px 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      line-height: 1.55;
     }
 
     /* ── Step Timeline ─────────────────────────────────── */
@@ -411,10 +426,6 @@
       border-color: var(--success);
     }
 
-    .step-item.trace {
-      background: linear-gradient(180deg, var(--bg-surface), transparent);
-    }
-
     .step-tool {
       display: flex;
       align-items: center;
@@ -449,17 +460,73 @@
       gap: 4px;
     }
 
-    .trace-pre {
-      margin-top: 6px;
-      padding: 8px 10px;
-      background: var(--bg-tertiary);
-      border-radius: 6px;
+    .trace-drawer {
+      margin: 14px 0 0 44px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      overflow: hidden;
+    }
+
+    .trace-drawer summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
       color: var(--text-secondary);
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .trace-drawer summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .trace-drawer[open] summary {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .trace-meta {
+      color: var(--text-muted);
+      font-size: 0.62rem;
+      letter-spacing: 0.04em;
+    }
+
+    .trace-log {
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 10px 12px 12px;
+    }
+
+    .trace-line {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.69rem;
       line-height: 1.55;
       white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    .trace-line:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .trace-kind {
+      display: inline-block;
+      margin-bottom: 4px;
+      color: var(--text-tertiary);
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
     /* ── Tool Result Cards ────────────────────────────── */
@@ -838,7 +905,15 @@
             <div class="thinking-sublabel" id="${thinkingId}-sublabel">Analyzing your query...</div>
           </div>
         </div>
+        <div class="thinking-snapshot" id="${thinkingId}-snapshot">Preparing the first lookup...</div>
         <div class="steps-timeline" id="${thinkingId}-steps"></div>
+        <details class="trace-drawer" id="${thinkingId}-drawer" style="display:none;">
+          <summary>
+            <span>Internal reasoning</span>
+            <span class="trace-meta" id="${thinkingId}-trace-meta">0 events</span>
+          </summary>
+          <div class="trace-log" id="${thinkingId}-trace"></div>
+        </details>
       </div>`;
     addHTML(html);
   }
@@ -846,6 +921,36 @@
   // ─── SSE Event-Driven Steps ────────────────────────────
   // Adds/updates steps in the thinking panel in real-time
   let currentStepEl = null;
+
+  function updateSnapshot(thinkingId, text) {
+    const snapshotEl = document.getElementById(`${thinkingId}-snapshot`);
+    if (!snapshotEl || !text) return;
+    snapshotEl.textContent = text.length > 180 ? text.slice(0, 177) + '...' : text;
+  }
+
+  function appendTrace(thinkingId, streamState, kind, message) {
+    const traceEl = document.getElementById(`${thinkingId}-trace`);
+    const metaEl = document.getElementById(`${thinkingId}-trace-meta`);
+    const drawerEl = document.getElementById(`${thinkingId}-drawer`);
+    if (!traceEl || !message) return;
+
+    streamState.traceCount = (streamState.traceCount || 0) + 1;
+    if (drawerEl) {
+      drawerEl.style.display = '';
+    }
+    if (metaEl) {
+      metaEl.textContent = `${streamState.traceCount} event${streamState.traceCount === 1 ? '' : 's'}`;
+    }
+
+    const line = document.createElement('div');
+    line.className = 'trace-line';
+    line.innerHTML = `<div class="trace-kind">${escapeHtml(kind)}</div>${escapeHtml(message)}`;
+    traceEl.appendChild(line);
+
+    while (traceEl.children.length > 18) {
+      traceEl.removeChild(traceEl.firstElementChild);
+    }
+  }
 
   function handleEvent(thinkingId, event, streamState) {
     const stepsEl = document.getElementById(`${thinkingId}-steps`);
@@ -856,6 +961,7 @@
 
     if (type === 'thinking') {
       if (sublabelEl) sublabelEl.textContent = data.status || 'Thinking...';
+      updateSnapshot(thinkingId, data.status || 'Thinking...');
       // Mark any active step as still active (no change needed)
     }
 
@@ -877,6 +983,7 @@
       const inputStr = data.input ? (data.input.length > 80 ? data.input.slice(0, 80) + '…' : data.input) : '';
 
       if (sublabelEl) sublabelEl.textContent = label;
+      updateSnapshot(thinkingId, `${label}...`);
 
       const stepHtml = `
         <div class="step-item active">
@@ -894,17 +1001,10 @@
     }
 
     else if (type === 'decision') {
-      streamState.timelineCount++;
       const msg = data.message ? data.message.trim() : 'Choosing next action…';
       if (sublabelEl) sublabelEl.textContent = 'Planning next step';
-      stepsEl.insertAdjacentHTML('beforeend', `
-        <div class="step-item">
-          <div class="step-tool">
-            <span class="material-icons tool-icon">psychology_alt</span>
-            <span class="tool-name">decision</span>
-          </div>
-          <div class="step-input">${escapeHtml(msg.slice(0, 180))}</div>
-        </div>`);
+      updateSnapshot(thinkingId, msg);
+      appendTrace(thinkingId, streamState, 'decision', msg);
       scrollBottom();
     }
 
@@ -921,6 +1021,9 @@
           out.dataset.filled = '1';
         }
       }
+      if (data.output_preview) {
+        updateSnapshot(thinkingId, data.output_preview);
+      }
       scrollBottom();
     }
 
@@ -928,43 +1031,30 @@
       const raw = (data.message || '').trim();
       if (!raw) return;
 
-      streamState.timelineCount++;
-
-      let icon = 'terminal';
       let label = 'trace';
-      if (raw.startsWith('Thought:')) {
-        icon = 'psychology_alt';
-        label = 'thought';
-      } else if (raw.startsWith('Action:')) {
-        icon = 'play_circle';
-        label = 'action';
-      } else if (raw.startsWith('Observation:')) {
-        icon = 'visibility';
+      let text = raw;
+      if (raw.startsWith('Observation:')) {
         label = 'observation';
-      } else if (raw.includes('Final Answer')) {
-        icon = 'task_alt';
-        label = 'final answer';
+        text = raw.replace(/^Observation:\s*/, '');
+      } else if (raw.startsWith('Thought:')) {
+        label = 'thought';
+        text = raw.replace(/^Thought:\s*/, '');
+      } else if (raw.startsWith('Action:')) {
+        label = 'action';
+        text = raw.replace(/^Action:\s*/, '');
       } else if (raw.includes('AgentExecutor chain')) {
-        icon = 'hub';
-        label = 'executor';
+        label = 'system';
       }
 
-      if (sublabelEl) sublabelEl.textContent = `Streaming ${label}`;
-
-      stepsEl.insertAdjacentHTML('beforeend', `
-        <div class="step-item trace">
-          <div class="step-tool">
-            <span class="material-icons tool-icon">${icon}</span>
-            <span class="tool-name">${label}</span>
-          </div>
-          <div class="trace-pre">${escapeHtml(raw)}</div>
-        </div>`);
+      appendTrace(thinkingId, streamState, label, text);
       scrollBottom();
     }
 
     else if (type === 'error') {
       streamState.timelineCount++;
       if (sublabelEl) sublabelEl.textContent = 'Error encountered';
+      updateSnapshot(thinkingId, data.message || 'Unknown error');
+      appendTrace(thinkingId, streamState, 'error', data.message || 'Unknown error');
       stepsEl.insertAdjacentHTML('beforeend', `
         <div class="step-item" style="border-color:var(--error);">
           <div class="step-tool" style="color:var(--error);">
@@ -1017,6 +1107,60 @@
   }
 
   // ─── User / AI Bubbles ─────────────────────────────────
+  function finishThinkingCompact(thinkingId, streamState) {
+    const container = document.getElementById(thinkingId);
+    if (!container) return;
+
+    const toolCount = streamState.toolCount || 0;
+    const timelineCount = streamState.timelineCount || 0;
+    const traceCount = streamState.traceCount || 0;
+    const drawer = document.getElementById(`${thinkingId}-drawer`);
+
+    if (toolCount === 0 && timelineCount === 0 && traceCount === 0) {
+      container.remove();
+      return;
+    }
+
+    const label = container.querySelector('.thinking-label');
+    const sublabel = container.querySelector('.thinking-sublabel');
+    const ring = container.querySelector('.status-ring');
+
+    if (label) label.textContent = 'COMPLETE';
+    if (sublabel) {
+      sublabel.textContent = toolCount > 0
+        ? `${toolCount} tool${toolCount > 1 ? 's' : ''} executed`
+        : 'Reasoning captured';
+    }
+
+    updateSnapshot(
+      thinkingId,
+      toolCount > 0
+        ? `${toolCount} tool${toolCount > 1 ? 's' : ''} executed. ${traceCount} internal event${traceCount === 1 ? '' : 's'} tucked into the drawer below.`
+        : `${traceCount} internal event${traceCount === 1 ? '' : 's'} captured in the drawer below.`
+    );
+
+    if (ring) {
+      ring.style.animation = 'none';
+      ring.style.borderColor = 'var(--success)';
+      ring.querySelector('.material-icons').textContent = 'check_circle';
+      ring.querySelector('.material-icons').style.color = 'var(--success)';
+    }
+
+    if (currentStepEl && currentStepEl.classList.contains('active')) {
+      currentStepEl.classList.remove('active');
+      currentStepEl.classList.add('done');
+    }
+
+    if (drawer) {
+      drawer.open = false;
+      if (traceCount === 0) {
+        drawer.style.display = 'none';
+      }
+    }
+
+    scrollBottom();
+  }
+
   function addUserMsg(text) {
     addHTML(`
       <div class="msg user">
@@ -1060,7 +1204,7 @@
     addThinking(thinkingId);
     currentStepEl = null;
 
-    const streamState = { toolCount: 0, timelineCount: 0 };
+    const streamState = { toolCount: 0, timelineCount: 0, traceCount: 0 };
     let answered = false;
     let currentBubble = null;
     let rawAnswer = '';
@@ -1075,7 +1219,7 @@
           if (event.type === 'token') {
             if (!answered) {
               answered = true;
-              finishThinking(thinkingId, streamState);
+              finishThinkingCompact(thinkingId, streamState);
               
               const id = 'bubble-' + Date.now();
               addHTML(`
@@ -1100,7 +1244,7 @@
 
             if (!answered) {
               answered = true;
-              finishThinking(thinkingId, streamState);
+              finishThinkingCompact(thinkingId, streamState);
               addAIMsg(formatAnswer(answer));
             } else {
               if (currentBubble) {
@@ -1156,7 +1300,7 @@
 
           else if (event.type === 'done') {
             // ensure thinking is finalized
-            if (!answered) finishThinking(thinkingId, streamState);
+            if (!answered) finishThinkingCompact(thinkingId, streamState);
           }
 
           else if (event.type !== 'answer') {

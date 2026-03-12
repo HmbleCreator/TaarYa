@@ -1,6 +1,7 @@
 """Streaming agent — SSE endpoint that emits real-time tool events."""
 import json
 import logging
+import re
 from typing import Optional, List, Any
 from queue import Queue, Empty
 from threading import Thread
@@ -12,6 +13,8 @@ from src.config import settings
 from src.agent.tools import ALL_TOOLS
 
 logger = logging.getLogger(__name__)
+
+ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
 
 # ── Event types ────────────────────────────────────────────
@@ -32,10 +35,34 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         self.queue = event_queue
         self._tool_by_run_id = {}
         self.final_answer_candidate = None
-        self.final_answer_streamed = False
 
     def _push(self, event_type: str, data: dict):
         self.queue.put({"type": event_type, "data": data})
+
+    def _clean_text(self, text: Any) -> str:
+        return ANSI_ESCAPE_RE.sub("", str(text or "")).strip()
+
+    def _extract_final_answer_candidate(self, action) -> str:
+        answer = action.tool_input
+        if isinstance(answer, dict):
+            answer = answer.get("answer") or answer.get("action_input") or json.dumps(answer)
+
+        answer = self._clean_text(answer)
+        if not answer:
+            return ""
+
+        noisy_markers = (
+            "Thought:",
+            "Action:",
+            "Observation:",
+            "Prompt after formatting:",
+            "Human:",
+            '"action":',
+        )
+        if any(marker in answer for marker in noisy_markers):
+            return ""
+
+        return answer
 
     def on_llm_new_token(self, token: str, **kwargs: Any) -> Any:
         self._push("token", {"text": token})
@@ -66,44 +93,17 @@ class StreamingCallbackHandler(BaseCallbackHandler):
 
     def on_agent_action(self, action, **kwargs):
         if getattr(action, "tool", None) == "Final Answer":
-            answer = action.tool_input
-            if isinstance(answer, dict):
-                answer = answer.get("answer") or answer.get("action_input") or json.dumps(answer)
-            answer = str(answer).strip() if answer is not None else ""
+            answer = self._extract_final_answer_candidate(action)
             if answer:
                 self.final_answer_candidate = answer
-                if not self.final_answer_streamed:
-                    self.final_answer_streamed = True
-                    self._push("answer", {
-                        "answer": answer,
-                        "tools_used": [],
-                        "tool_outputs": [],
-                        "source": "agent_action",
-                    })
-            return
-
-        self._push("decision", {
-            "message": action.log[:400] if getattr(action, "log", None) else f"Selecting tool: {action.tool}",
-            "tool": action.tool,
-        })
+        # Deliberately do not stream agent scratchpad thoughts/actions.
 
     def on_agent_finish(self, finish, **kwargs):
         pass  # We handle final answer separately
 
     def on_text(self, text: str, **kwargs):
-        """Capture verbose Thought/Action/Observation traces from the agent."""
-        if not text:
-            return
-
-        for raw_line in str(text).splitlines():
-            line = raw_line.strip()
-            if not line:
-                continue
-
-            self._push("trace", {"message": line[:1200]})
-
-            if line.startswith("Thought:"):
-                self._push("thinking", {"status": line[8:].strip() or "Thinking..."})
+        """Ignore verbose scratchpad text for the user-facing stream."""
+        return
 
     def on_llm_error(self, error, **kwargs):
         self._push("error", {"message": str(error)})
@@ -259,6 +259,7 @@ def run_agent_streaming(query: str, chat_history: Optional[List[dict]] = None):
     # Final: yield the answer
     if result_holder["error"]:
         if callback_handler.final_answer_candidate:
+            yield f"data: {json.dumps({'type': 'answer', 'data': {'answer': callback_handler.final_answer_candidate, 'tools_used': [], 'tool_outputs': [], 'source': 'fallback_final_answer'}})}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'data': {}})}\n\n"
             return
         yield f"data: {json.dumps({'type': 'error', 'data': {'message': result_holder['error']}})}\n\n"

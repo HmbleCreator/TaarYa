@@ -12,6 +12,38 @@ logger = logging.getLogger(__name__)
 
 class SpatialSearch:
     """Q3C-powered spatial queries on the stars catalog."""
+
+    def _dedupe_stars(
+        self,
+        stars: List[Dict[str, Any]],
+        limit: int
+    ) -> List[Dict[str, Any]]:
+        """Collapse obviously duplicated catalog rows before returning them."""
+        unique_stars: List[Dict[str, Any]] = []
+        seen = set()
+
+        for star in stars:
+            key = (
+                round(float(star["ra"]), 8),
+                round(float(star["dec"]), 8),
+                round(float(star["parallax"]), 6) if star.get("parallax") is not None else None,
+                round(float(star["phot_g_mean_mag"]), 6) if star.get("phot_g_mean_mag") is not None else None,
+                round(float(star["phot_bp_mean_mag"]), 6) if star.get("phot_bp_mean_mag") is not None else None,
+                round(float(star["phot_rp_mean_mag"]), 6) if star.get("phot_rp_mean_mag") is not None else None,
+                star.get("catalog_source"),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            unique_stars.append(star)
+            if len(unique_stars) >= limit:
+                break
+
+        removed = len(stars) - len(unique_stars)
+        if removed > 0:
+            logger.warning(f"Deduplicated {removed} repeated star rows from query results")
+
+        return unique_stars
     
     def cone_search(
         self,
@@ -36,6 +68,8 @@ class SpatialSearch:
         
         postgres_conn.connect()
         
+        fetch_limit = max(limit, min(limit * 5, 2000))
+
         query = text("""
             SELECT source_id, ra, dec, parallax, pmra, pmdec,
                    phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag,
@@ -44,7 +78,7 @@ class SpatialSearch:
             FROM stars
             WHERE q3c_radial_query(ra, dec, :center_ra, :center_dec, :radius)
             ORDER BY angular_distance
-            LIMIT :limit
+            LIMIT :fetch_limit
         """)
         
         with postgres_conn.session() as session:
@@ -52,11 +86,11 @@ class SpatialSearch:
                 "center_ra": ra,
                 "center_dec": dec,
                 "radius": radius_deg,
-                "limit": limit
+                "fetch_limit": fetch_limit
             })
             
             rows = result.mappings().all()
-            stars = [dict(row) for row in rows]
+            stars = self._dedupe_stars([dict(row) for row in rows], limit=limit)
             
         logger.info(f"Found {len(stars)} stars in cone")
         return stars
@@ -89,7 +123,7 @@ class SpatialSearch:
             "center_ra": ra,
             "center_dec": dec,
             "radius": radius_deg,
-            "limit": limit
+            "fetch_limit": max(limit, min(limit * 5, 2000))
         }
         
         if mag_limit is not None:
@@ -110,7 +144,7 @@ class SpatialSearch:
             FROM stars
             WHERE {where_clause}
             ORDER BY angular_distance
-            LIMIT :limit
+            LIMIT :fetch_limit
         """)
         
         postgres_conn.connect()
@@ -118,7 +152,7 @@ class SpatialSearch:
         with postgres_conn.session() as session:
             result = session.execute(query, params)
             rows = result.mappings().all()
-            stars = [dict(row) for row in rows]
+            stars = self._dedupe_stars([dict(row) for row in rows], limit=limit)
         
         logger.info(f"Radial search: {len(stars)} stars (mag<={mag_limit}, plx>={min_parallax})")
         return stars
