@@ -85,14 +85,19 @@
                 if (done) break;
 
                 buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n\n');
-                buffer = lines.pop(); // keep incomplete chunk
+                const chunks = buffer.split(/\r?\n\r?\n/);
+                buffer = chunks.pop() || '';
 
-                for (const chunk of lines) {
-                    const trimmed = chunk.trim();
-                    if (!trimmed.startsWith('data: ')) continue;
+                for (const chunk of chunks) {
+                    const dataLines = chunk
+                        .split(/\r?\n/)
+                        .filter(line => line.startsWith('data:'))
+                        .map(line => line.slice(5).trimStart());
+
+                    if (!dataLines.length) continue;
+
                     try {
-                        const parsed = JSON.parse(trimmed.slice(6));
+                        const parsed = JSON.parse(dataLines.join('\n'));
                         onEvent(parsed);
                     } catch (e) {
                         // skip malformed

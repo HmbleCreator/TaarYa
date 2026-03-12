@@ -31,6 +31,8 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         super().__init__()
         self.queue = event_queue
         self._tool_by_run_id = {}
+        self.final_answer_candidate = None
+        self.final_answer_streamed = False
 
     def _push(self, event_type: str, data: dict):
         self.queue.put({"type": event_type, "data": data})
@@ -63,6 +65,23 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         })
 
     def on_agent_action(self, action, **kwargs):
+        if getattr(action, "tool", None) == "Final Answer":
+            answer = action.tool_input
+            if isinstance(answer, dict):
+                answer = answer.get("answer") or answer.get("action_input") or json.dumps(answer)
+            answer = str(answer).strip() if answer is not None else ""
+            if answer:
+                self.final_answer_candidate = answer
+                if not self.final_answer_streamed:
+                    self.final_answer_streamed = True
+                    self._push("answer", {
+                        "answer": answer,
+                        "tools_used": [],
+                        "tool_outputs": [],
+                        "source": "agent_action",
+                    })
+            return
+
         self._push("decision", {
             "message": action.log[:400] if getattr(action, "log", None) else f"Selecting tool: {action.tool}",
             "tool": action.tool,
@@ -70,6 +89,21 @@ class StreamingCallbackHandler(BaseCallbackHandler):
 
     def on_agent_finish(self, finish, **kwargs):
         pass  # We handle final answer separately
+
+    def on_text(self, text: str, **kwargs):
+        """Capture verbose Thought/Action/Observation traces from the agent."""
+        if not text:
+            return
+
+        for raw_line in str(text).splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            self._push("trace", {"message": line[:1200]})
+
+            if line.startswith("Thought:"):
+                self._push("thinking", {"status": line[8:].strip() or "Thinking..."})
 
     def on_llm_error(self, error, **kwargs):
         self._push("error", {"message": str(error)})
@@ -224,6 +258,9 @@ def run_agent_streaming(query: str, chat_history: Optional[List[dict]] = None):
 
     # Final: yield the answer
     if result_holder["error"]:
+        if callback_handler.final_answer_candidate:
+            yield f"data: {json.dumps({'type': 'done', 'data': {}})}\n\n"
+            return
         yield f"data: {json.dumps({'type': 'error', 'data': {'message': result_holder['error']}})}\n\n"
     elif result_holder["result"]:
         result = result_holder["result"]
@@ -254,6 +291,6 @@ def run_agent_streaming(query: str, chat_history: Optional[List[dict]] = None):
                     except Exception:
                         pass
 
-        yield f"data: {json.dumps({'type': 'answer', 'data': {'answer': answer, 'tools_used': tools_used, 'tool_outputs': tool_outputs}})}\n\n"
+        yield f"data: {json.dumps({'type': 'answer', 'data': {'answer': answer, 'tools_used': tools_used, 'tool_outputs': tool_outputs, 'source': 'result'}})}\n\n"
 
     yield f"data: {json.dumps({'type': 'done', 'data': {}})}\n\n"

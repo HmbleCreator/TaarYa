@@ -411,6 +411,10 @@
       border-color: var(--success);
     }
 
+    .step-item.trace {
+      background: linear-gradient(180deg, var(--bg-surface), transparent);
+    }
+
     .step-tool {
       display: flex;
       align-items: center;
@@ -443,6 +447,19 @@
       display: flex;
       align-items: center;
       gap: 4px;
+    }
+
+    .trace-pre {
+      margin-top: 6px;
+      padding: 8px 10px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     /* ── Tool Result Cards ────────────────────────────── */
@@ -830,7 +847,7 @@
   // Adds/updates steps in the thinking panel in real-time
   let currentStepEl = null;
 
-  function handleEvent(thinkingId, event) {
+  function handleEvent(thinkingId, event, streamState) {
     const stepsEl = document.getElementById(`${thinkingId}-steps`);
     const sublabelEl = document.getElementById(`${thinkingId}-sublabel`);
     if (!stepsEl) return;
@@ -843,6 +860,7 @@
     }
 
     else if (type === 'tool_start') {
+      streamState.timelineCount++;
       // Mark previous active step as done
       if (currentStepEl) {
         currentStepEl.classList.remove('active');
@@ -876,6 +894,7 @@
     }
 
     else if (type === 'decision') {
+      streamState.timelineCount++;
       const msg = data.message ? data.message.trim() : 'Choosing next action…';
       if (sublabelEl) sublabelEl.textContent = 'Planning next step';
       stepsEl.insertAdjacentHTML('beforeend', `
@@ -905,7 +924,46 @@
       scrollBottom();
     }
 
+    else if (type === 'trace') {
+      const raw = (data.message || '').trim();
+      if (!raw) return;
+
+      streamState.timelineCount++;
+
+      let icon = 'terminal';
+      let label = 'trace';
+      if (raw.startsWith('Thought:')) {
+        icon = 'psychology_alt';
+        label = 'thought';
+      } else if (raw.startsWith('Action:')) {
+        icon = 'play_circle';
+        label = 'action';
+      } else if (raw.startsWith('Observation:')) {
+        icon = 'visibility';
+        label = 'observation';
+      } else if (raw.includes('Final Answer')) {
+        icon = 'task_alt';
+        label = 'final answer';
+      } else if (raw.includes('AgentExecutor chain')) {
+        icon = 'hub';
+        label = 'executor';
+      }
+
+      if (sublabelEl) sublabelEl.textContent = `Streaming ${label}`;
+
+      stepsEl.insertAdjacentHTML('beforeend', `
+        <div class="step-item trace">
+          <div class="step-tool">
+            <span class="material-icons tool-icon">${icon}</span>
+            <span class="tool-name">${label}</span>
+          </div>
+          <div class="trace-pre">${escapeHtml(raw)}</div>
+        </div>`);
+      scrollBottom();
+    }
+
     else if (type === 'error') {
+      streamState.timelineCount++;
       if (sublabelEl) sublabelEl.textContent = 'Error encountered';
       stepsEl.insertAdjacentHTML('beforeend', `
         <div class="step-item" style="border-color:var(--error);">
@@ -918,12 +976,15 @@
     }
   }
 
-  function finishThinking(thinkingId, toolCount) {
+  function finishThinking(thinkingId, streamState) {
     const container = document.getElementById(thinkingId);
     if (!container) return;
 
-    // If no tools were used at all, just remove the thinking panel
-    if (toolCount === 0) {
+    const toolCount = streamState.toolCount || 0;
+    const timelineCount = streamState.timelineCount || 0;
+
+    // Remove the panel only if the stream never produced anything useful.
+    if (toolCount === 0 && timelineCount === 0) {
       container.remove();
       return;
     }
@@ -934,7 +995,11 @@
     const ring = container.querySelector('.status-ring');
 
     if (label) label.textContent = 'COMPLETE';
-    if (sublabel) sublabel.textContent = `${toolCount} tool${toolCount > 1 ? 's' : ''} executed`;
+    if (sublabel) {
+      sublabel.textContent = toolCount > 0
+        ? `${toolCount} tool${toolCount > 1 ? 's' : ''} executed • ${timelineCount} live event${timelineCount > 1 ? 's' : ''}`
+        : `${timelineCount} live event${timelineCount > 1 ? 's' : ''} captured`;
+    }
     if (ring) {
       ring.style.animation = 'none';
       ring.style.borderColor = 'var(--success)';
@@ -995,7 +1060,7 @@
     addThinking(thinkingId);
     currentStepEl = null;
 
-    let toolCount = 0;
+    const streamState = { toolCount: 0, timelineCount: 0 };
     let answered = false;
     let currentBubble = null;
     let rawAnswer = '';
@@ -1005,12 +1070,12 @@
         query,
         chatHistory.length > 2 ? chatHistory.slice(-10) : null,
         (event) => {
-          if (event.type === 'tool_start') toolCount++;
+          if (event.type === 'tool_start') streamState.toolCount++;
 
           if (event.type === 'token') {
             if (!answered) {
               answered = true;
-              finishThinking(thinkingId, toolCount);
+              finishThinking(thinkingId, streamState);
               
               const id = 'bubble-' + Date.now();
               addHTML(`
@@ -1031,17 +1096,20 @@
           }
 
           if (event.type === 'answer') {
+            const answer = event.data.answer || rawAnswer || 'No response received.';
+
             if (!answered) {
               answered = true;
-              finishThinking(thinkingId, toolCount);
-              const answer = event.data.answer || 'No response received.';
+              finishThinking(thinkingId, streamState);
               addAIMsg(formatAnswer(answer));
-              chatHistory.push({ role: 'assistant', content: answer });
             } else {
-              const answer = event.data.answer || rawAnswer;
               if (currentBubble) {
                 currentBubble.innerHTML = formatAnswer(answer);
               }
+            }
+
+            const lastMessage = chatHistory[chatHistory.length - 1];
+            if (!lastMessage || lastMessage.role !== 'assistant' || lastMessage.content !== answer) {
               chatHistory.push({ role: 'assistant', content: answer });
             }
 
@@ -1088,12 +1156,12 @@
 
           else if (event.type === 'done') {
             // ensure thinking is finalized
-            if (!answered) finishThinking(thinkingId, toolCount);
+            if (!answered) finishThinking(thinkingId, streamState);
           }
 
           else if (event.type !== 'answer') {
             // thinking, decision, tool_start, tool_end, error
-            handleEvent(thinkingId, event);
+            handleEvent(thinkingId, event, streamState);
           }
         }
       );
