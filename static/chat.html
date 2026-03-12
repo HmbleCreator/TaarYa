@@ -13,25 +13,7 @@
 <body>
 <div class="app-layout">
 
-  <aside class="sidebar">
-    <button id="sidebar-toggle" class="sidebar-toggle"></button>
-    <div class="sidebar-brand">
-      <h1>TaarYa</h1>
-      <p>Star Catalog Intelligence</p>
-    </div>
-    <ul class="sidebar-nav">
-      <li><a href="/static/dashboard.html">
-        <span class="material-icons">dashboard</span> Dashboard
-      </a></li>
-      <li><a href="/static/explore.html">
-        <span class="material-icons">explore</span> Explore
-      </a></li>
-      <li><a href="/static/chat.html" class="active">
-        <span class="material-icons">smart_toy</span> Chat
-      </a></li>
-    </ul>
-    <div class="sidebar-footer"><span class="version">v0.2.0</span></div>
-  </aside>
+  <div id="sidebar-mount"></div>
 
   <main class="main-content">
     <div class="chat-topbar">
@@ -44,10 +26,6 @@
           <div class="status-dot"></div>
           <span>ONLINE</span>
         </div>
-        <button class="session-create-btn" id="new-session-btn" title="Start a new chat">
-          <span class="material-icons">add_comment</span>
-          <span>New Chat</span>
-        </button>
         <div class="query-count" id="query-count">0 queries</div>
         <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">
           <span class="material-icons">light_mode</span>
@@ -55,29 +33,8 @@
       </div>
     </div>
 
-    <div class="chat-area">
-      <aside class="session-rail">
-        <div class="session-rail-header">
-          <div>
-            <div class="session-rail-title">Sessions</div>
-            <div class="session-rail-subtitle">Local memory for each conversation</div>
-          </div>
-          <button class="session-mini-btn" id="session-rail-new-btn" title="Create new session">
-            <span class="material-icons">add</span>
-          </button>
-        </div>
-        <div class="session-list" id="session-list"></div>
-      </aside>
-
-      <div class="chat-panel">
-        <div class="chat-session-meta" id="chat-session-meta">
-          <div>
-            <div class="chat-session-label">Active Session</div>
-            <div class="chat-session-title" id="active-session-title">New Session</div>
-          </div>
-          <div class="chat-session-summary" id="active-session-summary">No messages yet</div>
-        </div>
-
+    <div class="chat-layout">
+      <div class="chat-area">
         <div class="chat-messages" id="chat-messages">
           <div class="welcome-screen" id="welcome">
             <img src="/static/TaarYaLogo.png" alt="TaarYa" class="welcome-logo" id="welcome-logo">
@@ -109,5 +66,6 @@
 <script src="/static/taarya-api.js"></script>
 <script src="/static/chat.js"></script>
 <script src="/static/theme.js"></script>
+<script src="/static/js/sidebar.js"></script>
 </body>
 </html>

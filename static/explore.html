@@ -11,27 +11,7 @@
 <body>
 <div class="app-layout">
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <button id="sidebar-toggle" class="sidebar-toggle"></button>
-    <div class="sidebar-brand">
-      <img src="/static/TaarYaLogo.png" alt="TaarYa" style="width:36px;height:36px;border-radius:8px;object-fit:contain;filter:var(--logo-filter);margin-bottom:8px;">
-      <h1>TaarYa</h1>
-      <p>Star Catalog Intelligence</p>
-    </div>
-    <ul class="sidebar-nav">
-      <li><a href="/static/dashboard.html">
-        <span class="material-icons">dashboard</span> Dashboard
-      </a></li>
-      <li><a href="/static/explore.html" class="active">
-        <span class="material-icons">explore</span> Explore
-      </a></li>
-      <li><a href="/static/chat.html">
-        <span class="material-icons">smart_toy</span> Chat
-      </a></li>
-    </ul>
-    <div class="sidebar-footer"><span class="version">v0.2.0</span></div>
-  </aside>
+  <div id="sidebar-mount"></div>
 
   <!-- Main -->
   <main class="main-content">
@@ -139,6 +119,7 @@
 
 <script src="/static/taarya-api.js"></script>
 <script src="/static/theme.js"></script>
+<script src="/static/js/sidebar.js"></script>
 <script>
 (function() {
   'use strict';

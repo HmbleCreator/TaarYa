@@ -89,6 +89,7 @@ class AskRequest(BaseModel):
     """Request body for the /ask endpoint."""
     query: str = Field(..., min_length=1)
     chat_history: Optional[List[dict]] = None
+    session_id: Optional[str] = None
 
 
 class AgentResponse(BaseModel):

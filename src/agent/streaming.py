@@ -13,7 +13,10 @@ from src.agent.agent import (
     MAX_AGENT_EXECUTION_TIME,
     MAX_AGENT_ITERATIONS,
     _parse_tool_output,
+    _run_async_sync,
     build_system_prompt_sync,
+    load_session_history,
+    save_message,
 )
 from src.config import settings
 from src.agent.tools import ALL_TOOLS
@@ -211,7 +214,11 @@ def _build_agent(callback_handler):
     )
 
 
-def run_agent_streaming(query: str, chat_history: Optional[List[dict]] = None):
+def run_agent_streaming(
+    query: str,
+    chat_history: Optional[List[dict]] = None,
+    session_id: Optional[str] = None,
+):
     """
     Generator that yields SSE events as the agent processes.
     
@@ -222,8 +229,8 @@ def run_agent_streaming(query: str, chat_history: Optional[List[dict]] = None):
     yield f"data: {json.dumps({'type': 'thinking', 'data': {'status': 'Connecting to agent...'}})}\n\n"
 
     # Convert chat_history
-    history_messages = []
-    if chat_history:
+    history_messages = _run_async_sync(load_session_history(session_id)) if session_id else []
+    if not history_messages and chat_history:
         for msg in chat_history:
             role = msg.get('role')
             content = msg.get('content', '')
@@ -268,6 +275,14 @@ def run_agent_streaming(query: str, chat_history: Optional[List[dict]] = None):
     # Final: yield the answer
     if result_holder["error"]:
         if callback_handler.final_answer_candidate:
+            if session_id:
+                _run_async_sync(save_message(session_id, "user", query))
+                _run_async_sync(save_message(
+                    session_id,
+                    "assistant",
+                    callback_handler.final_answer_candidate,
+                    {"tools_used": [], "tool_outputs": []},
+                ))
             yield f"data: {json.dumps({'type': 'answer', 'data': {'answer': callback_handler.final_answer_candidate, 'tools_used': [], 'tool_outputs': [], 'source': 'fallback_final_answer'}})}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'data': {}})}\n\n"
             return
@@ -296,6 +311,15 @@ def run_agent_streaming(query: str, chat_history: Optional[List[dict]] = None):
                 structured_output = _parse_tool_output(tool_output)
                 if structured_output is not None:
                     tool_outputs.append({"tool": tool_name, "data": structured_output})
+
+        if session_id:
+            _run_async_sync(save_message(session_id, "user", query))
+            _run_async_sync(save_message(
+                session_id,
+                "assistant",
+                answer,
+                {"tools_used": tools_used, "tool_outputs": tool_outputs},
+            ))
 
         yield f"data: {json.dumps({'type': 'answer', 'data': {'answer': answer, 'tools_used': tools_used, 'tool_outputs': tool_outputs, 'source': 'result'}})}\n\n"
 

@@ -1,4 +1,8 @@
 """FastAPI application entry point."""
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 import logging
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -93,6 +97,7 @@ app.include_router(papers_router, prefix="/api")
 app.include_router(search_router, prefix="/api")
 app.include_router(stats_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
+app.include_router(__import__("src.api.sessions", fromlist=["router"]).router, prefix="/api")
 
 
 if __name__ == "__main__":

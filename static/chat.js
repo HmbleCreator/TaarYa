@@ -8,8 +8,10 @@
   const welcomeEl  = document.getElementById('welcome');
   const countEl    = document.getElementById('query-count');
   const toggleBtn  = document.getElementById('theme-toggle');
+  const welcomeTemplate = messagesEl.innerHTML;
 
   let chatHistory = [];
+  let activeSessionId = null;
   let sending = false;
   let queryCount = 0;
 
@@ -19,7 +21,8 @@
   }
 
   function addHTML(html) {
-    if (welcomeEl) welcomeEl.style.display = 'none';
+    const currentWelcomeEl = document.getElementById('welcome');
+    if (currentWelcomeEl) currentWelcomeEl.style.display = 'none';
     messagesEl.insertAdjacentHTML('beforeend', html);
     scrollBottom();
   }
@@ -341,6 +344,131 @@
       </div>`);
   }
 
+  function renderMessage(role, content) {
+    if (role === 'user') {
+      addUserMsg(content);
+      return;
+    }
+    addAIMsg(formatAnswer(content));
+  }
+
+  async function askWithSession(query, chatHistoryForRequest = null) {
+    const response = await fetch('/api/agent/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        chat_history: chatHistoryForRequest,
+        session_id: activeSessionId
+      }),
+    });
+    if (!response.ok) throw new Error(`POST /api/agent/ask → ${response.status}`);
+    return response.json();
+  }
+
+  async function askStreamWithSession(query, chatHistoryForRequest, onEvent) {
+    const response = await fetch('/api/agent/ask/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        chat_history: chatHistoryForRequest,
+        session_id: activeSessionId
+      }),
+    });
+    if (!response.ok) throw new Error(`POST /api/agent/ask/stream → ${response.status}`);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split(/\r?\n\r?\n/);
+      buffer = chunks.pop() || '';
+
+      for (const chunk of chunks) {
+        const dataLines = chunk
+          .split(/\r?\n/)
+          .filter(line => line.startsWith('data:'))
+          .map(line => line.slice(5).trimStart());
+
+        if (!dataLines.length) continue;
+
+        try {
+          onEvent(JSON.parse(dataLines.join('\n')));
+        } catch (error) {
+          // Ignore malformed SSE chunks.
+        }
+      }
+    }
+  }
+
+  async function initSessions() {
+    const res = await fetch('/api/sessions');
+    const sessions = await res.json();
+    const list = document.getElementById('session-list');
+    list.innerHTML = '';
+    for (const s of sessions) {
+      const item = document.createElement('div');
+      item.className = 'session-item' + (s.id === activeSessionId ? ' active' : '');
+      item.dataset.id = s.id;
+      const ago = timeAgo(new Date(s.updated_at));
+      item.innerHTML = `
+            <span class="s-delete" data-id="${s.id}">✕</span>
+            <div class="s-title">${escapeHtml(s.title || 'New conversation')}</div>
+            <div class="s-time">${ago}</div>`;
+      item.addEventListener('click', () => switchSession(s.id));
+      item.querySelector('.s-delete').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await fetch(`/api/sessions/${s.id}`, { method: 'DELETE' });
+        if (activeSessionId === s.id) await newSession();
+        else initSessions();
+      });
+      list.appendChild(item);
+    }
+  }
+
+  async function newSession() {
+    const res = await fetch('/api/sessions', { method: 'POST' });
+    const data = await res.json();
+    activeSessionId = data.session_id;
+    chatHistory = [];
+    document.getElementById('chat-messages').innerHTML = welcomeTemplate;
+    await initSessions();
+  }
+
+  async function switchSession(id) {
+    activeSessionId = id;
+    const res = await fetch(`/api/sessions/${id}/messages`);
+    const messages = await res.json();
+    const container = document.getElementById('chat-messages');
+    container.innerHTML = '';
+    chatHistory = [];
+
+    if (!messages.length) {
+      container.innerHTML = welcomeTemplate;
+    } else {
+      for (const m of messages) {
+        renderMessage(m.role, m.content);
+        chatHistory.push({ role: m.role, content: m.content });
+      }
+    }
+
+    await initSessions();
+  }
+
+  function timeAgo(date) {
+    const diff = Math.floor((Date.now() - date) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  }
+
   function buildStarsTable(toolOutput, step) {
     const stars = toolOutput.data || [];
     const duplicates = detectDuplicateMeasurements(stars);
@@ -479,6 +607,7 @@
     if (sending) return;
     const query = overrideQuery || inputEl.value.trim();
     if (!query) return;
+    if (!activeSessionId) await newSession();
 
     inputEl.value = '';
     sending = true;
@@ -498,7 +627,7 @@
     let answered = false;
 
     try {
-      await api.askStream(
+      await askStreamWithSession(
         query,
         chatHistory.length > 2 ? chatHistory.slice(-10) : null,
         (event) => {
@@ -534,16 +663,18 @@
           }
         }
       );
+      await initSessions();
     } catch (err) {
       // Fallback to non-streaming API
       const thinkEl = document.getElementById(thinkingId);
       if (thinkEl) thinkEl.remove();
 
       try {
-        const resp = await api.ask(query, chatHistory.length > 2 ? chatHistory.slice(-10) : null);
+        const resp = await askWithSession(query, chatHistory.length > 2 ? chatHistory.slice(-10) : null);
         const answer = resp.answer || resp.response || 'No response.';
         addAIMsg(formatAnswer(answer));
         chatHistory.push({ role: 'assistant', content: answer });
+        await initSessions();
       } catch (fallbackErr) {
         addAIMsg(`<span style="color:var(--error);">⚠ Failed:</span> ${escapeHtml(fallbackErr.message)}`);
       }
@@ -569,11 +700,28 @@
   });
 
   messagesEl.addEventListener('click', (event) => {
+    const welcomeChip = event.target.closest('.welcome-chip[data-query]');
+    if (welcomeChip) {
+      const welcomeQuery = welcomeChip.getAttribute('data-query');
+      if (welcomeQuery) send(welcomeQuery);
+      return;
+    }
+
     const chip = event.target.closest('.chip-btn[data-query]');
     if (!chip) return;
     const q = chip.getAttribute('data-query');
     if (q) send(q);
   });
 
-  inputEl.focus();
+  document.addEventListener('sidebar-ready', async () => {
+    document.getElementById('new-chat-btn').addEventListener('click', newSession);
+
+    const sessions = await fetch('/api/sessions').then(r => r.json());
+    if (sessions.length > 0) {
+      await switchSession(sessions[0].id);
+    } else {
+      await newSession();
+    }
+    inputEl.focus();
+  });
 })();

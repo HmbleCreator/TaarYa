@@ -1,7 +1,9 @@
 """Agent query API route — includes SSE streaming endpoint."""
 from fastapi import APIRouter, Query
+from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 
+from src.agent.agent import ask as agent_ask
 from src.services.agent_service import AgentService
 from src.schemas import AskRequest
 
@@ -18,7 +20,10 @@ async def ask_agent(request: AskRequest):
     (spatial search, paper search, graph traversal), run them,
     and synthesize a response.
     """
-    return _svc.ask(request.query, request.chat_history)
+    try:
+        return agent_ask(request.query, request.chat_history, request.session_id)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Agent unavailable: {e}")
 
 
 @router.get("/ask")
@@ -44,7 +49,7 @@ async def ask_agent_stream(request: AskRequest):
     from src.agent.streaming import run_agent_streaming
 
     return StreamingResponse(
-        run_agent_streaming(request.query, request.chat_history),
+        run_agent_streaming(request.query, request.chat_history, request.session_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

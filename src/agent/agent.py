@@ -7,6 +7,7 @@ from threading import Thread
 from typing import Any, Dict, Optional
 
 from langchain_core.messages import AIMessage, HumanMessage
+from sqlalchemy import text
 
 from src.agent.tools import (
     ALL_TOOLS,
@@ -16,6 +17,7 @@ from src.agent.tools import (
     star_lookup,
 )
 from src.config import settings
+from src.database import postgres_conn
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +95,81 @@ def build_system_prompt_sync() -> str:
     if "error" in error_holder:
         raise error_holder["error"]
     return result_holder["prompt"]
+
+
+def _run_async_sync(coro):
+    """Bridge async DB helpers into the current sync agent path."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+
+    result_holder: Dict[str, Any] = {}
+    error_holder: Dict[str, Exception] = {}
+
+    def _runner():
+        try:
+            result_holder["result"] = asyncio.run(coro)
+        except Exception as exc:  # pragma: no cover - defensive bridge
+            error_holder["error"] = exc
+
+    thread = Thread(target=_runner, daemon=True)
+    thread.start()
+    thread.join()
+
+    if "error" in error_holder:
+        raise error_holder["error"]
+    return result_holder.get("result")
+
+
+async def load_session_history(session_id: str) -> list:
+    """Load last 10 message pairs for a session as LangChain messages."""
+    if not session_id:
+        return []
+    query = text("""
+        SELECT role, content FROM chat_messages
+        WHERE session_id = :session_id
+        ORDER BY created_at DESC
+        LIMIT 20
+    """)
+    with postgres_conn.session() as session:
+        rows = session.execute(query, {"session_id": session_id}).mappings().all()
+    rows = list(reversed(rows))
+    result = []
+    for row in rows:
+        if row["role"] == "user":
+            result.append(HumanMessage(content=row["content"]))
+        else:
+            result.append(AIMessage(content=row["content"]))
+    return result
+
+
+async def save_message(session_id: str, role: str, content: str, tool_trace: dict = None):
+    if not session_id:
+        return
+    msg_query = text("""
+        INSERT INTO chat_messages (session_id, role, content, tool_trace)
+        VALUES (:session_id, :role, :content, :tool_trace)
+    """)
+    title_query = text("""
+        UPDATE chat_sessions
+        SET title = COALESCE(title, LEFT(:content, 50)),
+            updated_at = NOW()
+        WHERE id = :session_id
+    """)
+    with postgres_conn.session() as session:
+        session.execute(msg_query, {
+            "session_id": session_id,
+            "role": role,
+            "content": content,
+            "tool_trace": json.dumps(tool_trace) if tool_trace else None
+        })
+        if role == "user":
+            session.execute(title_query, {
+                "session_id": session_id,
+                "content": content
+            })
+        session.commit()
 
 
 def _parse_tool_output(tool_output: Any) -> Optional[Any]:
@@ -219,13 +296,13 @@ class AstronomyAgent:
             logger.error(f"Failed to initialize agent: {e}")
             raise
 
-    def ask(self, query: str, chat_history: Optional[list] = None) -> Dict[str, Any]:
+    def ask(self, query: str, chat_history: Optional[list] = None, session_id: Optional[str] = None) -> Dict[str, Any]:
         """Process a natural language astronomy query."""
         system_prompt = build_system_prompt_sync()
         self._ensure_agent(system_prompt)
 
-        history_messages = []
-        if chat_history:
+        history_messages = _run_async_sync(load_session_history(session_id)) if session_id else []
+        if not history_messages and chat_history:
             for msg in chat_history:
                 role = msg.get("role")
                 content = msg.get("content")
@@ -271,15 +348,26 @@ class AstronomyAgent:
                             "data": structured_output,
                         })
 
+            answer = result.get("output", "I couldn't generate a response.")
+            tool_trace = {"tools_used": tools_used, "tool_outputs": tool_outputs}
+            print(f"DEBUG save_message: session_id={session_id} role=user query={query[:40]}")
+            _run_async_sync(save_message(session_id, "user", query))
+            print(f"DEBUG save_message: session_id={session_id} role=assistant content={answer[:40]}")
+            _run_async_sync(save_message(session_id, "assistant", answer, tool_trace))
             return {
-                "answer": result.get("output", "I couldn't generate a response."),
+                "answer": answer,
                 "tools_used": tools_used,
                 "tool_outputs": tool_outputs,
                 "query": query,
             }
         except Exception as e:
             logger.error(f"Agent error: {e}")
-            return self._fallback_response(query)
+            fallback = self._fallback_response(query)
+            print(f"DEBUG save_message: session_id={session_id} role=user query={query[:40]}")
+            _run_async_sync(save_message(session_id, "user", query))
+            print(f"DEBUG save_message: session_id={session_id} role=assistant content={fallback['answer'][:40]}")
+            _run_async_sync(save_message(session_id, "assistant", fallback["answer"], {"tools_used": fallback.get("tools_used", [])}))
+            return fallback
 
     def _fallback_response(self, query: str) -> Dict[str, Any]:
         """Simple fallback when LLM is unavailable."""
@@ -327,9 +415,9 @@ class AstronomyAgent:
 _agent = None
 
 
-def ask(query: str, chat_history: Optional[list] = None) -> Dict[str, Any]:
+def ask(query: str, chat_history: Optional[list] = None, session_id: Optional[str] = None) -> Dict[str, Any]:
     """Convenience function to ask the TaarYa agent a question."""
     global _agent
     if _agent is None:
         _agent = AstronomyAgent()
-    return _agent.ask(query, chat_history)
+    return _agent.ask(query, chat_history, session_id)
