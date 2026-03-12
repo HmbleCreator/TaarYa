@@ -263,7 +263,11 @@ def graph_query(source_id: str) -> str:
         return result
     except Exception as e:
         logger.error(f"Graph query failed: {e}")
-        return f"Error querying knowledge graph: {str(e)}"
+        return {
+            "status": "UNAVAILABLE",
+            "message": "Knowledge graph is offline. Skipping graph traversal.",
+            "results": [],
+        }
 
 
 @tool

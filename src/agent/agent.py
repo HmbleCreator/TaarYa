@@ -172,6 +172,40 @@ async def save_message(session_id: str, role: str, content: str, tool_trace: dic
         session.commit()
 
 
+_title_llm = None
+
+
+async def generate_session_title(session_id: str, query: str, answer: str):
+    """Generate a short descriptive title from the first exchange."""
+    if not session_id:
+        return
+
+    check = text("SELECT title FROM chat_sessions WHERE id = :sid")
+    with postgres_conn.session() as s:
+        row = s.execute(check, {"sid": session_id}).mappings().one_or_none()
+        if not row or row["title"] is not None:
+            return
+
+    prompt = (
+        f"Give a 5-7 word title for a conversation that started with: "
+        f"'{query[:120]}'. Reply with only the title, no punctuation."
+    )
+
+    try:
+        global _title_llm
+        if _title_llm is None:
+            _title_llm = _get_llm()
+
+        response = _title_llm.invoke([HumanMessage(content=prompt)])
+        title = str(response.content).strip()[:60]
+        update = text("UPDATE chat_sessions SET title = :title WHERE id = :sid")
+        with postgres_conn.session() as s:
+            s.execute(update, {"title": title, "sid": session_id})
+            s.commit()
+    except Exception:
+        pass
+
+
 def _parse_tool_output(tool_output: Any) -> Optional[Any]:
     """Extract structured tool payloads for the frontend when possible."""
     if isinstance(tool_output, (list, dict)):
@@ -252,32 +286,6 @@ class AstronomyAgent:
         self._system_prompt = system_prompt
 
         try:
-            from langchain.agents import AgentExecutor, create_tool_calling_agent
-            from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", system_prompt),
-                MessagesPlaceholder(variable_name="chat_history", optional=True),
-                ("human", "{input}"),
-                MessagesPlaceholder(variable_name="agent_scratchpad"),
-            ])
-
-            agent = create_tool_calling_agent(self._llm, ALL_TOOLS, prompt)
-            self._agent = AgentExecutor(
-                agent=agent,
-                tools=ALL_TOOLS,
-                verbose=True,
-                max_iterations=MAX_AGENT_ITERATIONS,
-                max_execution_time=MAX_AGENT_EXECUTION_TIME,
-                handle_parsing_errors=True,
-                return_intermediate_steps=True,
-            )
-            logger.info("Agent initialized (tool-calling mode)")
-            return
-        except Exception as e:
-            logger.warning(f"Tool-calling agent failed: {e}, trying ReAct")
-
-        try:
             from langchain.agents import AgentType, initialize_agent
 
             self._agent = initialize_agent(
@@ -350,10 +358,9 @@ class AstronomyAgent:
 
             answer = result.get("output", "I couldn't generate a response.")
             tool_trace = {"tools_used": tools_used, "tool_outputs": tool_outputs}
-            print(f"DEBUG save_message: session_id={session_id} role=user query={query[:40]}")
             _run_async_sync(save_message(session_id, "user", query))
-            print(f"DEBUG save_message: session_id={session_id} role=assistant content={answer[:40]}")
             _run_async_sync(save_message(session_id, "assistant", answer, tool_trace))
+            _run_async_sync(generate_session_title(session_id, query, answer))
             return {
                 "answer": answer,
                 "tools_used": tools_used,
@@ -363,10 +370,9 @@ class AstronomyAgent:
         except Exception as e:
             logger.error(f"Agent error: {e}")
             fallback = self._fallback_response(query)
-            print(f"DEBUG save_message: session_id={session_id} role=user query={query[:40]}")
             _run_async_sync(save_message(session_id, "user", query))
-            print(f"DEBUG save_message: session_id={session_id} role=assistant content={fallback['answer'][:40]}")
             _run_async_sync(save_message(session_id, "assistant", fallback["answer"], {"tools_used": fallback.get("tools_used", [])}))
+            _run_async_sync(generate_session_title(session_id, query, fallback["answer"]))
             return fallback
 
     def _fallback_response(self, query: str) -> Dict[str, Any]:

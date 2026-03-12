@@ -15,6 +15,7 @@ from src.agent.agent import (
     _parse_tool_output,
     _run_async_sync,
     build_system_prompt_sync,
+    generate_session_title,
     load_session_history,
     save_message,
 )
@@ -174,31 +175,6 @@ def _build_agent(callback_handler):
     llm = _get_llm()
     system_prompt = build_system_prompt_sync()
 
-    try:
-        from langchain.agents import create_tool_calling_agent, AgentExecutor
-        from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            MessagesPlaceholder(variable_name="chat_history", optional=True),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
-
-        agent = create_tool_calling_agent(llm, ALL_TOOLS, prompt)
-        return AgentExecutor(
-            agent=agent,
-            tools=ALL_TOOLS,
-            verbose=True,
-            max_iterations=MAX_AGENT_ITERATIONS,
-            max_execution_time=MAX_AGENT_EXECUTION_TIME,
-            handle_parsing_errors=True,
-            return_intermediate_steps=True,
-            callbacks=[callback_handler],
-        )
-    except Exception as e:
-        logger.warning(f"Tool-calling agent failed: {e}, trying ReAct")
-
     from langchain.agents import initialize_agent, AgentType
     return initialize_agent(
         tools=ALL_TOOLS,
@@ -283,6 +259,11 @@ def run_agent_streaming(
                     callback_handler.final_answer_candidate,
                     {"tools_used": [], "tool_outputs": []},
                 ))
+                _run_async_sync(generate_session_title(
+                    session_id,
+                    query,
+                    callback_handler.final_answer_candidate,
+                ))
             yield f"data: {json.dumps({'type': 'answer', 'data': {'answer': callback_handler.final_answer_candidate, 'tools_used': [], 'tool_outputs': [], 'source': 'fallback_final_answer'}})}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'data': {}})}\n\n"
             return
@@ -320,6 +301,7 @@ def run_agent_streaming(
                 answer,
                 {"tools_used": tools_used, "tool_outputs": tool_outputs},
             ))
+            _run_async_sync(generate_session_title(session_id, query, answer))
 
         yield f"data: {json.dumps({'type': 'answer', 'data': {'answer': answer, 'tools_used': tools_used, 'tool_outputs': tool_outputs, 'source': 'result'}})}\n\n"
 

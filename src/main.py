@@ -3,9 +3,11 @@ import sys
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+import asyncio
 import logging
 from pathlib import Path
 from contextlib import asynccontextmanager
+from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +17,7 @@ from fastapi.responses import RedirectResponse
 from src.config import settings
 from src.utils.logger import setup_logging
 from src.database import postgres_conn, qdrant_conn, neo4j_conn
+from src.ingestion.seed import seed_catalog
 
 # Setup logging
 setup_logging()
@@ -25,6 +28,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = PROJECT_ROOT / "static"
 
 
+async def run_seed_in_background(db):
+    """Run catalog seeding without blocking app startup."""
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor() as pool:
+        await loop.run_in_executor(pool, seed_catalog, db)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle for database connections."""
@@ -32,6 +42,7 @@ async def lifespan(app: FastAPI):
     try:
         postgres_conn.connect()
         logger.info("PostgreSQL: connected")
+        asyncio.create_task(run_seed_in_background(postgres_conn))
     except Exception as e:
         logger.warning(f"PostgreSQL: {e}")
     try:
@@ -43,7 +54,7 @@ async def lifespan(app: FastAPI):
         neo4j_conn.connect()
         logger.info("Neo4j: connected")
     except Exception as e:
-        logger.warning(f"Neo4j: {e}")
+        logger.warning(f"Neo4j unavailable — graph features disabled: {e}")
 
     yield  # App is running
 

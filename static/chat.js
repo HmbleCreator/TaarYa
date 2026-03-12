@@ -333,23 +333,108 @@
       </div>`);
   }
 
-  function addAIMsg(html) {
+  function summarizeToolOutputData(toolOutput) {
+    if (!toolOutput || toolOutput.data == null) return 'Completed';
+    if (Array.isArray(toolOutput.data)) {
+      return `Returned ${toolOutput.data.length} result${toolOutput.data.length === 1 ? '' : 's'}`;
+    }
+    if (typeof toolOutput.data === 'object') {
+      if (typeof toolOutput.data.count === 'number') {
+        return `Found ${toolOutput.data.count} result${toolOutput.data.count === 1 ? '' : 's'}`;
+      }
+      if (toolOutput.data.message) {
+        return String(toolOutput.data.message);
+      }
+    }
+    return 'Completed';
+  }
+
+  function buildTraceAccordion(trace) {
+    const toolsUsed = Array.isArray(trace?.tools_used) ? trace.tools_used : [];
+    const toolOutputs = Array.isArray(trace?.tool_outputs) ? trace.tool_outputs : [];
+
+    if (!toolsUsed.length && !toolOutputs.length) return '';
+
+    const outputByTool = new Map();
+    toolOutputs.forEach((item) => {
+      if (!outputByTool.has(item.tool)) outputByTool.set(item.tool, item);
+    });
+
+    const steps = toolsUsed.map((tool, index) => {
+      const params = parseMaybeObject(tool.input);
+      const label = regionLabelFromInput(tool.tool, params);
+      const output = outputByTool.get(tool.tool);
+      const preview = tool.output_preview || summarizeToolOutputData(output);
+      const state = getStepState(preview);
+
+      return `
+        <details class="step" id="saved-step-${index + 1}">
+          <summary>
+            <div class="step-icon ${state}">${iconForState(state)}</div>
+            <div class="step-copy">
+              <div class="step-label">${escapeHtml(tool.tool)} â€” ${escapeHtml(label)}</div>
+              <div class="step-result ${state}">${escapeHtml(preview)}</div>
+            </div>
+          </summary>
+          ${tool.input ? `<div class="step-params">${escapeHtml(summarizeParams(params))}</div>` : ''}
+        </details>`;
+    });
+
+    const successCount = steps.filter((_, index) => getStepState(toolsUsed[index].output_preview || summarizeToolOutputData(outputByTool.get(toolsUsed[index].tool))) === 'success').length;
+    const emptyCount = steps.filter((_, index) => getStepState(toolsUsed[index].output_preview || summarizeToolOutputData(outputByTool.get(toolsUsed[index].tool))) === 'empty').length;
+    const errorCount = steps.filter((_, index) => getStepState(toolsUsed[index].output_preview || summarizeToolOutputData(outputByTool.get(toolsUsed[index].tool))) === 'error').length;
+
+    let stateClass = 'running';
+    let stateText = 'working';
+    if (errorCount > 0 && successCount === 0) {
+      stateClass = 'error';
+      stateText = 'error';
+    } else if (successCount > 0) {
+      stateClass = 'success';
+      stateText = 'complete';
+    } else if (emptyCount > 0) {
+      stateClass = 'empty';
+      stateText = 'no results';
+    }
+
+    const stats = [];
+    if (successCount) stats.push(`<span class="summary-stat"><span class="summary-dot" style="background:var(--success)"></span>${successCount} success</span>`);
+    if (emptyCount) stats.push(`<span class="summary-stat"><span class="summary-dot" style="background:var(--warning)"></span>${emptyCount} empty</span>`);
+    if (errorCount) stats.push(`<span class="summary-stat"><span class="summary-dot" style="background:var(--error)"></span>${errorCount} error</span>`);
+    stats.push(`<span class="summary-stat">${toolsUsed.length} tool${toolsUsed.length === 1 ? '' : 's'}</span>`);
+
+    return `
+      <details class="agent-process">
+        <summary class="process-header">
+          <span>âš¡</span>
+          <span class="process-title">Research Trace</span>
+          <span class="process-state ${stateClass}">${stateText}</span>
+          <span class="process-chevron">â–¼</span>
+        </summary>
+        <div class="process-steps">${steps.join('')}</div>
+        <div class="process-summary">${stats.join('')}</div>
+      </details>`;
+  }
+
+  function addAIMsg(html, traceHtml = '') {
     addHTML(`
       <div class="msg ai">
         <div class="msg-avatar"><span class="material-icons">auto_awesome</span></div>
         <div class="msg-body">
           <div class="msg-sender">TaarYa</div>
+          ${traceHtml}
           <div class="msg-bubble">${html}</div>
         </div>
       </div>`);
   }
 
-  function renderMessage(role, content) {
+  function renderMessage(role, content, toolTrace = null) {
     if (role === 'user') {
       addUserMsg(content);
       return;
     }
-    addAIMsg(formatAnswer(content));
+    const traceHtml = toolTrace ? buildTraceAccordion(toolTrace) : '';
+    addAIMsg(formatAnswer(content), traceHtml);
   }
 
   async function askWithSession(query, chatHistoryForRequest = null) {
@@ -453,7 +538,12 @@
       container.innerHTML = welcomeTemplate;
     } else {
       for (const m of messages) {
-        renderMessage(m.role, m.content);
+        if (m.role === 'user') {
+          addUserMsg(m.content);
+        } else {
+          const traceHtml = m.tool_trace ? buildTraceAccordion(m.tool_trace) : '';
+          addAIMsg(formatAnswer(m.content), traceHtml);
+        }
         chatHistory.push({ role: m.role, content: m.content });
       }
     }
