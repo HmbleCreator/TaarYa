@@ -30,10 +30,57 @@
         return p.length ? '?' + p.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&') : '';
     }
 
+    function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const result = String(reader.result || '');
+                const comma = result.indexOf(',');
+                resolve(comma >= 0 ? result.slice(comma + 1) : result);
+            };
+            reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+            reader.readAsDataURL(file);
+        });
+    }
+
     /* ── API Layer ──────────────────────────────────────────── */
     const api = {
         stats:   () => _get('/api/stats'),
         regions: () => _get('/api/regions'),
+        spaceVolume: ({ limit = 8000, minParallax, magLimit } = {}) =>
+            _get('/api/stars/space-volume' + qs({
+                limit,
+                min_parallax: minParallax,
+                mag_limit: magLimit,
+            })),
+        discovery: ({ limit = 15, poolLimit = 3000, radiusDeg = 0.08, mode = 'balanced' } = {}) =>
+            _get('/api/stars/discovery' + qs({
+                limit,
+                pool_limit: poolLimit,
+                radius_deg: radiusDeg,
+                mode,
+            })),
+
+        ingestionStatus: () => _get('/api/ingest/status'),
+        ingestCatalog: ({ catalogSource, filepath, limit, fieldMap } = {}) =>
+            _post('/api/ingest/catalog', {
+                catalog_source: catalogSource,
+                filepath,
+                limit,
+                field_map: fieldMap,
+            }),
+
+        uploadCatalog: async ({ catalogSource, file, limit, fieldMap } = {}) => {
+            if (!file) throw new Error('A file must be selected before upload');
+            const contentBase64 = await readFileAsBase64(file);
+            return _post('/api/ingest/catalog/upload', {
+                catalog_source: catalogSource,
+                filename: file.name || 'upload.csv',
+                content_base64: contentBase64,
+                limit,
+                field_map: fieldMap,
+            });
+        },
 
         // Stars
         coneSearch: (ra, dec, radius, { magLimit, minParallax, limit = 100 } = {}) =>
@@ -145,19 +192,19 @@
             return `
         <div class="ty-star-card${clickable ? ' cursor-pointer hover:border-primary/50' : ''}"
              data-source-id="${star.source_id || ''}"
-             style="padding:12px 14px;border:1px solid rgba(255,255,255,0.07);border-radius:8px;
-                    background:rgba(255,255,255,0.03);margin-bottom:8px;transition:border-color 0.2s;">
+             style="padding:12px 14px;border:1px solid var(--panel-border, rgba(255,255,255,0.07));border-radius:8px;
+                    background:var(--panel-bg, rgba(255,255,255,0.03));margin-bottom:8px;transition:border-color 0.2s, transform 0.2s;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
             <div>
-              <div style="font-size:12px;font-family:monospace;color:#94a3b8;letter-spacing:.5px;">${star.source_id || 'Unknown'}</div>
-              <div style="font-size:11px;color:#475569;margin-top:2px;">RA ${ra}° · Dec ${dec}°</div>
+              <div style="font-size:12px;font-family:monospace;color:var(--text-primary);letter-spacing:.5px;">${star.source_id || 'Unknown'}</div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">RA ${ra}° · Dec ${dec}°</div>
             </div>
             <div style="text-align:right;flex-shrink:0;">
-              <div style="font-size:14px;font-weight:600;color:#e2e8f0;">G ${mag}</div>
-              <div style="font-size:11px;color:#475569;">${dist}</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text-primary);">G ${mag}</div>
+              <div style="font-size:11px;color:var(--text-muted);">${dist}</div>
             </div>
           </div>
-          ${star.angular_distance != null ? `<div style="font-size:10px;color:#334155;margin-top:6px;">θ = ${(star.angular_distance * 60).toFixed(2)}′ from centre</div>` : ''}
+          ${star.angular_distance != null ? `<div style="font-size:10px;color:var(--text-muted);margin-top:6px;">θ = ${(star.angular_distance * 60).toFixed(2)}′ from centre</div>` : ''}
         </div>`;
         },
 
@@ -173,27 +220,27 @@
                 ? paper.categories
                 : (paper.categories || '').split(' ');
             const cats = catsRaw.slice(0, 2).map(c =>
-                `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(37,71,244,0.18);color:#93c5fd;">${c}</span>`
+                `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:var(--accent-soft);color:var(--text-primary);">${c}</span>`
             ).join(' ');
             return `
         <div class="ty-paper-card${clickable ? ' cursor-pointer hover:border-primary/40' : ''}"
              data-arxiv-id="${paper.arxiv_id || ''}"
-             style="padding:12px 14px;border:1px solid rgba(255,255,255,0.07);border-radius:8px;
-                    background:rgba(255,255,255,0.03);margin-bottom:10px;transition:border-color 0.2s;">
+             style="padding:12px 14px;border:1px solid var(--panel-border, rgba(255,255,255,0.07));border-radius:8px;
+                    background:var(--panel-bg, rgba(255,255,255,0.03));margin-bottom:10px;transition:border-color 0.2s, transform 0.2s;">
           <div style="display:flex;align-items:flex-start;gap:10px;">
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:600;color:#e2e8f0;line-height:1.4;">${paper.title || 'Untitled'}</div>
-              <div style="font-size:11px;color:#64748b;margin-top:4px;">${authors}</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.4;">${paper.title || 'Untitled'}</div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">${authors}</div>
               <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">${cats}</div>
             </div>
             <div style="text-align:right;flex-shrink:0;">
-              ${date ? `<div style="font-size:10px;color:#475569;">${date}</div>` : ''}
-              ${score ? `<div style="font-size:10px;color:#2547f4;margin-top:2px;">${score}</div>` : ''}
+              ${date ? `<div style="font-size:10px;color:var(--text-muted);">${date}</div>` : ''}
+              ${score ? `<div style="font-size:10px;color:var(--text-primary);margin-top:2px;">${score}</div>` : ''}
               ${paper.arxiv_id ? `<a href="https://arxiv.org/abs/${paper.arxiv_id}" target="_blank"
-                   style="font-size:10px;color:#3b82f6;display:block;margin-top:4px;">arXiv ↗</a>` : ''}
+                   style="font-size:10px;color:var(--text-primary);display:block;margin-top:4px;">arXiv ↗</a>` : ''}
             </div>
           </div>
-          ${paper.abstract ? `<div style="font-size:11px;color:#475569;margin-top:8px;line-height:1.5;
+          ${paper.abstract ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:8px;line-height:1.5;
                                    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
             ${paper.abstract}</div>` : ''}
         </div>`;
@@ -211,7 +258,7 @@
 
         /** Empty state for lists */
         emptyState: (msg = 'No results found') =>
-            `<div style="text-align:center;padding:32px 16px;color:#475569;">
+            `<div style="text-align:center;padding:32px 16px;color:var(--text-secondary);">
          <span class="material-icons" style="font-size:36px;opacity:.4;display:block;margin-bottom:8px;">search_off</span>
          <div style="font-size:13px;">${msg}</div>
        </div>`,
@@ -219,7 +266,7 @@
         /** Loading spinner */
         spinner: () =>
             `<div style="text-align:center;padding:24px;">
-         <div style="width:24px;height:24px;border:2px solid rgba(37,71,244,.3);border-top-color:#2547f4;
+         <div style="width:24px;height:24px;border:2px solid var(--accent-soft);border-top-color:var(--accent);
                      border-radius:50%;animation:ty-spin 0.7s linear infinite;display:inline-block;"></div>
        </div>`,
 

@@ -1,9 +1,16 @@
 """Star catalog search API routes."""
 from fastapi import APIRouter, Query
-from typing import Optional
+from typing import Optional, Literal
 
 from src.services.star_service import StarService
-from src.schemas import ConeSearchResponse, ConeSearchQuery, StarCountResponse, NearbyStarsResponse
+from src.schemas import (
+    ConeSearchResponse,
+    ConeSearchQuery,
+    DiscoveryResponse,
+    StarCountResponse,
+    NearbyStarsResponse,
+    SpaceVolumeResponse,
+)
 
 router = APIRouter(prefix="/stars", tags=["Stars"])
 _svc = StarService()
@@ -61,3 +68,36 @@ async def count_region(
     """Count stars in a region without returning full data."""
     count = _svc.count_region(ra, dec, radius)
     return StarCountResponse(ra=ra, dec=dec, radius_deg=radius, count=count)
+
+
+@router.get("/space-volume", response_model=SpaceVolumeResponse)
+async def space_volume(
+    limit: int = Query(8000, ge=1, le=10000, description="Maximum points to return"),
+    min_parallax: Optional[float] = Query(None, description="Minimum parallax in mas"),
+    mag_limit: Optional[float] = Query(None, description="Maximum G-band magnitude"),
+):
+    """Return stars projected into 3D space for the volume view."""
+    return _svc.space_volume(
+        limit=limit,
+        min_parallax=min_parallax,
+        mag_limit=mag_limit,
+    )
+
+
+@router.get("/discovery", response_model=DiscoveryResponse)
+async def discovery_mode(
+    limit: int = Query(15, ge=1, le=50, description="Maximum candidates to return"),
+    pool_limit: int = Query(3000, ge=50, le=10000, description="Candidate pool size"),
+    radius_deg: float = Query(0.08, gt=0, le=1, description="Local match radius in degrees"),
+    mode: Literal["strict", "balanced", "aggressive"] = Query(
+        "balanced",
+        description="Discovery scoring profile",
+    ),
+):
+    """Return discovery-scored candidates and catalog comparison context."""
+    return _svc.discovery(
+        limit=limit,
+        pool_limit=pool_limit,
+        radius_deg=radius_deg,
+        mode=mode,
+    )
