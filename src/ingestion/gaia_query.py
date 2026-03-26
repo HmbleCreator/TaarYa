@@ -4,13 +4,22 @@ import logging
 import socket
 from typing import List, Dict, Any, Optional
 
-from astroquery.gaia import Gaia
-
 logger = logging.getLogger(__name__)
 
-Gaia.ROW_LIMIT = 2000
-Gaia.MAIN_GAIA_TABLE = "gaiadr3.gaia_source"
-Gaia.TIMEOUT = 30
+_gaia = None  # Lazily initialised to avoid slow Gaia archive contact at import time
+
+
+def _get_gaia():
+    """Return the configured Gaia client, initialising it on first use."""
+    global _gaia
+    if _gaia is None:
+        from astroquery.gaia import Gaia  # noqa: PLC0415 – intentional lazy import
+
+        Gaia.ROW_LIMIT = 2000
+        Gaia.MAIN_GAIA_TABLE = "gaiadr3.gaia_source"
+        Gaia.TIMEOUT = 30
+        _gaia = Gaia
+    return _gaia
 
 
 def query_gaia_region(
@@ -41,6 +50,7 @@ def query_gaia_region(
           AND phot_g_mean_mag < 18
     """
 
+    Gaia = _get_gaia()  # lazy init – contacts Gaia archive only on first real query
     try:
         logger.info(
             f"Querying Gaia for region: RA={ra}, Dec={dec}, radius={radius_deg}°"

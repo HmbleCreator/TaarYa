@@ -25,9 +25,12 @@ services:
       - neo4j_logs:/logs
     environment:
       - NEO4J_AUTH=neo4j/taarya123
-      - NEO4J_PLUGINS=["apoc"]
-      - NEO4J_apoc_export_file_enabled=true
-      - NEO4J_apoc_import_file_enabled=true
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "taarya123", "RETURN 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   # Spatial Database with Q3C extension
   postgres:

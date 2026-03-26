@@ -1,194 +1,425 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
-
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>TaarYa - Settings</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#4fc3f7",
-                        "secondary": "#7c4dff",
-                        "background-dark": "#0a0e1a",
-                        "surface-dark": "#0d1424",
-                        "surface-glass": "rgba(255, 255, 255, 0.05)",
-                    },
-                    fontFamily: {
-                        "display": ["Inter", "sans-serif"],
-                        "mono": ["JetBrains Mono", "monospace"],
-                    },
-                    backgroundImage: {
-                        'space-gradient': 'radial-gradient(circle at 10% 20%, rgba(124, 77, 255, 0.12) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(79, 195, 247, 0.08) 0%, transparent 40%)',
-                    },
-                    boxShadow: {
-                        'glow': '0 0 20px rgba(79, 195, 247, 0.15)',
-                    }
-                },
-            },
-        }
-    </script>
-    <style type="text/tailwindcss">
-        @layer base {
-            ::-webkit-scrollbar { width: 6px; height: 6px; }
-            ::-webkit-scrollbar-track { background: transparent; }
-            ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-            ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
-        }
-        .star-pattern {
-            background-image: 
-                radial-gradient(white, rgba(255,255,255,.2) 1px, transparent 2px),
-                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px);
-            background-size: 400px 400px, 250px 250px;
-            background-position: 0 0, 150px 150px;
-        }
-        .sidebar-item-active {
-            @apply bg-blue-50 dark:bg-primary/10 border-l-2 border-primary text-primary;
-        }
-        .sidebar-collapsed .sidebar-text { display: none; }
-        .sidebar-collapsed .sidebar-section-title { display: none; }
-        .sidebar-collapsed .history-list { display: none; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaarYa — Settings</title>
+  <meta name="description" content="TaarYa settings — manage data ingestion pipelines and system health.">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <style>
+    /* ── Settings-specific styles ─────────────────────────── */
+    .settings-section {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 20px 22px;
+      margin-bottom: 16px;
+    }
+    .settings-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .settings-section-title .material-icons {
+      font-size: 15px;
+    }
+
+    /* ── Pipeline cards ───────────────────────────────────── */
+    .pipeline-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: border-color .2s;
+    }
+    .pipeline-card:hover { border-color: rgba(37,71,244,0.3); }
+    .pipeline-card:last-child { margin-bottom: 0; }
+    .pipeline-info { flex: 1; min-width: 0; }
+    .pipeline-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .pipeline-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* ── Status pill ──────────────────────────────────────── */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .status-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-idle    { background: rgba(100,116,139,.12); border: 1px solid rgba(100,116,139,.3);  color: #94a3b8; }
+    .status-idle    .status-pill-dot { background: #64748b; }
+    .status-running { background: rgba(16,185,129,.12);  border: 1px solid rgba(16,185,129,.35); color: #10b981; }
+    .status-running .status-pill-dot { background: #10b981; box-shadow: 0 0 6px #10b981; animation: pulse-dot 1.4s infinite; }
+    .status-error   { background: rgba(239,68,68,.12);   border: 1px solid rgba(239,68,68,.3);   color: #ef4444; }
+    .status-error   .status-pill-dot { background: #ef4444; }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* ── Log console ──────────────────────────────────────── */
+    #log-console {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 12px 14px;
+      height: 160px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 1.7;
+      color: #6ee7b7;
+    }
+    #log-console .log-warn  { color: #fbbf24; }
+    #log-console .log-error { color: #f87171; }
+    #log-console .log-info  { color: #94a3b8; }
+
+    /* ── Backend health grid ──────────────────────────────── */
+    .health-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+    .health-item {
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .health-item-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .health-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .health-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .health-value {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: #a5b4fc;
+      letter-spacing: -0.5px;
+    }
+    .health-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── API endpoint cards ───────────────────────────────── */
+    .endpoint-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .endpoint-row:last-child { border-bottom: none; }
+    .method-badge {
+      font-size: 9px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 2px 7px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      letter-spacing: 0.5px;
+    }
+    .method-get  { background: rgba(16,185,129,.15); color: #10b981; border: 1px solid rgba(16,185,129,.3); }
+    .method-post { background: rgba(37,71,244,.15);  color: #818cf8; border: 1px solid rgba(37,71,244,.3); }
+    .endpoint-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .endpoint-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+  </style>
 </head>
+<body>
+<div class="app-layout">
+  <div id="sidebar-mount"></div>
 
-<body
-    class="bg-gray-50 dark:bg-background-dark text-gray-900 dark:text-white font-display h-screen flex overflow-hidden selection:bg-primary/30 transition-colors duration-200">
-    <div class="fixed inset-0 z-0 bg-space-gradient pointer-events-none opacity-50 dark:opacity-100"></div>
-    <div class="fixed inset-0 z-0 star-pattern opacity-10 dark:opacity-20 pointer-events-none"></div>
+  <main class="main-content">
+    <!-- Header -->
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+      <div>
+        <h2 style="margin:0;">Settings</h2>
+        <p style="margin:4px 0 0;color:var(--text-muted);font-size:13px;">Ingestion pipelines, system health & API info</p>
+      </div>
+      <button id="theme-toggle"
+        style="background:var(--bg-surface);border:1px solid var(--border);border-radius:50%;
+               width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+               cursor:pointer;color:var(--text-secondary);transition:all .2s;">
+      </button>
+    </div>
 
-    <!-- Sidebar -->
-    <aside id="mainSidebar"
-        class="w-64 transition-all duration-300 border-r border-gray-200 dark:border-white/5 bg-white/80 dark:bg-surface-dark/60 flex flex-col shrink-0 overflow-hidden relative backdrop-blur-md z-50">
-        <!-- Header / Logo -->
-        <div class="p-4 flex items-center justify-between border-b border-white/5 h-16">
-            <div class="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-                <div
-                    class="w-8 h-8 rounded bg-gradient-to-tr from-secondary to-primary flex items-center justify-center flex-shrink-0 shadow-glow-sm">
-                    <span class="material-icons text-white text-lg">auto_awesome</span>
-                </div>
-                <div class="sidebar-text flex flex-col transition-opacity duration-200">
-                    <h1
-                        class="text-lg font-bold tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-primary to-white">
-                        TaarYa</h1>
-                    <span class="text-[9px] uppercase tracking-widest text-primary/60 font-bold">Astro AI</span>
-                </div>
-            </div>
-            <button id="sidebarToggle" class="text-gray-400 hover:text-white transition-colors p-1">
-                <span class="material-icons text-sm">menu_open</span>
-            </button>
+    <!-- ── System Health ─────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <span class="material-icons">monitor_heart</span> System Health
+      </div>
+      <div class="health-grid" id="health-grid">
+        <!-- Populated by JS -->
+        <div class="health-item" style="opacity:.5;">
+          <div class="health-item-top">
+            <div class="health-dot" style="background:#64748b;"></div>
+            <span class="health-name">Loading…</span>
+          </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Navigation -->
-        <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-            <!-- Main Nav -->
-            <nav class="space-y-1">
-                <a href="/"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
-                    title="Ask / Dashboard">
-                    <span
-                        class="material-icons text-xl group-hover:text-primary transition-colors">chat_bubble_outline</span>
-                    <span class="text-sm font-medium sidebar-text">Ask</span>
-                </a>
-                <a href="/static/explore.html"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
-                    title="Explore">
-                    <span class="material-icons text-xl group-hover:text-white transition-colors">explore</span>
-                    <span class="text-sm font-medium sidebar-text">Explore</span>
-                </a>
-                <a href="/static/analysis.html"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/5 transition-all group"
-                    title="System">
-                    <span class="material-icons text-xl group-hover:text-primary transition-colors">query_stats</span>
-                    <span class="text-sm font-medium sidebar-text">System</span>
-                </a>
-                <a href="/static/settings.html"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-200 dark:bg-white/5 hover:bg-gray-300 dark:hover:bg-white/10 transition-all group sidebar-item-active"
-                    title="Settings">
-                    <span class="material-icons text-xl text-primary transition-colors">settings</span>
-                    <span class="text-sm font-medium sidebar-text text-black dark:text-primary">Settings</span>
-                </a>
-            </nav>
+    <!-- ── Ingestion Pipelines ───────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <span class="material-icons">play_arrow</span> Ingestion Pipelines
+      </div>
 
-            <!-- Divider -->
-            <div class="h-[1px] bg-white/5 mx-2"></div>
-
-            <!-- History Section (No history on settings typically, or maybe just System capability) -->
+      <!-- Gaia -->
+      <div class="pipeline-card">
+        <div class="pipeline-info">
+          <div class="pipeline-name">Gaia Star Catalog</div>
+          <div class="pipeline-desc">Fetch stars from the ESA Gaia archive for seeded regions</div>
         </div>
+        <span class="status-pill status-idle" id="gaia-status-pill">
+          <span class="status-pill-dot"></span><span id="gaia-status-text">Idle</span>
+        </span>
+        <button class="btn btn-primary" id="gaia-btn" onclick="triggerIngestion('gaia')"
+          style="height:36px;padding:0 14px;font-size:12px;display:flex;align-items:center;gap:5px;white-space:nowrap;">
+          <span class="material-icons" style="font-size:16px;">download</span> Run
+        </button>
+      </div>
 
-        <!-- User Profile (Bottom) -->
-        <div
-            class="p-4 border-t border-white/5 flex items-center gap-3 overflow-hidden cursor-pointer hover:bg-white/5 transition-colors">
-            <img alt="User" class="w-8 h-8 rounded-full border border-white/20 flex-shrink-0"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPM7Ss5zF4TAMyNXPL8z1Kz7YnLez5acgGS8xFywaltOC-sHxt3rAQlMKC4ipKBeg8R6YHCDgrF_iqTJRpOSiytM_srkiMdDdU8__Dpq3lIjOuE93sNgwi7yRL-IjGJu5XDTwbaCDKoDbd5GrL45gnlMBBBRaF-Z3cq7PpJN322H5xd-ADbYBdsiNgQCe8UhtsD_GGYxSuHtosItTsR9cIwwjSmsIW3L0GTjKzFjuSGegz_8vs_K0X9GXLOPaAVIrBpeRfqbyB8lU" />
-            <div class="sidebar-text">
-                <div class="text-xs font-bold text-white">Researcher</div>
-                <div class="text-[10px] text-primary">Pro Account</div>
-            </div>
+      <!-- ArXiv -->
+      <div class="pipeline-card">
+        <div class="pipeline-info">
+          <div class="pipeline-name">ArXiv Papers</div>
+          <div class="pipeline-desc">Ingest recent astronomy papers and build knowledge graph links</div>
         </div>
-    </aside>
+        <span class="status-pill status-idle" id="arxiv-status-pill">
+          <span class="status-pill-dot"></span><span id="arxiv-status-text">Idle</span>
+        </span>
+        <button class="btn btn-primary" id="arxiv-btn" onclick="triggerIngestion('arxiv')"
+          style="height:36px;padding:0 14px;font-size:12px;display:flex;align-items:center;gap:5px;white-space:nowrap;">
+          <span class="material-icons" style="font-size:16px;">download</span> Run
+        </button>
+      </div>
 
-    <!-- Main Content Area -->
-    <main
-        class="flex-1 overflow-y-auto p-6 lg:px-12 space-y-6 bg-white/50 dark:bg-background-dark/20 transition-colors duration-200">
-        <header class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-gray-500 dark:text-gray-400 text-2xl">settings</span>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Settings</h2>
-            </div>
-        </header>
-
-        <div class="max-w-2xl space-y-6">
-            <div
-                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl p-6 shadow-lg">
-                <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">Appearance
-                </h3>
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-sm font-bold text-gray-900 dark:text-white">Theme</div>
-                        <div class="text-[10px] text-gray-500">Switch between Light and Dark mode</div>
-                    </div>
-                    <div
-                        class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" id="themeToggle"
-                            class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer checked:right-0 checked:border-primary" />
-                        <label for="themeToggle"
-                            class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
-                    </div>
-                </div>
-            </div>
-
-            <div
-                class="bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/10 rounded-xl p-6 shadow-lg">
-                <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4">Data
-                    Sources</h3>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-gray-700 dark:text-gray-300">Gaia DR3 Catalog</div>
-                        <span
-                            class="text-[10px] text-green-600 dark:text-green-400 font-bold bg-green-100 dark:bg-green-400/10 px-2 py-0.5 rounded">CONNECTED</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-gray-700 dark:text-gray-300">SIMBAD Database</div>
-                        <span
-                            class="text-[10px] text-yellow-600 dark:text-yellow-400 font-bold bg-yellow-100 dark:bg-yellow-400/10 px-2 py-0.5 rounded">CONNECTING...</span>
-                    </div>
-                </div>
-            </div>
+      <!-- Log console -->
+      <div style="margin-top:14px;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--text-muted);margin-bottom:7px;">
+          Activity Log
         </div>
-    </main>
+        <div id="log-console"><span class="log-info">Ready — trigger a pipeline to see output.</span></div>
+      </div>
+    </div>
 
-    <script src="/static/app.js"></script>
+    <!-- ── API Endpoints ─────────────────────────────────── -->
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <span class="material-icons">api</span> API Endpoints
+      </div>
+
+      <div class="endpoint-row">
+        <span class="method-badge method-post">POST</span>
+        <span class="endpoint-path">/api/ingest/gaia</span>
+        <span class="endpoint-desc">Trigger Gaia ingestion</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge method-post">POST</span>
+        <span class="endpoint-path">/api/ingest/arxiv</span>
+        <span class="endpoint-desc">Trigger ArXiv ingestion</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/ingest/status</span>
+        <span class="endpoint-desc">Pipeline running status</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/stats</span>
+        <span class="endpoint-desc">System statistics</span>
+      </div>
+      <div class="endpoint-row">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/regions</span>
+        <span class="endpoint-desc">Seeded sky regions</span>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="/static/taarya-api.js"></script>
+<script src="/static/theme.js"></script>
+<script src="/static/js/sidebar.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ── Log helpers ─────────────────────────────────────── */
+  const logEl = document.getElementById('log-console');
+  function log(msg, type = '') {
+    const span = document.createElement('span');
+    span.className = type ? `log-${type}` : '';
+    span.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    logEl.appendChild(span);
+    logEl.appendChild(document.createElement('br'));
+    logEl.scrollTop = logEl.scrollHeight;
+    // cap at 200 lines
+    while (logEl.childElementCount > 400) logEl.removeChild(logEl.firstChild);
+  }
+
+  /* ── System Health ───────────────────────────────────── */
+  function renderHealth(data) {
+    const pg  = data.postgresql || {};
+    const qd  = data.qdrant     || {};
+    const neo = data.neo4j      || {};
+
+    const mkDot = (ok) => `<div class="health-dot" style="background:${ok ? '#10b981;box-shadow:0 0 5px #10b981' : '#ef4444'};"></div>`;
+
+    const pgOk  = pg.status  === 'connected';
+    const qdOk  = qd.status  === 'connected' || qd.points_count != null;
+    const neoOk = neo.status === 'connected';
+
+    document.getElementById('health-grid').innerHTML = `
+      <div class="health-item">
+        <div class="health-item-top">${mkDot(pgOk)}<span class="health-name">PostgreSQL</span></div>
+        <div class="health-value">${fmt(pg.total_stars)}</div>
+        <div class="health-label">Stars</div>
+      </div>
+      <div class="health-item">
+        <div class="health-item-top">${mkDot(qdOk)}<span class="health-name">Qdrant</span></div>
+        <div class="health-value">${fmt(qd.points_count || qd.vectors_count || 0)}</div>
+        <div class="health-label">Vectors</div>
+      </div>
+      <div class="health-item">
+        <div class="health-item-top">${mkDot(neoOk)}<span class="health-name">Neo4j</span></div>
+        <div class="health-value">${fmt((neo.stars||0) + (neo.papers||0) + (neo.clusters||0))}</div>
+        <div class="health-label">Graph Nodes</div>
+      </div>
+      <div class="health-item">
+        <div class="health-item-top"><div class="health-dot" style="background:#a5b4fc;"></div><span class="health-name">Relationships</span></div>
+        <div class="health-value">${fmt(neo.relationships || 0)}</div>
+        <div class="health-label">Edges</div>
+      </div>`;
+  }
+
+  function loadHealth() {
+    TaarYa.api.stats()
+      .then(renderHealth)
+      .catch(err => log('Failed to load health: ' + err.message, 'error'));
+  }
+
+  loadHealth();
+
+  /* ── Pipeline controls ───────────────────────────────── */
+  async function triggerIngestion(pipeline) {
+    const btn      = document.getElementById(pipeline + '-btn');
+    const pill     = document.getElementById(pipeline + '-status-pill');
+    const pillText = document.getElementById(pipeline + '-status-text');
+
+    btn.disabled = true;
+    setStatus(pill, pillText, 'running', 'Running…');
+    log(`Triggering ${pipeline} ingestion…`);
+
+    try {
+      const res = await fetch(`/api/ingest/${pipeline}`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || res.status);
+      log(`${pipeline}: ${data.message || 'started'}`, 'info');
+    } catch (err) {
+      log(`${pipeline} trigger failed: ${err.message}`, 'error');
+      setStatus(pill, pillText, 'error', 'Error');
+      btn.disabled = false;
+      return;
+    }
+
+    // Poll status
+    pollStatus(pipeline, pill, pillText, btn);
+  }
+
+  function setStatus(pill, pillText, state, label) {
+    pill.className = 'status-pill status-' + state;
+    pillText.textContent = label;
+  }
+
+  function pollStatus(pipeline, pill, pillText, btn) {
+    const iv = setInterval(async () => {
+      try {
+        const res  = await fetch('/api/ingest/status');
+        const data = await res.json();
+        const running = data[pipeline + '_running'] ?? data[pipeline];
+
+        if (running === false || running === 'idle') {
+          clearInterval(iv);
+          setStatus(pill, pillText, 'idle', 'Idle');
+          btn.disabled = false;
+          log(`${pipeline} ingestion complete.`);
+          // Refresh health after ingestion
+          loadHealth();
+        }
+      } catch {
+        clearInterval(iv);
+        setStatus(pill, pillText, 'idle', 'Idle');
+        btn.disabled = false;
+      }
+    }, 3000);
+  }
+
+  /* ── Make triggerIngestion global (used in inline onclick) */
+  window.triggerIngestion = triggerIngestion;
+
+  /* ── Helpers ─────────────────────────────────────────── */
+  function fmt(n) { return n != null ? Number(n).toLocaleString() : '—'; }
+
+})();
+</script>
 </body>
-
 </html>

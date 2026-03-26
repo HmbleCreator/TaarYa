@@ -237,15 +237,15 @@ class GraphSearch:
     
     def get_graph_stats(self) -> Dict[str, int]:
         """Get counts of nodes and relationships in the graph."""
-        with neo4j_conn.session() as session:
-            stars = session.run("MATCH (s:Star) RETURN count(s) AS cnt").single()["cnt"]
-            papers = session.run("MATCH (p:Paper) RETURN count(p) AS cnt").single()["cnt"]
-            clusters = session.run("MATCH (c:Cluster) RETURN count(c) AS cnt").single()["cnt"]
-            rels = session.run("MATCH ()-[r]->() RETURN count(r) AS cnt").single()["cnt"]
-            
-            return {
-                "stars": stars,
-                "papers": papers,
-                "clusters": clusters,
-                "relationships": rels
-            }
+
+        def _count(query: str) -> int:
+            """Run a COUNT query and return 0 if the graph is empty."""
+            record = neo4j_conn.session().run(query).single()
+            return int(record["cnt"]) if record is not None else 0
+
+        return {
+            "stars":         _count("MATCH (s:Star)    RETURN count(s) AS cnt"),
+            "papers":        _count("MATCH (p:Paper)   RETURN count(p) AS cnt"),
+            "clusters":      _count("MATCH (c:Cluster) RETURN count(c) AS cnt"),
+            "relationships": _count("MATCH ()-[r]->()  RETURN count(r) AS cnt"),
+        }

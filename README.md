@@ -107,30 +107,32 @@ If you prefer manual control:
 
 ## 📥 Data Ingestion
 
-By default, the server starts without running Gaia/ArXiv ingestion. You can control this with the `RUN_INGESTION` environment variable:
-
-### Option 1: Run ingestion on server startup
-```bash
-# Windows
-set RUN_INGESTION=true && uv run python -m src.main
-
-# Linux/Mac
-RUN_INGESTION=true uv run python -m src.main
-```
-
-### Option 2: Run ingestion separately (recommended for testing)
+The server **never** runs ingestion automatically on startup. Pipelines are triggered explicitly while the server is running:
 
 ```bash
-# Ingest Gaia stellar catalog (PostgreSQL)
-uv run python -m src.ingestion.seed
+# Ingest Gaia DR3 stellar catalog → PostgreSQL
+curl -X POST http://localhost:8000/api/ingest/gaia
 
-# Ingest ArXiv papers (Qdrant)
-uv run python -m src.ingestion.arxiv_ingest
+# Ingest ArXiv papers → Qdrant
+curl -X POST http://localhost:8000/api/ingest/arxiv
+
+# Check whether either pipeline is currently running
+curl http://localhost:8000/api/ingest/status
 ```
 
-The ArXiv ingestion is capped at 300 papers by default. Edit `src/ingestion/arxiv_ingest.py` to adjust the limit.
+Both endpoints return immediately (`{"status": "started", "pipeline": "..."}`) and run in the background — follow progress in the server logs. Attempting to trigger a pipeline that is already running returns `409 Conflict`.
+
+You can also run them directly from the CLI (useful for scripting or testing):
+
+```bash
+uv run python -m src.ingestion.seed          # Gaia catalog
+uv run python -m src.ingestion.arxiv_ingest  # ArXiv papers
+```
+
+The ArXiv ingestion is capped at 300 papers by default. Edit `ARXIV_QUERIES` and `max_papers` in `src/ingestion/arxiv_ingest.py` to adjust.
 
 ---
+
 
 ## Usage Examples
 

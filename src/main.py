@@ -19,8 +19,6 @@ from fastapi.responses import RedirectResponse
 from src.config import settings
 from src.utils.logger import setup_logging
 from src.database import postgres_conn, qdrant_conn, neo4j_conn
-from src.ingestion.seed import seed_catalog
-from src.ingestion.arxiv_ingest import ingest_arxiv_papers
 from src.api import regions as regions_router
 
 # Setup logging
@@ -32,25 +30,6 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = PROJECT_ROOT / "static"
 
 
-async def run_seed_in_background(db, qdrant):
-    """Run catalog seeding and ArXiv ingestion without blocking app startup."""
-    loop = asyncio.get_event_loop()
-    with ThreadPoolExecutor() as pool:
-        try:
-            logger.info("Background task: starting seed_catalog...")
-            await loop.run_in_executor(pool, seed_catalog, db)
-            logger.info("Background task: seed_catalog completed")
-        except Exception as e:
-            logger.error(f"seed_catalog failed: {e}", exc_info=True)
-            # Don't return — still attempt ArXiv ingestion
-
-        try:
-            logger.info("Background task: starting ingest_arxiv_papers...")
-            await loop.run_in_executor(pool, ingest_arxiv_papers, qdrant)
-            logger.info("Background task: ingest_arxiv_papers completed")
-        except Exception as e:
-            logger.error(f"ingest_arxiv_papers failed: {e}", exc_info=True)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -61,32 +40,15 @@ async def lifespan(app: FastAPI):
         logger.info("PostgreSQL: connected")
 
         # Ensure regions table exists
-        from src.models import Base, Region
-        from sqlalchemy import text
+        from src.models import Base
 
         Base.metadata.create_all(postgres_conn.engine)
         logger.info("Database tables: ensured")
 
         qdrant_conn.connect()
         logger.info("Qdrant: connected")
-
-        if os.getenv("RUN_INGESTION", "").lower() == "true":
-            task = asyncio.create_task(
-                run_seed_in_background(postgres_conn, qdrant_conn)
-            )
-            task.add_done_callback(
-                lambda t: logger.error(
-                    f"Background task failed: {t.exception()}", exc_info=t.exception()
-                )
-                if not t.cancelled() and t.exception()
-                else None
-            )
-        else:
-            logger.info(
-                "Skipping seed and ingestion (set RUN_INGESTION=true to enable)"
-            )
     except Exception as e:
-        logger.error(f"Failed to start background task: {e}", exc_info=True)
+        logger.error(f"Failed to connect databases: {e}", exc_info=True)
 
     try:
         neo4j_conn.connect()
@@ -94,6 +56,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Neo4j unavailable — graph features disabled: {e}")
 
+    logger.info("TaarYa ready. Ingestion pipelines idle — trigger via POST /api/ingest/gaia or /api/ingest/arxiv")
     yield  # App is running
 
     logger.info("Shutting down TaarYa — closing connections...")
@@ -101,6 +64,7 @@ async def lifespan(app: FastAPI):
     qdrant_conn.close()
     neo4j_conn.close()
     logger.info("All connections closed")
+
 
 
 # Create FastAPI app
@@ -142,6 +106,7 @@ from src.api.papers import router as papers_router
 from src.api.search import router as search_router, stats_router
 from src.api.agent import router as agent_router
 from src.api.sessions import router as sessions_router
+from src.api.ingestion import router as ingestion_router
 
 app.include_router(stars_router, prefix="/api")
 app.include_router(papers_router, prefix="/api")
@@ -150,6 +115,8 @@ app.include_router(stats_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
 app.include_router(regions_router.router, prefix="/api")
+app.include_router(ingestion_router, prefix="/api")
+
 
 
 if __name__ == "__main__":

@@ -10,10 +10,9 @@ from sentence_transformers import SentenceTransformer
 from qdrant_client.http import models
 
 from src.config import settings
-from src.utils.logger import setup_logging
 
-setup_logging()
 logger = logging.getLogger(__name__)
+
 
 # ArXiv search queries
 ARXIV_QUERIES = [

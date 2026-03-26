@@ -1,4 +1,4 @@
-<aside class="sidebar">
+<aside class="sidebar" style="display:flex; flex-direction:column;">
   <button id="sidebar-toggle" class="sidebar-toggle"></button>
   <div class="sidebar-brand">
     <h1>TaarYa</h1>
@@ -18,5 +18,11 @@
   <div class="nav-section-title">Recent Chats</div>
   <button id="new-chat-btn" class="new-chat-btn">+ New Chat</button>
   <div id="session-list" class="session-list"></div>
-  <div class="sidebar-footer"><span class="version">v0.2.0</span></div>
+  <div class="sidebar-footer">
+    <a href="/static/settings.html" style="display:flex;align-items:center;gap:8px;color:var(--text-secondary);text-decoration:none;margin-bottom:4px;">
+      <span class="material-icons" style="font-size:18px;">settings</span> Settings
+    </a>
+    <span class="version">v0.2.0</span>
+  </div>
 </aside>
+

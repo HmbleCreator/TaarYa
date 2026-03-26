@@ -9,9 +9,7 @@ from sqlalchemy import text, select
 from src.database import postgres_conn
 from src.ingestion.gaia_query import query_gaia_region
 from src.models import Region
-from src.utils.logger import setup_logging
 
-setup_logging()
 logger = logging.getLogger(__name__)
 
 SEED_REGIONS: List[Dict[str, float]] = [
