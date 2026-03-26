@@ -36,11 +36,14 @@ def query_gaia_region(
         offset: Number of rows to skip (for pagination)
 
     Returns:
-        List of star dictionaries with keys: source_id, ra, dec, parallax, pmra, pmdec, phot_g_mean_mag
+        List of star dictionaries with keys:
+        source_id, ra, dec, parallax, pmra, pmdec, phot_g_mean_mag,
+        phot_bp_mean_mag, phot_rp_mean_mag, ruwe
     """
     gaia_query = f"""
         SELECT TOP {max_stars + offset}
-            source_id, ra, dec, parallax, pmra, pmdec, phot_g_mean_mag
+            source_id, ra, dec, parallax, pmra, pmdec,
+            phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe
         FROM gaiadr3.gaia_source
         WHERE CONTAINS(
             POINT('ICRS', ra, dec),
@@ -89,6 +92,13 @@ def query_gaia_region(
                     "phot_g_mean_mag": float(record["phot_g_mean_mag"])
                     if record["phot_g_mean_mag"] is not None
                     else None,
+                    "phot_bp_mean_mag": float(record["phot_bp_mean_mag"])
+                    if record["phot_bp_mean_mag"] is not None
+                    else None,
+                    "phot_rp_mean_mag": float(record["phot_rp_mean_mag"])
+                    if record["phot_rp_mean_mag"] is not None
+                    else None,
+                    "ruwe": float(record["ruwe"]) if record["ruwe"] is not None else None,
                 }
             )
         except (KeyError, ValueError, TypeError) as e:

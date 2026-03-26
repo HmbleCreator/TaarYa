@@ -240,8 +240,9 @@ class GraphSearch:
 
         def _count(query: str) -> int:
             """Run a COUNT query and return 0 if the graph is empty."""
-            record = neo4j_conn.session().run(query).single()
-            return int(record["cnt"]) if record is not None else 0
+            with neo4j_conn.session() as session:
+                record = session.run(query).single()
+                return int(record["cnt"]) if record is not None else 0
 
         return {
             "stars":         _count("MATCH (s:Star)    RETURN count(s) AS cnt"),

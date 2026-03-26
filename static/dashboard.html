@@ -3,12 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TaarYa — Dashboard</title>
-  <meta name="description" content="TaarYa astronomy research dashboard — system stats and quick search.">
+  <title>TaarYa â€” Dashboard</title>
+  <meta name="description" content="TaarYa astronomy research dashboard â€” system stats and quick search.">
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
   <style>
-    /* ── Dashboard-specific styles ─────────────────────────── */
+    :root {
+      --dashboard-panel-bg: var(--panel-bg);
+      --dashboard-panel-bg-strong: var(--panel-bg-strong);
+      --dashboard-panel-border: var(--panel-border);
+      --dashboard-panel-border-strong: var(--panel-border-strong);
+      --dashboard-panel-text: var(--panel-text);
+      --dashboard-panel-text-secondary: var(--panel-text-secondary);
+      --dashboard-panel-text-muted: var(--panel-text-muted);
+      --dashboard-shadow: 0 18px 38px rgba(0, 0, 0, 0.16);
+    }
+
+    html[data-theme="light"] {
+      --dashboard-shadow: 0 16px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    /* â”€â”€ Dashboard-specific styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .dash-stats-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -16,22 +31,23 @@
       margin-bottom: 20px;
     }
     .dash-stat {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.07);
+      background: var(--dashboard-panel-bg);
+      border: 1px solid var(--dashboard-panel-border);
       border-radius: 10px;
       padding: 16px 18px;
       display: flex;
       flex-direction: column;
       gap: 4px;
-      transition: border-color .2s;
+      transition: border-color .2s, transform .2s;
+      box-shadow: var(--dashboard-shadow);
     }
-    .dash-stat:hover { border-color: rgba(37,71,244,0.4); }
-    .dash-stat-icon { font-size: 18px; color: var(--text-muted); margin-bottom: 4px; }
+    .dash-stat:hover { border-color: var(--dashboard-panel-border-strong); transform: translateY(-1px); }
+    .dash-stat-icon { font-size: 18px; color: var(--dashboard-panel-text-muted); margin-bottom: 4px; }
     .dash-stat-value {
       font-size: 22px;
       font-weight: 700;
       font-family: 'JetBrains Mono', monospace;
-      color: var(--text-primary);
+      color: var(--dashboard-panel-text);
       letter-spacing: -0.5px;
     }
     .dash-stat-label {
@@ -41,10 +57,10 @@
       color: var(--text-muted);
     }
 
-    /* ── Two-column layout ─────────────────────────────────── */
+    /* â”€â”€ Two-column layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .dash-grid {
       display: grid;
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: 1fr 380px;
       gap: 16px;
       align-items: start;
     }
@@ -52,50 +68,206 @@
       .dash-grid { grid-template-columns: 1fr; }
     }
 
-    /* ── Sky map ───────────────────────────────────────────── */
+    /* â”€â”€ Sky map â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .sky-map-wrap {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.07);
+      background: var(--dashboard-panel-bg);
+      border: 1px solid var(--dashboard-panel-border);
       border-radius: 10px;
       padding: 18px 20px;
+      box-shadow: var(--dashboard-shadow);
     }
     .sky-map-title {
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      color: var(--text-muted);
+      color: var(--dashboard-panel-text-muted);
       margin-bottom: 14px;
     }
-    #sky-svg {
+    .sky-map-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .sky-filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .sky-filter {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 132px;
+    }
+    .sky-filter label {
+      font-size: 9px;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      color: var(--dashboard-panel-text-muted);
+    }
+    .sky-filter input {
+      background: var(--dashboard-panel-bg-strong);
+      border: 1px solid var(--dashboard-panel-border);
+      border-radius: 8px;
+      color: var(--dashboard-panel-text);
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
       width: 100%;
-      height: auto;
+    }
+    .sky-filter input:focus {
+      border-color: var(--dashboard-panel-border-strong);
+      box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.12);
+    }
+    .sky-map-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .sky-zoom-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 8px 0 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--dashboard-panel-border);
+      background: var(--dashboard-panel-bg);
+    }
+    .sky-zoom-group label {
+      font-size: 9px;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      color: var(--dashboard-panel-text-muted);
+    }
+    .sky-zoom-group input[type="range"] {
+      flex: 1 1 180px;
+      min-width: 180px;
+      accent-color: #e5e7eb;
+    }
+    .sky-zoom-value {
+      font-size: 10px;
+      color: var(--dashboard-panel-text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      min-width: 54px;
+      text-align: right;
+    }
+    .sky-map-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .legend-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--dashboard-panel-border);
+      background: var(--dashboard-panel-bg-strong);
+      color: var(--dashboard-panel-text-muted);
+      font-size: 10px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 8px currentColor;
+    }
+    .legend-swatch.hot { background: #7dd3fc; color: #7dd3fc; }
+    .legend-swatch.mid { background: #f59e0b; color: #f59e0b; }
+    .legend-swatch.cool { background: #f8fafc; color: #f8fafc; }
+    .legend-swatch.quality { background: #a78bfa; color: #a78bfa; }
+    .sky-globe-shell {
+      position: relative;
+      min-height: 360px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--dashboard-panel-border);
+      background:
+        radial-gradient(circle at 28% 24%, rgba(255,255,255,0.09), transparent 26%),
+        radial-gradient(circle at 50% 52%, rgba(255,255,255,0.04), rgba(0,0,0,0.0) 62%),
+        linear-gradient(180deg, var(--dashboard-panel-bg-strong), var(--dashboard-panel-bg));
+    }
+    #sky-globe-canvas {
+      width: 100%;
+      height: 100%;
       display: block;
+      touch-action: none;
+      cursor: grab;
+    }
+    #sky-globe-canvas:active {
+      cursor: grabbing;
+    }
+    .sky-globe-hud {
+      position: absolute;
+      inset: auto 14px 14px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      pointer-events: none;
+    }
+    .sky-globe-hint,
+    .sky-globe-readout {
+      backdrop-filter: blur(10px);
+      background: var(--dashboard-panel-bg);
+      border: 1px solid var(--dashboard-panel-border);
+      color: var(--dashboard-panel-text);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 10px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      font-weight: 600;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    }
+    .sky-globe-readout {
+      text-transform: none;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--dashboard-panel-text-secondary);
+      max-width: min(100%, 340px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    /* ── Region list ───────────────────────────────────────── */
+    /* â”€â”€ Region list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .region-list {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.07);
+      background: var(--dashboard-panel-bg);
+      border: 1px solid var(--dashboard-panel-border);
       border-radius: 10px;
       padding: 18px 20px;
+      box-shadow: var(--dashboard-shadow);
     }
     .region-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 9px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      border-bottom: 1px solid var(--dashboard-panel-border);
     }
     .region-row:last-child { border-bottom: none; }
     .region-name {
       font-size: 12px;
       font-weight: 600;
-      color: var(--text-primary);
+      color: var(--dashboard-panel-text);
     }
     .region-coords {
       font-size: 10px;
-      color: var(--text-muted);
+      color: var(--dashboard-panel-text-muted);
       font-family: 'JetBrains Mono', monospace;
       margin-top: 2px;
     }
@@ -113,7 +285,7 @@
       flex-shrink: 0;
     }
 
-    /* ── Backend badges ────────────────────────────────────── */
+    /* â”€â”€ Backend badges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .backend-row {
       display: flex;
       flex-wrap: wrap;
@@ -140,20 +312,21 @@
     .be-dot-on  { background: #10b981; box-shadow: 0 0 4px #10b981; }
     .be-dot-off { background: #ef4444; }
 
-    /* ── Quick search card ─────────────────────────────────── */
+    /* â”€â”€ Quick search card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .qs-card {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.07);
+      background: var(--dashboard-panel-bg);
+      border: 1px solid var(--dashboard-panel-border);
       border-radius: 10px;
       padding: 18px 20px;
       margin-top: 16px;
+      box-shadow: var(--dashboard-shadow);
     }
     .qs-card h3 {
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      color: var(--text-muted);
+      color: var(--dashboard-panel-text-muted);
       margin-bottom: 14px;
     }
     .qs-input-row {
@@ -163,7 +336,7 @@
     }
     .qs-input-row .input-group { flex: 1; }
 
-    /* ── Neo4j graph mini-breakdown ────────────────────────── */
+    /* â”€â”€ Neo4j graph mini-breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .graph-breakdown {
       display: grid;
       grid-template-columns: repeat(3,1fr);
@@ -171,24 +344,260 @@
       margin-top: 8px;
     }
     .graph-mini {
-      background: rgba(255,255,255,0.025);
-      border: 1px solid rgba(255,255,255,0.06);
+      background: var(--dashboard-panel-bg);
+      border: 1px solid var(--dashboard-panel-border);
       border-radius: 8px;
       padding: 10px 12px;
       text-align: center;
+      box-shadow: var(--dashboard-shadow);
     }
     .graph-mini-val {
       font-size: 16px;
       font-weight: 700;
       font-family: 'JetBrains Mono', monospace;
-      color: #a5b4fc;
+      color: var(--dashboard-panel-text);
     }
     .graph-mini-lbl {
       font-size: 9px;
       text-transform: uppercase;
       letter-spacing: 0.7px;
-      color: var(--text-muted);
+      color: var(--dashboard-panel-text-muted);
       margin-top: 3px;
+    }
+
+    .side-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .discovery-panel {
+      background: var(--dashboard-panel-bg);
+      border: 1px solid var(--dashboard-panel-border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      box-shadow: var(--dashboard-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .discovery-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .discovery-controls {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .discovery-control {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 168px;
+    }
+
+    .discovery-control label,
+    .catalog-import-field label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--dashboard-panel-text-muted);
+    }
+
+    .discovery-control select,
+    .catalog-import-field input,
+    .catalog-import-field select {
+      background: var(--dashboard-panel-bg-strong);
+      border: 1px solid var(--dashboard-panel-border);
+      border-radius: 8px;
+      color: var(--dashboard-panel-text);
+      padding: 8px 10px;
+      font-size: 12px;
+      outline: none;
+      width: 100%;
+    }
+
+    .discovery-control select:focus,
+    .catalog-import-field input:focus,
+    .catalog-import-field select:focus {
+      border-color: var(--dashboard-panel-border-strong);
+      box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.12);
+    }
+
+    .discovery-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .discovery-summary-card {
+      border: 1px solid var(--dashboard-panel-border);
+      background: var(--dashboard-panel-bg-strong);
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-height: 70px;
+    }
+
+    .discovery-summary-value {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--dashboard-panel-text);
+    }
+
+    .discovery-summary-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--dashboard-panel-text-muted);
+      margin-top: 4px;
+    }
+
+    .discovery-catalog-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .catalog-pill,
+    .reason-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--dashboard-panel-border);
+      background: var(--dashboard-panel-bg-strong);
+      color: var(--dashboard-panel-text);
+      font-size: 9px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .reason-pill {
+      cursor: help;
+    }
+
+    .reason-pill:hover,
+    .catalog-pill:hover {
+      border-color: var(--dashboard-panel-border-strong);
+    }
+
+    .discovery-score-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      min-width: 92px;
+    }
+
+    .discovery-score-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--dashboard-panel-text-muted);
+    }
+
+    .discovery-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .discovery-card {
+      border: 1px solid var(--dashboard-panel-border);
+      border-radius: 12px;
+      background: var(--dashboard-panel-bg-strong);
+      padding: 12px 14px;
+    }
+
+    .discovery-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .discovery-score {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--dashboard-panel-text);
+      text-align: right;
+    }
+
+    .discovery-source {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--dashboard-panel-text);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.4px;
+    }
+
+    .discovery-meta {
+      font-size: 11px;
+      color: var(--dashboard-panel-text-muted);
+      margin-top: 3px;
+      line-height: 1.5;
+    }
+
+    .discovery-reasons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .catalog-import-panel {
+      background: var(--dashboard-panel-bg);
+      border: 1px solid var(--dashboard-panel-border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      box-shadow: var(--dashboard-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .catalog-import-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 10px;
+    }
+
+    .catalog-import-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .catalog-import-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .catalog-import-status {
+      min-height: 18px;
+      font-size: 11px;
+      color: var(--dashboard-panel-text-muted);
+      line-height: 1.4;
+    }
+
+    .catalog-file-input {
+      display: none;
     }
   </style>
 </head>
@@ -212,43 +621,43 @@
 
     <!-- Backend status badges -->
     <div class="backend-row" id="backend-badges">
-      <span class="be-badge be-offline"><span class="be-badge-dot be-dot-off"></span>Loading…</span>
+      <span class="be-badge be-offline"><span class="be-badge-dot be-dot-off"></span>Loadingâ€¦</span>
     </div>
 
     <!-- Top stats row -->
     <div class="dash-stats-row" id="stats-row">
       <div class="dash-stat">
         <span class="material-icons dash-stat-icon">star</span>
-        <div class="dash-stat-value" id="stat-stars">—</div>
+        <div class="dash-stat-value" id="stat-stars">â€”</div>
         <div class="dash-stat-label">Stars in DB</div>
       </div>
       <div class="dash-stat">
         <span class="material-icons dash-stat-icon">article</span>
-        <div class="dash-stat-value" id="stat-papers">—</div>
+        <div class="dash-stat-value" id="stat-papers">â€”</div>
         <div class="dash-stat-label">Papers Indexed</div>
       </div>
       <div class="dash-stat">
         <span class="material-icons dash-stat-icon">hub</span>
-        <div class="dash-stat-value" id="stat-nodes">—</div>
+        <div class="dash-stat-value" id="stat-nodes">â€”</div>
         <div class="dash-stat-label">Graph Nodes</div>
       </div>
       <div class="dash-stat">
         <span class="material-icons dash-stat-icon">share</span>
-        <div class="dash-stat-value" id="stat-rels">—</div>
+        <div class="dash-stat-value" id="stat-rels">â€”</div>
         <div class="dash-stat-label">Relationships</div>
       </div>
       <div class="dash-stat">
         <span class="material-icons dash-stat-icon">scatter_plot</span>
-        <div class="dash-stat-value" id="stat-clusters">—</div>
+        <div class="dash-stat-value" id="stat-clusters">â€”</div>
         <div class="dash-stat-label">Clusters</div>
       </div>
     </div>
 
     <!-- Neo4j graph breakdown -->
     <div class="graph-breakdown" id="graph-breakdown" style="margin-bottom:18px;">
-      <div class="graph-mini"><div class="graph-mini-val" id="neo-stars">—</div><div class="graph-mini-lbl">Star nodes</div></div>
-      <div class="graph-mini"><div class="graph-mini-val" id="neo-papers">—</div><div class="graph-mini-lbl">Paper nodes</div></div>
-      <div class="graph-mini"><div class="graph-mini-val" id="neo-clusters">—</div><div class="graph-mini-lbl">Cluster nodes</div></div>
+      <div class="graph-mini"><div class="graph-mini-val" id="neo-stars">â€”</div><div class="graph-mini-lbl">Star nodes</div></div>
+      <div class="graph-mini"><div class="graph-mini-val" id="neo-papers">â€”</div><div class="graph-mini-lbl">Paper nodes</div></div>
+      <div class="graph-mini"><div class="graph-mini-val" id="neo-clusters">â€”</div><div class="graph-mini-lbl">Cluster nodes</div></div>
     </div>
 
 
@@ -274,13 +683,54 @@
 
       <!-- Sky coverage map -->
       <div class="sky-map-wrap">
-        <div class="sky-map-title">Sky Coverage Map</div>
-        <svg id="sky-svg" viewBox="0 0 600 240" xmlns="http://www.w3.org/2000/svg">
+        <div class="sky-map-title">3D Space Volume</div>
+        <div class="sky-map-toolbar">
+          <div class="sky-filter-group">
+            <div class="sky-filter">
+              <label for="volume-min-parallax">Min Parallax (mas)</label>
+              <input id="volume-min-parallax" type="number" step="0.1" min="0" placeholder="e.g. 2.0">
+            </div>
+            <div class="sky-filter">
+              <label for="volume-mag-limit">Max G Mag</label>
+              <input id="volume-mag-limit" type="number" step="0.1" min="0" placeholder="e.g. 16.5">
+            </div>
+          </div>
+          <div class="sky-map-actions">
+            <button id="volume-refresh-btn" class="btn btn-primary" type="button" style="height:38px;">
+              <span class="material-icons" style="font-size:17px;">refresh</span> Refresh
+            </button>
+            <button id="volume-reset-btn" class="btn btn-secondary" type="button" style="height:38px;">
+              Reset
+            </button>
+          </div>
+        </div>
+        <div class="sky-zoom-group">
+          <label for="volume-zoom">Zoom</label>
+          <button id="zoom-out-btn" class="btn btn-secondary" type="button" style="height:34px;width:34px;padding:0;">-</button>
+          <input id="volume-zoom" type="range" min="0.65" max="1.8" step="0.01" value="1">
+          <button id="zoom-in-btn" class="btn btn-secondary" type="button" style="height:34px;width:34px;padding:0;">+</button>
+          <button id="zoom-reset-btn" class="btn btn-secondary" type="button" style="height:34px;">Reset View</button>
+          <span id="volume-zoom-value" class="sky-zoom-value">1.00x</span>
+        </div>
+        <div class="sky-globe-shell" style="margin-bottom:12px;">
+          <canvas id="sky-globe-canvas" aria-label="3D space volume map"></canvas>
+          <div class="sky-globe-hud">
+            <div class="sky-globe-hint">Drag to rotate the space volume</div>
+            <div class="sky-globe-readout" id="sky-globe-readout">Loading space volume...</div>
+          </div>
+        </div>
+        <div class="sky-map-legend">
+          <span class="legend-chip"><span class="legend-swatch hot"></span> Blue-white = hotter</span>
+          <span class="legend-chip"><span class="legend-swatch mid"></span> Amber = intermediate</span>
+          <span class="legend-chip"><span class="legend-swatch cool"></span> White = cooler</span>
+          <span class="legend-chip"><span class="legend-swatch quality"></span> RUWE dims weak-quality stars</span>
+        </div>
+        <svg id="sky-svg" viewBox="0 0 600 240" xmlns="http://www.w3.org/2000/svg" style="display:none;">
           <!-- Background -->
           <rect width="600" height="240" fill="#050810" rx="6"/>
 
           <!-- Subtle grid lines -->
-          <!-- RA lines every 60° -->
+          <!-- RA lines every 60Â° -->
           <g stroke="rgba(255,255,255,0.06)" stroke-width="0.5">
             <line x1="0"   y1="0" x2="0"   y2="240"/>
             <line x1="100" y1="0" x2="100" y2="240"/>
@@ -290,7 +740,7 @@
             <line x1="500" y1="0" x2="500" y2="240"/>
             <line x1="600" y1="0" x2="600" y2="240"/>
           </g>
-          <!-- Dec lines every 30° -->
+          <!-- Dec lines every 30Â° -->
           <g stroke="rgba(255,255,255,0.06)" stroke-width="0.5">
             <line x1="0" y1="40"  x2="600" y2="40"/>
             <line x1="0" y1="80"  x2="600" y2="80"/>
@@ -319,21 +769,21 @@
           </g>
           <!-- Dec labels -->
           <g fill="rgba(255,255,255,0.25)" font-size="8" font-family="monospace" text-anchor="end">
-            <text x="598" y="43">+60°</text>
-            <text x="598" y="83">+30°</text>
-            <text x="598" y="123">0°</text>
-            <text x="598" y="163">-30°</text>
-            <text x="598" y="203">-60°</text>
+            <text x="598" y="43">+60Â°</text>
+            <text x="598" y="83">+30Â°</text>
+            <text x="598" y="123">0Â°</text>
+            <text x="598" y="163">-30Â°</text>
+            <text x="598" y="203">-60Â°</text>
           </g>
 
           <!-- Galactic plane label -->
           <text x="285" y="170" fill="rgba(251,191,36,0.45)" font-size="8"
                 font-family="monospace">galactic plane</text>
 
-          <!-- Region circles — injected by JS -->
+          <!-- Region circles â€” injected by JS -->
           <g id="sky-regions"></g>
         </svg>
-        <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;">
+        <div style="display:none;">
           <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(255,255,255,0.35);">
             <span style="display:inline-block;width:24px;height:1px;border-top:1px dashed rgba(251,191,36,.5);"></span>
             Galactic plane
@@ -346,10 +796,76 @@
       </div>
 
       <!-- Region list panel -->
-      <div class="region-list">
-        <div class="sky-map-title">Seeded Regions</div>
-        <div id="region-rows">
-          <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px;">Loading…</div>
+      <div class="side-stack">
+        <div class="region-list">
+          <div class="sky-map-title">Seeded Regions</div>
+          <div id="region-rows">
+            <div style="text-align:center;padding:24px;color:var(--dashboard-panel-text-muted);font-size:12px;">Loadingâ€¦</div>
+          </div>
+        </div>
+
+        <div class="discovery-panel">
+          <div class="sky-map-title" style="margin-bottom:0;">Discovery Mode</div>
+          <div class="discovery-toolbar">
+            <div class="discovery-controls">
+              <div class="discovery-control">
+                <label for="discovery-mode-select">Ranking Mode</label>
+                <select id="discovery-mode-select">
+                  <option value="strict">Strict</option>
+                  <option value="balanced" selected>Balanced</option>
+                  <option value="aggressive">Aggressive</option>
+                </select>
+              </div>
+              <button id="discovery-refresh-btn" class="btn btn-secondary" type="button" style="height:34px;">Refresh</button>
+            </div>
+          </div>
+          <div class="discovery-catalog-row" id="discovery-catalog-row">
+            <span class="catalog-pill">Loading catalogs…</span>
+          </div>
+          <div class="discovery-summary" id="discovery-summary">
+            <div class="discovery-summary-card">
+              <div class="discovery-summary-value" id="discovery-total">—</div>
+              <div class="discovery-summary-label">Candidates</div>
+            </div>
+            <div class="discovery-summary-card">
+              <div class="discovery-summary-value" id="discovery-catalogs">—</div>
+              <div class="discovery-summary-label">Catalogs</div>
+            </div>
+            <div class="discovery-summary-card">
+              <div class="discovery-summary-value" id="discovery-overlaps">—</div>
+              <div class="discovery-summary-label">Cross-matches</div>
+            </div>
+          </div>
+          <div class="discovery-list" id="discovery-list">
+            <div style="color:var(--dashboard-panel-text-muted);font-size:12px;padding:10px 0;">Loading discovery candidates…</div>
+          </div>
+        </div>
+
+        <div class="catalog-import-panel">
+          <div class="sky-map-title" style="margin-bottom:0;">Catalog Import</div>
+          <div class="catalog-import-grid">
+            <div class="catalog-import-field">
+              <label for="catalog-source-select">Catalog Source</label>
+              <select id="catalog-source-select">
+                <option value="WISE">WISE</option>
+                <option value="2MASS">2MASS</option>
+                <option value="PAN-STARRS">Pan-STARRS</option>
+                <option value="GAIA">Gaia</option>
+              </select>
+            </div>
+            <div class="catalog-import-field">
+              <label for="catalog-file-path">Server File Path</label>
+              <input id="catalog-file-path" type="text" placeholder="C:\\data\\wise_catalog.csv">
+            </div>
+          </div>
+          <div class="catalog-import-actions">
+            <button id="catalog-ingest-btn" class="btn btn-secondary" type="button">Ingest Server File</button>
+            <input id="catalog-file-input" class="catalog-file-input" type="file" accept=".csv,.json,.jsonl,.fits,.fit">
+            <button id="catalog-choose-file-btn" class="btn btn-secondary" type="button">Choose File</button>
+            <span id="catalog-file-name" class="catalog-pill">No file selected</span>
+            <button id="catalog-upload-btn" class="btn btn-primary" type="button">Upload &amp; Ingest</button>
+          </div>
+          <div id="catalog-import-status" class="catalog-import-status">Use a server path or upload a local catalog to add it to the shared dataset.</div>
         </div>
       </div>
     </div>
@@ -366,22 +882,404 @@
   'use strict';
   const { api, render } = TaarYa;
 
-  /* ── Region dot colours ───────────────────────────────────── */
+  /* â”€â”€ Region dot colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const REGION_COLORS = ['#38bdf8', '#6ee7b7', '#f472b6'];
 
-  /* ── Map helpers ──────────────────────────────────────────── */
-  // Equirectangular projection: RA 0-360 → x 0-600, Dec -90..90 → y 240..0
+  /* â”€â”€ Map helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  // Equirectangular projection: RA 0-360 â†’ x 0-600, Dec -90..90 â†’ y 240..0
   function raToX(ra)  { return (ra / 360) * 600; }
   function decToY(dec){ return (90 - dec) / 180 * 240; }
 
-  // Radius in degrees → approximate SVG radius (1° ≈ 1.67px in RA direction)
+  // Radius in degrees â†’ approximate SVG radius (1Â° â‰ˆ 1.67px in RA direction)
   function degToR(deg, dec) {
     const raPx  = (deg / 360) * 600;
     const decPx = (deg / 180) * 240;
     return Math.max((raPx + decPx) / 2, 4);
   }
 
-  /* ── Load stats ───────────────────────────────────────────── */
+  const REGION_TONES = ['#7dd3fc', '#93c5fd', '#a78bfa', '#fda4af', '#fde68a', '#86efac'];
+  const DEG2RAD = Math.PI / 180;
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function hexToRgba(hex, alpha) {
+    const normalized = hex.replace('#', '').trim();
+    const full = normalized.length === 3
+      ? normalized.split('').map(ch => ch + ch).join('')
+      : normalized;
+    const value = parseInt(full, 16);
+    const r = (value >> 16) & 255;
+    const g = (value >> 8) & 255;
+    const b = value & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  function sphereToVec(ra, dec) {
+    const raRad = ra * DEG2RAD;
+    const decRad = dec * DEG2RAD;
+    const cosDec = Math.cos(decRad);
+    return {
+      x: cosDec * Math.cos(raRad),
+      y: Math.sin(decRad),
+      z: cosDec * Math.sin(raRad),
+    };
+  }
+
+  function rotateVec(vec, yaw, pitch) {
+    const cosY = Math.cos(yaw);
+    const sinY = Math.sin(yaw);
+    const cosP = Math.cos(pitch);
+    const sinP = Math.sin(pitch);
+
+    const x1 = vec.x * cosY - vec.z * sinY;
+    const z1 = vec.x * sinY + vec.z * cosY;
+    const y1 = vec.y;
+
+    return {
+      x: x1,
+      y: y1 * cosP - z1 * sinP,
+      z: y1 * sinP + z1 * cosP,
+    };
+  }
+
+  function createSkyGlobe(canvas, readoutEl) {
+    const ctx = canvas.getContext('2d');
+    const state = {
+      regions: [],
+      vectors: [],
+      totalCount: 0,
+      hoverIndex: -1,
+      yaw: -0.85,
+      pitch: -0.28,
+      dragging: false,
+      pointerX: 0,
+      pointerY: 0,
+      width: 0,
+      height: 0,
+      dpr: window.devicePixelRatio || 1,
+    };
+
+    function resize() {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      state.width = Math.max(rect.width, 320);
+      state.height = Math.max(rect.height, 320);
+      state.dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(state.width * state.dpr);
+      canvas.height = Math.round(state.height * state.dpr);
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      draw();
+    }
+
+    function project(vec, radius, cx, cy) {
+      return {
+        x: cx + vec.x * radius,
+        y: cy - vec.y * radius,
+      };
+    }
+
+    function roundedRectPath(x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    }
+
+    function updateReadout(region) {
+      if (!readoutEl) return;
+      if (region) {
+        readoutEl.textContent = `${region.name} | ${Number(region.count || 0).toLocaleString()} stars | RA ${Number(region.ra).toFixed(1)} deg Dec ${Number(region.dec).toFixed(1)} deg`;
+        return;
+      }
+      readoutEl.textContent = `${state.regions.length} regions | ${Number(state.totalCount || 0).toLocaleString()} stars in view`;
+    }
+
+    function drawGrid(radius, cx, cy) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.09)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 5]);
+
+      [-60, -30, 0, 30, 60].forEach((dec) => {
+        ctx.beginPath();
+        let started = false;
+        for (let ra = 0; ra <= 360; ra += 6) {
+          const rotated = rotateVec(sphereToVec(ra, dec), state.yaw, state.pitch);
+          if (rotated.z < -0.08) {
+            started = false;
+            continue;
+          }
+          const pt = project(rotated, radius, cx, cy);
+          if (!started) {
+            ctx.moveTo(pt.x, pt.y);
+            started = true;
+          } else {
+            ctx.lineTo(pt.x, pt.y);
+          }
+        }
+        ctx.stroke();
+      });
+
+      [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].forEach((ra) => {
+        ctx.beginPath();
+        let started = false;
+        for (let dec = -90; dec <= 90; dec += 6) {
+          const rotated = rotateVec(sphereToVec(ra, dec), state.yaw, state.pitch);
+          if (rotated.z < -0.08) {
+            started = false;
+            continue;
+          }
+          const pt = project(rotated, radius, cx, cy);
+          if (!started) {
+            ctx.moveTo(pt.x, pt.y);
+            started = true;
+          } else {
+            ctx.lineTo(pt.x, pt.y);
+          }
+        }
+        ctx.stroke();
+      });
+
+      ctx.restore();
+    }
+
+    function drawLabel(region, pt, radius, tone) {
+      const label = region.name || 'Region';
+      ctx.save();
+      ctx.font = '10px JetBrains Mono, monospace';
+      const boxW = Math.min(160, Math.max(72, ctx.measureText(label).width + 16));
+      const boxH = 18;
+      const labelX = clamp(pt.x - boxW / 2, 8, state.width - boxW - 8);
+      const labelY = clamp(pt.y - radius - 18, 8, state.height - boxH - 8);
+      roundedRectPath(labelX, labelY, boxW, boxH, 999);
+      ctx.fillStyle = 'rgba(8,8,8,0.78)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = tone;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, labelX + boxW / 2, labelY + boxH / 2 + 0.5);
+      ctx.restore();
+    }
+
+    function draw() {
+      if (!state.width || !state.height) return;
+
+      const w = state.width;
+      const h = state.height;
+      const radius = Math.min(w, h) * 0.34;
+      const cx = w * 0.44;
+      const cy = h * 0.5;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+
+      const backdrop = ctx.createRadialGradient(cx, cy - radius * 0.18, radius * 0.12, cx, cy, radius * 1.9);
+      backdrop.addColorStop(0, 'rgba(125,211,252,0.10)');
+      backdrop.addColorStop(0.32, 'rgba(167,139,250,0.06)');
+      backdrop.addColorStop(0.58, 'rgba(253,224,71,0.04)');
+      backdrop.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = backdrop;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.clip();
+
+      const sphere = ctx.createRadialGradient(
+        cx - radius * 0.28,
+        cy - radius * 0.32,
+        radius * 0.12,
+        cx,
+        cy,
+        radius * 1.12
+      );
+      sphere.addColorStop(0, 'rgba(255,255,255,0.12)');
+      sphere.addColorStop(0.18, 'rgba(59,130,246,0.10)');
+      sphere.addColorStop(0.42, 'rgba(147,197,253,0.08)');
+      sphere.addColorStop(0.72, 'rgba(168,85,247,0.05)');
+      sphere.addColorStop(1, 'rgba(0,0,0,0.96)');
+      ctx.fillStyle = sphere;
+      ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+      const shadow = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius);
+      shadow.addColorStop(0, 'rgba(0,0,0,0)');
+      shadow.addColorStop(1, 'rgba(0,0,0,0.42)');
+      ctx.fillStyle = shadow;
+      ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+      drawGrid(radius, cx, cy);
+
+      ctx.save();
+      ctx.setLineDash([]);
+      for (let i = 0; i < 84; i += 1) {
+        const seed = (i * 97) % 360;
+        const band = ((i * 53) % 180) - 90;
+        const rotated = rotateVec(sphereToVec(seed, band), state.yaw * 0.4, state.pitch * 0.2);
+        if (rotated.z < -0.06) continue;
+        const pt = project(rotated, radius * (0.98 + ((i % 5) * 0.008)), cx, cy);
+        const hue = [195, 220, 265, 330, 48, 140][i % 6];
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 0.8 + (i % 3) * 0.45, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${hue}, 90%, 72%, ${0.35 - (i % 4) * 0.04})`;
+        ctx.fill();
+      }
+      ctx.restore();
+
+      const visible = [];
+      state.regions.forEach((region, index) => {
+        const rotated = rotateVec(state.vectors[index], state.yaw, state.pitch);
+        if (rotated.z < -0.18) return;
+        visible.push({
+          index,
+          region,
+          rotated,
+          pt: project(rotated, radius, cx, cy),
+          depth: rotated.z,
+          screenRadius: Math.max(6, radius * Math.sin(Math.max(Number(region.radius || region.radius_deg || 0.5), 0.35) * DEG2RAD) * 0.9),
+        });
+      });
+
+      visible.sort((a, b) => a.depth - b.depth);
+      visible.forEach((item, drawIndex) => {
+        const tone = REGION_TONES[drawIndex % REGION_TONES.length];
+        const hovered = item.index === state.hoverIndex;
+        const fillColor = hovered ? hexToRgba(tone, 0.28) : hexToRgba(tone, 0.10);
+        const strokeColor = hovered ? hexToRgba(tone, 0.95) : hexToRgba(tone, 0.72);
+        ctx.beginPath();
+        ctx.arc(item.pt.x, item.pt.y, item.screenRadius, 0, Math.PI * 2);
+        ctx.fillStyle = fillColor;
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = hovered ? 1.8 : 1.1;
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(item.pt.x, item.pt.y, hovered ? 4.2 : 2.6, 0, Math.PI * 2);
+        ctx.fillStyle = hovered ? '#fff' : tone;
+        ctx.fill();
+
+        if (hovered || item.screenRadius > 14) {
+          drawLabel(item.region, item.pt, item.screenRadius, tone);
+        }
+      });
+
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 1.15;
+      ctx.stroke();
+      ctx.restore();
+
+      updateReadout(state.hoverIndex >= 0 ? state.regions[state.hoverIndex] : null);
+    }
+
+    function pickRegion(x, y) {
+      const radius = Math.min(state.width, state.height) * 0.34;
+      const cx = state.width * 0.44;
+      const cy = state.height * 0.5;
+      let best = -1;
+      let bestDist = Infinity;
+
+      state.regions.forEach((region, index) => {
+        const rotated = rotateVec(state.vectors[index], state.yaw, state.pitch);
+        if (rotated.z < -0.18) return;
+        const pt = project(rotated, radius, cx, cy);
+        const screenRadius = Math.max(6, radius * Math.sin(Math.max(Number(region.radius || region.radius_deg || 0.5), 0.35) * DEG2RAD) * 0.9);
+        const dist = Math.hypot(pt.x - x, pt.y - y);
+        if (dist <= Math.max(14, screenRadius * 0.8) && dist < bestDist) {
+          best = index;
+          bestDist = dist;
+        }
+      });
+
+      return best;
+    }
+
+    canvas.addEventListener('pointerdown', (event) => {
+      state.dragging = true;
+      state.pointerX = event.clientX;
+      state.pointerY = event.clientY;
+      canvas.setPointerCapture(event.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      if (state.dragging) {
+        const dx = event.clientX - state.pointerX;
+        const dy = event.clientY - state.pointerY;
+        state.pointerX = event.clientX;
+        state.pointerY = event.clientY;
+        state.yaw += dx * 0.01;
+        state.pitch = clamp(state.pitch + dy * 0.008, -1.15, 1.15);
+        draw();
+        return;
+      }
+
+      const hover = pickRegion(x, y);
+      if (hover !== state.hoverIndex) {
+        state.hoverIndex = hover;
+        draw();
+      }
+    });
+
+    canvas.addEventListener('pointerup', (event) => {
+      state.dragging = false;
+      try { canvas.releasePointerCapture(event.pointerId); } catch (error) {}
+    });
+
+    canvas.addEventListener('pointerleave', () => {
+      state.dragging = false;
+      if (state.hoverIndex !== -1) {
+        state.hoverIndex = -1;
+        draw();
+      }
+    });
+
+    window.addEventListener('resize', resize);
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas.parentElement);
+    syncZoomUI();
+
+    return {
+      setRegions(regions) {
+        state.regions = regions.map((region, index) => ({
+          ...region,
+          radius: Number(region.radius || region.radius_deg || 0.5),
+          count: Number(region.count || 0),
+          name: region.name || `Region ${index + 1}`,
+        }));
+        state.vectors = state.regions.map((region) => sphereToVec(Number(region.ra || 0), Number(region.dec || 0)));
+        state.totalCount = state.regions.reduce((sum, region) => sum + Number(region.count || 0), 0);
+        state.hoverIndex = -1;
+        resize();
+      },
+      destroy() {
+        window.removeEventListener('resize', resize);
+        observer.disconnect();
+      },
+    };
+  }
+
+  /* â”€â”€ Load stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   api.stats().then(data => {
     const pg  = data.postgresql || {};
     const qd  = data.qdrant     || {};
@@ -418,61 +1316,317 @@
       '<span class="be-badge be-offline"><span class="be-badge-dot be-dot-off"></span>API Offline</span>';
   });
 
-  /* ── Load regions ─────────────────────────────────────────── */
-  api.regions().then(data => {
-    const regions = data.regions || [];
-    const svgG    = document.getElementById('sky-regions');
-    const rowsEl  = document.getElementById('region-rows');
+  const volumeCanvas = document.getElementById('sky-globe-canvas');
+  const volumeReadout = document.getElementById('sky-globe-readout');
+  const volumeRowsEl = document.getElementById('region-rows');
+  const volumeMinParallaxEl = document.getElementById('volume-min-parallax');
+  const volumeMagLimitEl = document.getElementById('volume-mag-limit');
+  const volumeRefreshBtn = document.getElementById('volume-refresh-btn');
+  const volumeResetBtn = document.getElementById('volume-reset-btn');
+  const volumeZoomEl = document.getElementById('volume-zoom');
+  const volumeZoomValueEl = document.getElementById('volume-zoom-value');
+  const zoomOutBtn = document.getElementById('zoom-out-btn');
+  const zoomInBtn = document.getElementById('zoom-in-btn');
+  const zoomResetBtn = document.getElementById('zoom-reset-btn');
+  const discoveryRefreshBtn = document.getElementById('discovery-refresh-btn');
+  const discoveryModeEl = document.getElementById('discovery-mode-select');
+  const discoveryListEl = document.getElementById('discovery-list');
+  const discoveryCatalogRowEl = document.getElementById('discovery-catalog-row');
+  const discoveryTotalEl = document.getElementById('discovery-total');
+  const discoveryCatalogsEl = document.getElementById('discovery-catalogs');
+  const discoveryOverlapsEl = document.getElementById('discovery-overlaps');
+  const catalogSourceEl = document.getElementById('catalog-source-select');
+  const catalogPathEl = document.getElementById('catalog-file-path');
+  const catalogIngestBtn = document.getElementById('catalog-ingest-btn');
+  const catalogChooseBtn = document.getElementById('catalog-choose-file-btn');
+  const catalogUploadBtn = document.getElementById('catalog-upload-btn');
+  const catalogFileInput = document.getElementById('catalog-file-input');
+  const catalogFileNameEl = document.getElementById('catalog-file-name');
+  const catalogImportStatusEl = document.getElementById('catalog-import-status');
+  const spaceMap = createSpaceVolumeMap(volumeCanvas, volumeReadout);
+  let ingestionRefreshQueued = false;
+  let lastIngestionStatus = { gaia: 'idle', arxiv: 'idle' };
+  let selectedCatalogFile = null;
 
+  function readVolumeFilters() {
+    const minParallax = volumeMinParallaxEl && volumeMinParallaxEl.value !== ''
+      ? Number(volumeMinParallaxEl.value)
+      : undefined;
+    const magLimit = volumeMagLimitEl && volumeMagLimitEl.value !== ''
+      ? Number(volumeMagLimitEl.value)
+      : undefined;
+    return {
+      minParallax: Number.isFinite(minParallax) ? minParallax : undefined,
+      magLimit: Number.isFinite(magLimit) ? magLimit : undefined,
+    };
+  }
+
+  function renderRegions(regions) {
     if (!regions.length) {
-      rowsEl.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:12px 0;">No regions found.</div>';
+      volumeRowsEl.innerHTML = '<div style="color:var(--dashboard-panel-text-muted);font-size:12px;padding:12px 0;">No regions found.</div>';
       return;
     }
 
-    // Max count for scaling circle size
-    const maxCount = Math.max(...regions.map(r => r.count), 1);
-
     let rowsHTML = '';
     regions.forEach((r, i) => {
-      const color = REGION_COLORS[i % REGION_COLORS.length];
-      const x = raToX(r.ra);
-      const y = decToY(r.dec);
-      const baseR = degToR(r.radius, r.dec);
-      // Scale visual radius: smallest 6px, largest 28px based on star count
-      const vizR = 6 + ((r.count / maxCount) * 22);
-
-      // SVG circle + label
-      svgG.innerHTML += `
-        <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${vizR.toFixed(1)}"
-                fill="${color}22" stroke="${color}" stroke-width="1.5"
-                stroke-dasharray="4 3" opacity="0.85"/>
-        <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3"
-                fill="${color}" opacity="0.9"/>
-        <text x="${(x + vizR + 4).toFixed(1)}" y="${(y + 3).toFixed(1)}"
-              fill="${color}" font-size="9" font-family="monospace"
-              opacity="0.85">${r.name}</text>`;
-
-      // Region list row
+      const color = REGION_TONES[i % REGION_TONES.length];
       rowsHTML += `
         <div class="region-row">
           <div style="display:flex;align-items:center;">
             <div class="region-dot" style="background:${color};box-shadow:0 0 6px ${color}66;"></div>
             <div>
               <div class="region-name">${r.name}</div>
-              <div class="region-coords">RA ${r.ra}° · Dec ${r.dec}° · r=${r.radius}°</div>
+              <div class="region-coords">RA ${r.ra} deg | Dec ${r.dec} deg | r=${r.radius} deg</div>
             </div>
           </div>
           <div class="region-count">${fmt(r.count)}</div>
         </div>`;
     });
-    rowsEl.innerHTML = rowsHTML;
+    volumeRowsEl.innerHTML = rowsHTML;
+  }
 
-  }).catch(err => {
-    document.getElementById('region-rows').innerHTML =
-      `<div style="color:#ef4444;font-size:11px;padding:12px 0;">Failed to load regions: ${err.message}</div>`;
+  function renderDiscovery(discovery) {
+    const candidates = discovery.top_candidates || [];
+    const catalogSummary = discovery.catalog_summary || [];
+    const overlaps = discovery.cross_catalog_matches || {};
+    const mode = discovery.filters?.mode || 'balanced';
+
+    discoveryTotalEl.textContent = fmt(discovery.count || candidates.length);
+    discoveryCatalogsEl.textContent = fmt(catalogSummary.length);
+    discoveryOverlapsEl.textContent = fmt(overlaps.candidates_with_overlap || 0);
+
+    discoveryCatalogRowEl.innerHTML = catalogSummary.length
+      ? catalogSummary.map((row) => `
+        <span class="catalog-pill" title="${escapeHtml(row.catalog_source)} catalog currently contributes ${fmt(row.count)} rows">${escapeHtml(row.catalog_source)} · ${fmt(row.count)}</span>
+      `).join('')
+      : '<span class="catalog-pill">No catalogs yet</span>';
+
+    if (!candidates.length) {
+      discoveryListEl.innerHTML = `<div style="color:var(--dashboard-panel-text-muted);font-size:12px;padding:10px 0;">No discovery candidates yet in ${escapeHtml(mode)} mode.</div>`;
+      return;
+    }
+
+    discoveryListEl.innerHTML = candidates.map((item) => {
+      const reasons = (item.reasons || []).slice(0, 4);
+      const details = [
+        item.ra != null && item.dec != null ? `RA ${item.ra.toFixed(3)}° · Dec ${item.dec.toFixed(3)}°` : null,
+        item.distance_pc != null ? `${item.distance_pc.toFixed(1)} pc` : null,
+        item.phot_g_mean_mag != null ? `G ${item.phot_g_mean_mag.toFixed(2)}` : null,
+        item.ruwe != null ? `RUWE ${item.ruwe.toFixed(2)}` : null,
+        item.local_density != null ? `${item.local_density} neighbors` : null,
+      ].filter(Boolean).join(' · ');
+
+      return `
+        <div class="discovery-card">
+          <div class="discovery-card-head">
+            <div>
+              <div class="discovery-source">${escapeHtml(item.source_id || 'Unknown')}</div>
+              <div class="discovery-meta">${escapeHtml(details || 'No additional metadata')}</div>
+            </div>
+            <div class="discovery-score-block">
+              <div class="discovery-score-label">Discovery Score</div>
+              <div class="discovery-score" title="Higher means the object is more unusual by the current ${escapeHtml(mode)} ranking profile">${Number(item.score || 0).toFixed(1)}</div>
+            </div>
+          </div>
+          <div class="discovery-reasons">
+            <span class="catalog-pill" title="Primary catalog for this object">${escapeHtml(item.catalog_source || 'UNKNOWN')}</span>
+            ${(item.matched_catalogs || []).map((catalog) => `<span class="reason-pill" title="Cross-match catalog: ${escapeHtml(catalog)}">${escapeHtml(catalog)}</span>`).join('')}
+            ${reasons.map((reason) => `<span class="reason-pill" title="${escapeHtml(reasonTooltip(reason))}">${escapeHtml(reason)}</span>`).join('')}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function isAnyIngestRunning(status) {
+    if (!status) return false;
+    if (status.gaia === 'running' || status.arxiv === 'running') return true;
+    const catalogs = status.catalogs || {};
+    return Object.values(catalogs).some((value) => value === 'running');
+  }
+
+  async function loadSpaceVolume({ silent = false } = {}) {
+    const filters = readVolumeFilters();
+    if (!silent) {
+      volumeReadout.textContent = 'Loading space volume...';
+    }
+
+    const [regionData, volumeData] = await Promise.all([
+      api.regions(),
+      api.spaceVolume({ limit: 8000, ...filters }),
+    ]);
+
+    const regions = regionData.regions || [];
+    const volumePoints = volumeData.points || [];
+    renderRegions(regions);
+    spaceMap.setScene({
+      points: volumePoints,
+      regions,
+      bounds: volumeData.bounds || null,
+    });
+  }
+
+  async function loadDiscovery({ silent = false } = {}) {
+    if (!silent) {
+      discoveryListEl.innerHTML = '<div style="color:var(--dashboard-panel-text-muted);font-size:12px;padding:10px 0;">Loading discovery candidates...</div>';
+    }
+
+    const mode = discoveryModeEl && discoveryModeEl.value ? discoveryModeEl.value : 'balanced';
+    const discovery = await api.discovery({ limit: 12, poolLimit: 3500, radiusDeg: 0.08, mode });
+    renderDiscovery(discovery);
+  }
+
+  async function syncIngestionStatus() {
+    try {
+      const status = await api.ingestionStatus();
+      const anyRunning = isAnyIngestRunning(status);
+      if (anyRunning) {
+        ingestionRefreshQueued = true;
+        volumeReadout.textContent = 'Catalog ingestion running. Refreshing when it finishes...';
+      } else if (isAnyIngestRunning(lastIngestionStatus) && ingestionRefreshQueued) {
+        ingestionRefreshQueued = false;
+        await Promise.allSettled([
+          loadSpaceVolume({ silent: true }),
+          loadDiscovery({ silent: true }),
+        ]);
+      }
+      lastIngestionStatus = status;
+    } catch (err) {
+      // Ignore polling failures; the map stays interactive.
+    }
+  }
+
+  volumeRefreshBtn.addEventListener('click', () => {
+    loadSpaceVolume().catch(err => {
+      volumeRowsEl.innerHTML =
+        `<div style="color:#ef4444;font-size:11px;padding:12px 0;">Failed to load space volume: ${err.message}</div>`;
+    });
+    loadDiscovery().catch(err => {
+      discoveryListEl.innerHTML =
+        `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
+    });
   });
 
-  /* ── Quick search ─────────────────────────────────────────── */
+  volumeResetBtn.addEventListener('click', () => {
+    volumeMinParallaxEl.value = '';
+    volumeMagLimitEl.value = '';
+    loadSpaceVolume().catch(err => {
+      volumeRowsEl.innerHTML =
+        `<div style="color:#ef4444;font-size:11px;padding:12px 0;">Failed to load space volume: ${err.message}</div>`;
+    });
+    loadDiscovery().catch(err => {
+      discoveryListEl.innerHTML =
+        `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
+    });
+  });
+
+  discoveryRefreshBtn.addEventListener('click', () => {
+    loadDiscovery().catch(err => {
+      discoveryListEl.innerHTML =
+        `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
+    });
+  });
+
+  if (discoveryModeEl) {
+    discoveryModeEl.addEventListener('change', () => {
+      loadDiscovery().catch(err => {
+        discoveryListEl.innerHTML =
+          `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
+      });
+    });
+  }
+
+  if (catalogChooseBtn && catalogFileInput) {
+    catalogChooseBtn.addEventListener('click', () => catalogFileInput.click());
+  }
+
+  if (catalogFileInput) {
+    catalogFileInput.addEventListener('change', () => {
+      selectedCatalogFile = catalogFileInput.files && catalogFileInput.files[0] ? catalogFileInput.files[0] : null;
+      if (catalogFileNameEl) {
+        catalogFileNameEl.textContent = selectedCatalogFile ? selectedCatalogFile.name : 'No file selected';
+      }
+      if (selectedCatalogFile) {
+        setCatalogImportStatus(`Ready to upload ${selectedCatalogFile.name}.`, 'info');
+      } else {
+        setCatalogImportStatus('No file selected.', 'muted');
+      }
+    });
+  }
+
+  if (catalogIngestBtn) {
+    catalogIngestBtn.addEventListener('click', async () => {
+      const catalogSource = catalogSourceEl && catalogSourceEl.value ? catalogSourceEl.value : 'WISE';
+      const filepath = catalogPathEl ? catalogPathEl.value.trim() : '';
+      if (!filepath) {
+        setCatalogImportStatus('Enter a server file path first.', 'error');
+        return;
+      }
+
+      catalogIngestBtn.disabled = true;
+      try {
+        setCatalogImportStatus(`Starting ${catalogSource} ingest from the server path...`, 'info');
+        await api.ingestCatalog({ catalogSource, filepath });
+        ingestionRefreshQueued = true;
+        setCatalogImportStatus(`${catalogSource} ingest started. The dashboard will refresh after it finishes.`, 'success');
+      } catch (err) {
+        setCatalogImportStatus(`Server ingest failed: ${err.message}`, 'error');
+      } finally {
+        catalogIngestBtn.disabled = false;
+      }
+    });
+  }
+
+  if (catalogUploadBtn) {
+    catalogUploadBtn.addEventListener('click', async () => {
+      const catalogSource = catalogSourceEl && catalogSourceEl.value ? catalogSourceEl.value : 'WISE';
+      if (!selectedCatalogFile) {
+        setCatalogImportStatus('Choose a local CSV, JSON, JSONL, or FITS file first.', 'error');
+        return;
+      }
+
+      catalogUploadBtn.disabled = true;
+      try {
+        setCatalogImportStatus(`Uploading ${selectedCatalogFile.name} and starting ${catalogSource} ingest...`, 'info');
+        await api.uploadCatalog({ catalogSource, file: selectedCatalogFile });
+        ingestionRefreshQueued = true;
+        setCatalogImportStatus(`${selectedCatalogFile.name} upload started. The dashboard will refresh after ingest completes.`, 'success');
+      } catch (err) {
+        setCatalogImportStatus(`Upload failed: ${err.message}`, 'error');
+      } finally {
+        catalogUploadBtn.disabled = false;
+      }
+    });
+  }
+
+  function adjustZoom(delta) {
+    const next = Number(volumeZoomEl.value || 1) + delta;
+    volumeZoomEl.value = String(clamp(next, 0.65, 1.8));
+    volumeZoomEl.dispatchEvent(new Event('input'));
+  }
+
+  volumeZoomEl.addEventListener('input', () => {
+    const nextZoom = Number(volumeZoomEl.value || 1);
+    volumeZoomValueEl.textContent = `${nextZoom.toFixed(2)}x`;
+    spaceMap.setZoom(nextZoom);
+  });
+  zoomOutBtn.addEventListener('click', () => adjustZoom(-0.08));
+  zoomInBtn.addEventListener('click', () => adjustZoom(0.08));
+  zoomResetBtn.addEventListener('click', () => {
+    spaceMap.resetView();
+  });
+
+  loadSpaceVolume().catch(err => {
+    volumeRowsEl.innerHTML =
+      `<div style="color:#ef4444;font-size:11px;padding:12px 0;">Failed to load space volume: ${err.message}</div>`;
+  });
+  loadDiscovery().catch(err => {
+    discoveryListEl.innerHTML =
+      `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
+  });
+  syncIngestionStatus();
+  setInterval(syncIngestionStatus, 15000);
+
+  /* â”€â”€ Quick search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   document.getElementById('qs-btn').addEventListener('click', runSearch);
   document.getElementById('quick-q').addEventListener('keydown', e => {
     if (e.key === 'Enter') runSearch();
@@ -502,16 +1656,476 @@
       }
       out.innerHTML = html || render.emptyState(`No results for "${q}"`);
     } catch (err) {
-      out.innerHTML = render.emptyState('Search failed — ' + err.message);
+      out.innerHTML = render.emptyState('Search failed â€” ' + err.message);
     }
   }
 
-  /* ── Helpers ──────────────────────────────────────────────── */
-  function fmt(n)   { return n != null ? Number(n).toLocaleString() : '—'; }
+  /* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  function fmt(n)   { return n != null ? Number(n).toLocaleString() : 'â€”'; }
   function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
   function sectionHead(t) {
     return `<div style="font-size:10px;color:var(--text-muted);margin:14px 0 8px;
                         text-transform:uppercase;letter-spacing:1px;">${t}</div>`;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function reasonTooltip(reason) {
+    const text = String(reason || '');
+    const lookup = [
+      [/^cross-matched with/i, 'Seen in multiple catalogs. Multi-catalog overlap can mark a real source or a useful outlier.'],
+      [/^crowded field with/i, 'Many neighbors fall within the search radius. Dense regions can hide blended or confused sources.'],
+      [/^RUWE missing$/i, 'No RUWE value was available. Missing quality data can make a source worth a second look.'],
+      [/^RUWE .* very high/i, 'High RUWE means the astrometric solution fits poorly, which can signal an unusual object or contamination.'],
+      [/^RUWE .* elevated/i, 'Elevated RUWE is a softer warning that the astrometric fit is less clean than usual.'],
+      [/^RUWE .* unusually tight/i, 'Very low RUWE can indicate an especially clean fit or an unusually simple source.'],
+      [/^very blue BP-RP/i, 'Extreme blue color can point to hot, compact, or otherwise unusual sources.'],
+      [/^very red BP-RP/i, 'Extreme red color can indicate cool objects, dust extinction, or interesting stellar populations.'],
+      [/^fast proper motion/i, 'Large proper motion can suggest a nearby object or a dynamically interesting source.'],
+      [/^notable proper motion/i, 'Moderately large proper motion can still be astrophysically interesting.'],
+      [/^bright but distant$/i, 'A source that is bright even at a large distance can be unusual or exceptionally luminous.'],
+      [/^faint but nearby$/i, 'A nearby source that is still faint can be useful for follow-up or indicate a special class.'],
+      [/^GAIA catalog object$/i, 'A Gaia source in the candidate pool, used as the baseline for cross-catalog comparison.'],
+      [/^WISE catalog object$/i, 'A WISE source added for comparison against Gaia and other catalogs.'],
+      [/^2MASS catalog object$/i, 'A 2MASS source added for comparison against Gaia and other catalogs.'],
+      [/^PAN-STARRS catalog object$/i, 'A Pan-STARRS source added for comparison against Gaia and other catalogs.'],
+      [/^no Gaia color profile$/i, 'No Gaia BP/RP colors were available, so the object is harder to classify photometrically.'],
+    ];
+
+    for (const [pattern, message] of lookup) {
+      if (pattern.test(text)) return message;
+    }
+
+    return 'Heuristic discovery flag used to rank the candidate higher.';
+  }
+
+  function setCatalogImportStatus(message, tone = 'muted') {
+    if (!catalogImportStatusEl) return;
+    catalogImportStatusEl.textContent = message;
+    const colors = {
+      muted: 'var(--dashboard-panel-text-muted)',
+      success: '#10b981',
+      error: '#ef4444',
+      info: 'var(--dashboard-panel-text-secondary)',
+    };
+    catalogImportStatusEl.style.color = colors[tone] || colors.muted;
+  }
+
+  function createSpaceVolumeMap(canvas, readoutEl) {
+    const ctx = canvas.getContext('2d');
+    const initialView = { yaw: -0.72, pitch: -0.34, roll: 0.12, zoom: 1 };
+    const state = {
+      points: [],
+      regions: [],
+      bounds: null,
+      projectedPoints: [],
+      projectedRegions: [],
+      yaw: initialView.yaw,
+      pitch: initialView.pitch,
+      roll: initialView.roll,
+      zoom: initialView.zoom,
+      width: 0,
+      height: 0,
+      dpr: window.devicePixelRatio || 1,
+      dragging: false,
+      pointerX: 0,
+      pointerY: 0,
+      hoverPoint: -1,
+      hoverRegion: -1,
+      scale: 1,
+      center: { x: 0, y: 0, z: 0 },
+    };
+
+    function syncZoomUI() {
+      const slider = document.getElementById('volume-zoom');
+      const value = document.getElementById('volume-zoom-value');
+      if (slider) slider.value = String(state.zoom);
+      if (value) value.textContent = `${state.zoom.toFixed(2)}x`;
+    }
+
+    function setZoom(nextZoom) {
+      state.zoom = clamp(nextZoom, 0.65, 1.8);
+      syncZoomUI();
+      draw();
+    }
+
+    function resetView() {
+      state.yaw = initialView.yaw;
+      state.pitch = initialView.pitch;
+      state.roll = initialView.roll;
+      setZoom(initialView.zoom);
+    }
+
+    function resize() {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      state.width = Math.max(rect.width, 320);
+      state.height = Math.max(rect.height, 320);
+      state.dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(state.width * state.dpr);
+      canvas.height = Math.round(state.height * state.dpr);
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      draw();
+    }
+
+    function deriveBounds(points) {
+      const fallback = {
+        x_min: -1, x_max: 1,
+        y_min: -1, y_max: 1,
+        z_min: -1, z_max: 1,
+        distance_pc_min: 0, distance_pc_max: 1,
+      };
+      if (!points.length) return fallback;
+      const xs = points.map(p => p.x_pc);
+      const ys = points.map(p => p.y_pc);
+      const zs = points.map(p => p.z_pc);
+      const ds = points.map(p => p.distance_pc).filter(v => Number.isFinite(v));
+      return {
+        x_min: Math.min(...xs),
+        x_max: Math.max(...xs),
+        y_min: Math.min(...ys),
+        y_max: Math.max(...ys),
+        z_min: Math.min(...zs),
+        z_max: Math.max(...zs),
+        distance_pc_min: ds.length ? Math.min(...ds) : 0,
+        distance_pc_max: ds.length ? Math.max(...ds) : 1,
+      };
+    }
+
+    function normalizePoint(point) {
+      return {
+        x: (point.x_pc - state.center.x) / state.scale,
+        y: (point.y_pc - state.center.y) / state.scale,
+        z: (point.z_pc - state.center.z) / state.scale,
+      };
+    }
+
+    function rotatePoint(vec) {
+      const cosY = Math.cos(state.yaw);
+      const sinY = Math.sin(state.yaw);
+      const cosP = Math.cos(state.pitch);
+      const sinP = Math.sin(state.pitch);
+      const cosR = Math.cos(state.roll);
+      const sinR = Math.sin(state.roll);
+
+      let x = vec.x * cosY - vec.z * sinY;
+      let z = vec.x * sinY + vec.z * cosY;
+      let y = vec.y;
+
+      const y1 = y * cosP - z * sinP;
+      const z1 = y * sinP + z * cosP;
+      y = y1;
+      z = z1;
+
+      const x2 = x * cosR - y * sinR;
+      const y2 = x * sinR + y * cosR;
+      return { x: x2, y: y2, z };
+    }
+
+    function project(vec, cx, cy, baseRadius) {
+      const camera = 2.6;
+      const depth = camera - vec.z * state.zoom;
+      const perspective = camera / Math.max(depth, 0.65);
+      return {
+        x: cx + vec.x * baseRadius * perspective,
+        y: cy - vec.y * baseRadius * perspective,
+        perspective,
+        depth,
+      };
+    }
+
+    function starColor(point, alpha = 0.9) {
+      if (point.bp_rp != null) {
+        const t = clamp((point.bp_rp + 0.2) / 3.0, 0, 1);
+        const hue = 220 - t * 190;
+        const sat = 92 - t * 30;
+        const light = 78 - t * 18;
+        return `hsla(${hue.toFixed(0)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, ${alpha})`;
+      }
+      const mag = point.phot_g_mean_mag != null ? point.phot_g_mean_mag : 12;
+      const t = clamp((mag - 2) / 13, 0, 1);
+      const hue = 214 - t * 150;
+      const sat = 18 + t * 22;
+      const light = 94 - t * 24;
+      return `hsla(${hue.toFixed(0)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, ${alpha})`;
+    }
+
+    function starAlpha(point) {
+      const brightness = point.phot_g_mean_mag != null
+        ? clamp((14 - point.phot_g_mean_mag) / 10, 0.28, 1)
+        : 0.45;
+      const quality = point.ruwe != null
+        ? clamp(1.7 / Math.max(point.ruwe, 0.6), 0.35, 1)
+        : 0.82;
+      return clamp(0.28 + brightness * 0.34 + quality * 0.38, 0.36, 0.96);
+    }
+
+    function updateReadout(point, region) {
+      if (!readoutEl) return;
+      if (point) {
+        const distance = point.distance_pc != null ? `${point.distance_pc.toFixed(1)} pc` : 'distance n/a';
+        const colorInfo = point.bp_rp != null ? `BP-RP ${point.bp_rp.toFixed(2)}` : 'color fallback';
+        const motion = point.pmra != null && point.pmdec != null
+          ? `PM ${point.pmra.toFixed(1)}, ${point.pmdec.toFixed(1)} mas/yr`
+          : 'PM n/a';
+        const quality = point.ruwe != null ? `RUWE ${point.ruwe.toFixed(2)}` : 'RUWE n/a';
+        readoutEl.textContent = `${point.source_id} | ${distance} | G ${point.phot_g_mean_mag != null ? point.phot_g_mean_mag.toFixed(2) : 'n/a'} | ${colorInfo} | ${motion} | ${quality}`;
+        return;
+      }
+      if (region) {
+        readoutEl.textContent = `${region.name} | ${Number(region.count || 0).toLocaleString()} stars | RA ${Number(region.ra).toFixed(1)} deg Dec ${Number(region.dec).toFixed(1)} deg`;
+        return;
+      }
+      const range = state.bounds && state.bounds.distance_pc_min != null && state.bounds.distance_pc_max != null
+        ? `${state.bounds.distance_pc_min.toFixed(1)}-${state.bounds.distance_pc_max.toFixed(1)} pc`
+        : 'distance range n/a';
+      readoutEl.textContent = `${state.points.length} stars in volume | ${range}`;
+    }
+
+    function drawLabel(text, pt, tone) {
+      ctx.save();
+      ctx.font = '10px JetBrains Mono, monospace';
+      const width = Math.min(180, Math.max(80, ctx.measureText(text).width + 14));
+      const x = clamp(pt.x - width / 2, 8, state.width - width - 8);
+      const y = clamp(pt.y - 24, 8, state.height - 22);
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, 18, 999);
+      ctx.fillStyle = 'rgba(8,8,8,0.78)';
+      ctx.fill();
+      ctx.strokeStyle = tone;
+      ctx.globalAlpha = 0.7;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = tone;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x + width / 2, y + 9.5);
+      ctx.restore();
+    }
+
+    function draw() {
+      if (!state.width || !state.height) return;
+
+      const w = state.width;
+      const h = state.height;
+      const cx = w * 0.5;
+      const cy = h * 0.52;
+      const size = Math.min(w, h) * 0.34;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+
+      const bg = ctx.createRadialGradient(cx, cy - size * 0.2, size * 0.1, cx, cy, size * 2.2);
+      bg.addColorStop(0, 'rgba(255,255,255,0.08)');
+      bg.addColorStop(0.28, 'rgba(59,130,246,0.06)');
+      bg.addColorStop(0.56, 'rgba(168,85,247,0.05)');
+      bg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      for (let i = 0; i < 46; i += 1) {
+        const angle = (i * 137.5) * DEG2RAD;
+        const r = (0.15 + (i % 7) * 0.03) * size;
+        const x = cx + Math.cos(angle + state.yaw * 0.2) * r * 1.8;
+        const y = cy + Math.sin(angle + state.pitch * 0.2) * r * 1.1;
+        ctx.beginPath();
+        ctx.arc(x, y, 0.75 + (i % 3) * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      state.projectedPoints = [];
+      state.projectedRegions = [];
+
+      const visiblePoints = state.points.map((point, index) => {
+        const rotated = rotatePoint(point._normalized);
+        const projected = project(rotated, cx, cy, size);
+        return { point, index, rotated, projected };
+      }).filter(item => item.projected.depth > 0.2);
+
+      visiblePoints.sort((a, b) => a.projected.depth - b.projected.depth);
+      visiblePoints.forEach((item) => {
+        const bright = item.point.phot_g_mean_mag != null ? clamp((14 - item.point.phot_g_mean_mag) / 10, 0.2, 1) : 0.45;
+        const sizePx = clamp(0.55 + bright * 1.8, 0.6, 3.4) * item.projected.perspective;
+        ctx.beginPath();
+        ctx.arc(item.projected.x, item.projected.y, sizePx, 0, Math.PI * 2);
+        ctx.fillStyle = starColor(item.point, starAlpha(item.point));
+        ctx.fill();
+        state.projectedPoints.push({
+          index: item.index,
+          x: item.projected.x,
+          y: item.projected.y,
+          depth: item.projected.depth,
+          radius: sizePx,
+        });
+      });
+
+      const regionAnchors = state.regions.map((region, index) => {
+        const shell = sphereToVec(Number(region.ra || 0), Number(region.dec || 0));
+        const scaled = rotatePoint({ x: shell.x * 1.12, y: shell.y * 1.12, z: shell.z * 1.12 });
+        const projected = project(scaled, cx, cy, size);
+        return { region, index, projected };
+      }).filter(item => item.projected.depth > 0.15);
+
+      regionAnchors.sort((a, b) => a.projected.depth - b.projected.depth);
+      regionAnchors.forEach((item, i) => {
+        const tone = REGION_TONES[i % REGION_TONES.length];
+        const sizePx = 3.5 + Math.min(Number(item.region.count || 0) / 900, 6);
+        ctx.beginPath();
+        ctx.arc(item.projected.x, item.projected.y, sizePx, 0, Math.PI * 2);
+        ctx.fillStyle = hexToRgba(tone, 0.42);
+        ctx.fill();
+        ctx.strokeStyle = hexToRgba(tone, 0.92);
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        if (sizePx > 6 || item.index === state.hoverRegion) {
+          drawLabel(`${item.region.name} â€¢ ${Number(item.region.count || 0).toLocaleString()}`, item.projected, tone);
+        }
+        state.projectedRegions.push({
+          index: item.index,
+          x: item.projected.x,
+          y: item.projected.y,
+          depth: item.projected.depth,
+          radius: sizePx,
+        });
+      });
+
+      if (state.hoverPoint >= 0) {
+        updateReadout(state.points[state.hoverPoint], null);
+      } else if (state.hoverRegion >= 0) {
+        updateReadout(null, state.regions[state.hoverRegion]);
+      } else {
+        updateReadout(null, null);
+      }
+    }
+
+    function pickAt(x, y) {
+      let bestPoint = -1;
+      let bestPointDist = Infinity;
+      for (const item of state.projectedPoints) {
+        const dist = Math.hypot(item.x - x, item.y - y);
+        if (dist <= Math.max(8, item.radius * 2.2) && dist < bestPointDist) {
+          bestPoint = item.index;
+          bestPointDist = dist;
+        }
+      }
+
+      let bestRegion = -1;
+      let bestRegionDist = Infinity;
+      for (const item of state.projectedRegions) {
+        const dist = Math.hypot(item.x - x, item.y - y);
+        if (dist <= Math.max(12, item.radius * 2.4) && dist < bestRegionDist) {
+          bestRegion = item.index;
+          bestRegionDist = dist;
+        }
+      }
+
+      return { bestPoint, bestRegion };
+    }
+
+    function setScene({ points = [], regions = [], bounds = null }) {
+      state.bounds = bounds || deriveBounds(points);
+      state.center = {
+        x: (state.bounds.x_min + state.bounds.x_max) / 2,
+        y: (state.bounds.y_min + state.bounds.y_max) / 2,
+        z: (state.bounds.z_min + state.bounds.z_max) / 2,
+      };
+      const spanX = state.bounds.x_max - state.bounds.x_min;
+      const spanY = state.bounds.y_max - state.bounds.y_min;
+      const spanZ = state.bounds.z_max - state.bounds.z_min;
+      state.scale = Math.max(spanX, spanY, spanZ, 1);
+
+      state.points = points.map((point) => ({
+        ...point,
+        _normalized: normalizePoint(point),
+      }));
+      state.regions = regions.map((region, index) => ({
+        ...region,
+        name: region.name || `Region ${index + 1}`,
+        count: Number(region.count || 0),
+      }));
+      state.hoverPoint = -1;
+      state.hoverRegion = -1;
+      resize();
+    }
+
+    canvas.addEventListener('pointerdown', (event) => {
+      state.dragging = true;
+      state.pointerX = event.clientX;
+      state.pointerY = event.clientY;
+      canvas.setPointerCapture(event.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      if (state.dragging) {
+        const dx = event.clientX - state.pointerX;
+        const dy = event.clientY - state.pointerY;
+        state.pointerX = event.clientX;
+        state.pointerY = event.clientY;
+        state.yaw += dx * 0.009;
+        state.pitch = clamp(state.pitch + dy * 0.007, -1.2, 1.2);
+        draw();
+        return;
+      }
+
+      const picked = pickAt(x, y);
+      if (picked.bestPoint !== state.hoverPoint || picked.bestRegion !== state.hoverRegion) {
+        state.hoverPoint = picked.bestPoint;
+        state.hoverRegion = picked.bestRegion;
+        draw();
+      }
+    });
+
+    canvas.addEventListener('pointerup', (event) => {
+      state.dragging = false;
+      try { canvas.releasePointerCapture(event.pointerId); } catch (error) {}
+    });
+
+    canvas.addEventListener('pointerleave', () => {
+      state.dragging = false;
+      if (state.hoverPoint !== -1 || state.hoverRegion !== -1) {
+        state.hoverPoint = -1;
+        state.hoverRegion = -1;
+        draw();
+      }
+    });
+
+    canvas.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      state.zoom = clamp(state.zoom + (event.deltaY > 0 ? 0.06 : -0.06), 0.72, 1.7);
+      syncZoomUI();
+      draw();
+    }, { passive: false });
+
+    window.addEventListener('resize', resize);
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas.parentElement);
+
+    return {
+      setScene,
+      setZoom,
+      resetView,
+      destroy() {
+        window.removeEventListener('resize', resize);
+        observer.disconnect();
+      },
+    };
   }
 })();
 </script>

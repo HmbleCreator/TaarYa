@@ -41,12 +41,85 @@ class StarCountResponse(BaseModel):
     count: int
 
 
+class SpaceVolumePoint(BaseModel):
+    """Single star projected into 3D space."""
+    source_id: str
+    ra: Optional[float] = None
+    dec: Optional[float] = None
+    parallax: Optional[float] = None
+    pmra: Optional[float] = None
+    pmdec: Optional[float] = None
+    distance_pc: Optional[float] = None
+    distance_ly: Optional[float] = None
+    x_pc: Optional[float] = None
+    y_pc: Optional[float] = None
+    z_pc: Optional[float] = None
+    phot_g_mean_mag: Optional[float] = None
+    phot_bp_mean_mag: Optional[float] = None
+    phot_rp_mean_mag: Optional[float] = None
+    bp_rp: Optional[float] = None
+    ruwe: Optional[float] = None
+    catalog_source: Optional[str] = None
+
+
+class SpaceVolumeBounds(BaseModel):
+    """Axis-aligned bounds for the 3D view volume."""
+    x_min: Optional[float] = None
+    x_max: Optional[float] = None
+    y_min: Optional[float] = None
+    y_max: Optional[float] = None
+    z_min: Optional[float] = None
+    z_max: Optional[float] = None
+    distance_pc_min: Optional[float] = None
+    distance_pc_max: Optional[float] = None
+
+
+class SpaceVolumeResponse(BaseModel):
+    """Response for the 3D sky volume view."""
+    count: int
+    points: List[SpaceVolumePoint]
+    bounds: SpaceVolumeBounds
+    filters: Dict[str, Any]
+
+
 class NearbyStarsResponse(BaseModel):
     """Response for nearby-stars lookup."""
     source_id: str
     radius_deg: float
     count: int
     neighbors: List[StarResponse]
+
+
+class DiscoveryCandidate(BaseModel):
+    """A high-interest object surfaced by discovery scoring."""
+    source_id: str
+    catalog_source: Optional[str] = None
+    ra: Optional[float] = None
+    dec: Optional[float] = None
+    parallax: Optional[float] = None
+    distance_pc: Optional[float] = None
+    phot_g_mean_mag: Optional[float] = None
+    ruwe: Optional[float] = None
+    bp_rp: Optional[float] = None
+    local_density: Optional[int] = None
+    matched_catalogs: List[str] = Field(default_factory=list)
+    score: float
+    reasons: List[str]
+
+
+class CatalogSummaryRow(BaseModel):
+    """Catalog-level count summary."""
+    catalog_source: str
+    count: int
+
+
+class DiscoveryResponse(BaseModel):
+    """Response for discovery mode scoring."""
+    count: int
+    top_candidates: List[DiscoveryCandidate]
+    catalog_summary: List[CatalogSummaryRow]
+    cross_catalog_matches: Dict[str, Any]
+    filters: Dict[str, Any]
 
 
 # ── Paper Schemas ───────────────────────────────────────────

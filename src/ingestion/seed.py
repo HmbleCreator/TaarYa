@@ -59,13 +59,25 @@ def seed_catalog(db) -> None:
     insert_query = text("""
         INSERT INTO stars (
             source_id, ra, dec, parallax, pmra, pmdec,
-            phot_g_mean_mag, catalog_source
+            phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe,
+            catalog_source
         )
         VALUES (
             :source_id, :ra, :dec, :parallax, :pmra, :pmdec,
-            :phot_g_mean_mag, :catalog_source
+            :phot_g_mean_mag, :phot_bp_mean_mag, :phot_rp_mean_mag, :ruwe,
+            :catalog_source
         )
-        ON CONFLICT (source_id) DO NOTHING
+        ON CONFLICT (source_id) DO UPDATE SET
+            ra = EXCLUDED.ra,
+            dec = EXCLUDED.dec,
+            parallax = EXCLUDED.parallax,
+            pmra = EXCLUDED.pmra,
+            pmdec = EXCLUDED.pmdec,
+            phot_g_mean_mag = EXCLUDED.phot_g_mean_mag,
+            phot_bp_mean_mag = EXCLUDED.phot_bp_mean_mag,
+            phot_rp_mean_mag = EXCLUDED.phot_rp_mean_mag,
+            ruwe = EXCLUDED.ruwe,
+            catalog_source = EXCLUDED.catalog_source
     """)
 
     # Get existing region counts from regions table
@@ -78,10 +90,40 @@ def seed_catalog(db) -> None:
     for region in SEED_REGIONS:
         # Get existing star count for this region
         existing = existing_regions.get(region["name"], 0)
-        offset = existing
+        inserted = 0
+
+        def _upsert_rows(rows, count_new: bool) -> None:
+            nonlocal inserted
+            if not rows:
+                return
+            with db.session() as session:
+                for row in rows:
+                    row["catalog_source"] = "GAIA"
+                    result = session.execute(insert_query, row)
+                    if count_new:
+                        inserted += result.rowcount or 0
+                session.commit()
+
+        if existing > 0:
+            logger.info(
+                f"Seed region {region['name']}: refreshing {existing} existing rows from Gaia..."
+            )
+            try:
+                refresh_rows = query_gaia_region(
+                    region["ra"],
+                    region["dec"],
+                    region["radius_deg"],
+                    max_stars=existing,
+                    offset=0,
+                )
+                _upsert_rows(refresh_rows, count_new=False)
+            except Exception as e:
+                logger.warning(
+                    f"Seed region {region['name']}: refresh query failed ({e}), continuing"
+                )
 
         logger.info(
-            f"Seed region {region['name']}: existing={existing}, fetching from offset {offset}..."
+            f"Seed region {region['name']}: existing={existing}, fetching new rows from offset {existing}..."
         )
 
         logger.info(f"Seed region {region['name']}: starting Gaia query...")
@@ -92,7 +134,7 @@ def seed_catalog(db) -> None:
                 region["dec"],
                 region["radius_deg"],
                 max_stars=5000,
-                offset=offset,
+                offset=existing,
             )
         except Exception as e:
             logger.warning(
@@ -100,14 +142,7 @@ def seed_catalog(db) -> None:
             )
             continue
 
-        inserted = 0
-        if rows:
-            with db.session() as session:
-                for row in rows:
-                    row["catalog_source"] = "GAIA"
-                    result = session.execute(insert_query, row)
-                    inserted += result.rowcount or 0
-                session.commit()
+        _upsert_rows(rows, count_new=True)
 
         total_count = existing + inserted
         logger.info(

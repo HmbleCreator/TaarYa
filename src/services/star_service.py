@@ -62,3 +62,39 @@ class StarService:
         except Exception as e:
             logger.error(f"Count failed: {e}")
             raise HTTPException(status_code=503, detail=f"Star database unavailable: {e}")
+
+    def space_volume(
+        self,
+        limit: int = 8000,
+        min_parallax: Optional[float] = None,
+        mag_limit: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Return 3D space points for the dashboard volume view."""
+        try:
+            return self._spatial.space_volume(
+                limit=limit,
+                min_parallax=min_parallax,
+                mag_limit=mag_limit,
+            )
+        except Exception as e:
+            logger.error(f"Space volume failed: {e}")
+            raise HTTPException(status_code=503, detail=f"Star database unavailable: {e}")
+
+    def discovery(
+        self,
+        limit: int = 15,
+        pool_limit: int = 3000,
+        radius_deg: float = 0.08,
+        mode: str = "balanced",
+    ) -> Dict[str, Any]:
+        """Return discovery-mode candidates and catalog comparison context."""
+        try:
+            return self._spatial.discovery_candidates(
+                limit=limit,
+                pool_limit=pool_limit,
+                radius_deg=radius_deg,
+                mode=mode,
+            )
+        except Exception as e:
+            logger.error(f"Discovery scoring failed: {e}")
+            raise HTTPException(status_code=503, detail=f"Star database unavailable: {e}")
