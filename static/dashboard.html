@@ -166,6 +166,18 @@
       gap: 8px;
       margin-top: 10px;
     }
+    .catalog-color-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .object-class-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
     .legend-chip {
       display: inline-flex;
       align-items: center;
@@ -190,16 +202,50 @@
     .legend-swatch.mid { background: #f59e0b; color: #f59e0b; }
     .legend-swatch.cool { background: #f8fafc; color: #f8fafc; }
     .legend-swatch.quality { background: #a78bfa; color: #a78bfa; }
+    .catalog-color-chip,
+    .catalog-tone {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--chip-color, var(--dashboard-panel-border));
+      background: var(--dashboard-panel-bg-strong);
+      color: var(--dashboard-panel-text);
+      font-size: 10px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      box-shadow: 0 0 10px var(--chip-glow, transparent);
+      white-space: nowrap;
+    }
+    .catalog-color-chip {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .catalog-color-chip .catalog-color-swatch,
+    .catalog-tone .catalog-pill-swatch {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--chip-color, var(--dashboard-panel-text));
+      box-shadow: 0 0 10px var(--chip-glow, transparent);
+    }
+    .catalog-color-count {
+      color: var(--dashboard-panel-text-muted);
+      font-size: 9px;
+    }
+    .catalog-legend-note {
+      color: var(--dashboard-panel-text-muted);
+      border-style: dashed;
+      box-shadow: none;
+    }
     .sky-globe-shell {
       position: relative;
       min-height: 360px;
       border-radius: 14px;
       overflow: hidden;
       border: 1px solid var(--dashboard-panel-border);
-      background:
-        radial-gradient(circle at 28% 24%, rgba(255,255,255,0.09), transparent 26%),
-        radial-gradient(circle at 50% 52%, rgba(255,255,255,0.04), rgba(0,0,0,0.0) 62%),
-        linear-gradient(180deg, var(--dashboard-panel-bg-strong), var(--dashboard-panel-bg));
+      background: #000;
     }
     #sky-globe-canvas {
       width: 100%;
@@ -207,6 +253,7 @@
       display: block;
       touch-action: none;
       cursor: grab;
+      background: #000;
     }
     #sky-globe-canvas:active {
       cursor: grabbing;
@@ -491,6 +538,19 @@
       border-color: var(--dashboard-panel-border-strong);
     }
 
+    .catalog-pill.catalog-tone,
+    .reason-pill.catalog-tone {
+      border-color: var(--chip-color, var(--dashboard-panel-border));
+      background: var(--dashboard-panel-bg-strong);
+      color: var(--dashboard-panel-text);
+      box-shadow: 0 0 10px var(--chip-glow, transparent);
+    }
+
+    .catalog-pill.catalog-tone:hover,
+    .reason-pill.catalog-tone:hover {
+      border-color: var(--chip-color, var(--dashboard-panel-border));
+    }
+
     .discovery-score-block {
       display: flex;
       flex-direction: column;
@@ -704,14 +764,14 @@
             </button>
           </div>
         </div>
-        <div class="sky-zoom-group">
-          <label for="volume-zoom">Zoom</label>
-          <button id="zoom-out-btn" class="btn btn-secondary" type="button" style="height:34px;width:34px;padding:0;">-</button>
-          <input id="volume-zoom" type="range" min="0.65" max="1.8" step="0.01" value="1">
-          <button id="zoom-in-btn" class="btn btn-secondary" type="button" style="height:34px;width:34px;padding:0;">+</button>
-          <button id="zoom-reset-btn" class="btn btn-secondary" type="button" style="height:34px;">Reset View</button>
-          <span id="volume-zoom-value" class="sky-zoom-value">1.00x</span>
-        </div>
+          <div class="sky-zoom-group">
+            <label for="volume-zoom">Zoom</label>
+            <button id="zoom-out-btn" class="btn btn-secondary" type="button" style="height:34px;width:34px;padding:0;">-</button>
+          <input id="volume-zoom" type="range" min="0.2" max="24" step="0.05" value="1">
+            <button id="zoom-in-btn" class="btn btn-secondary" type="button" style="height:34px;width:34px;padding:0;">+</button>
+            <button id="zoom-reset-btn" class="btn btn-secondary" type="button" style="height:34px;">Reset View</button>
+            <span id="volume-zoom-value" class="sky-zoom-value">1.00x</span>
+          </div>
         <div class="sky-globe-shell" style="margin-bottom:12px;">
           <canvas id="sky-globe-canvas" aria-label="3D space volume map"></canvas>
           <div class="sky-globe-hud">
@@ -725,6 +785,8 @@
           <span class="legend-chip"><span class="legend-swatch cool"></span> White = cooler</span>
           <span class="legend-chip"><span class="legend-swatch quality"></span> RUWE dims weak-quality stars</span>
         </div>
+        <div class="catalog-color-legend" id="catalog-color-legend"></div>
+        <div class="object-class-legend" id="object-class-legend"></div>
         <svg id="sky-svg" viewBox="0 0 600 240" xmlns="http://www.w3.org/2000/svg" style="display:none;">
           <!-- Background -->
           <rect width="600" height="240" fill="#050810" rx="6"/>
@@ -1003,52 +1065,7 @@
     }
 
     function drawGrid(radius, cx, cy) {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,255,0.09)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 5]);
-
-      [-60, -30, 0, 30, 60].forEach((dec) => {
-        ctx.beginPath();
-        let started = false;
-        for (let ra = 0; ra <= 360; ra += 6) {
-          const rotated = rotateVec(sphereToVec(ra, dec), state.yaw, state.pitch);
-          if (rotated.z < -0.08) {
-            started = false;
-            continue;
-          }
-          const pt = project(rotated, radius, cx, cy);
-          if (!started) {
-            ctx.moveTo(pt.x, pt.y);
-            started = true;
-          } else {
-            ctx.lineTo(pt.x, pt.y);
-          }
-        }
-        ctx.stroke();
-      });
-
-      [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].forEach((ra) => {
-        ctx.beginPath();
-        let started = false;
-        for (let dec = -90; dec <= 90; dec += 6) {
-          const rotated = rotateVec(sphereToVec(ra, dec), state.yaw, state.pitch);
-          if (rotated.z < -0.08) {
-            started = false;
-            continue;
-          }
-          const pt = project(rotated, radius, cx, cy);
-          if (!started) {
-            ctx.moveTo(pt.x, pt.y);
-            started = true;
-          } else {
-            ctx.lineTo(pt.x, pt.y);
-          }
-        }
-        ctx.stroke();
-      });
-
-      ctx.restore();
+      return;
     }
 
     function drawLabel(region, pt, radius, tone) {
@@ -1085,58 +1102,8 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
 
-      const backdrop = ctx.createRadialGradient(cx, cy - radius * 0.18, radius * 0.12, cx, cy, radius * 1.9);
-      backdrop.addColorStop(0, 'rgba(125,211,252,0.10)');
-      backdrop.addColorStop(0.32, 'rgba(167,139,250,0.06)');
-      backdrop.addColorStop(0.58, 'rgba(253,224,71,0.04)');
-      backdrop.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = backdrop;
+      ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, h);
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.clip();
-
-      const sphere = ctx.createRadialGradient(
-        cx - radius * 0.28,
-        cy - radius * 0.32,
-        radius * 0.12,
-        cx,
-        cy,
-        radius * 1.12
-      );
-      sphere.addColorStop(0, 'rgba(255,255,255,0.12)');
-      sphere.addColorStop(0.18, 'rgba(59,130,246,0.10)');
-      sphere.addColorStop(0.42, 'rgba(147,197,253,0.08)');
-      sphere.addColorStop(0.72, 'rgba(168,85,247,0.05)');
-      sphere.addColorStop(1, 'rgba(0,0,0,0.96)');
-      ctx.fillStyle = sphere;
-      ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
-
-      const shadow = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius);
-      shadow.addColorStop(0, 'rgba(0,0,0,0)');
-      shadow.addColorStop(1, 'rgba(0,0,0,0.42)');
-      ctx.fillStyle = shadow;
-      ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
-
-      drawGrid(radius, cx, cy);
-
-      ctx.save();
-      ctx.setLineDash([]);
-      for (let i = 0; i < 84; i += 1) {
-        const seed = (i * 97) % 360;
-        const band = ((i * 53) % 180) - 90;
-        const rotated = rotateVec(sphereToVec(seed, band), state.yaw * 0.4, state.pitch * 0.2);
-        if (rotated.z < -0.06) continue;
-        const pt = project(rotated, radius * (0.98 + ((i % 5) * 0.008)), cx, cy);
-        const hue = [195, 220, 265, 330, 48, 140][i % 6];
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 0.8 + (i % 3) * 0.45, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${hue}, 90%, 72%, ${0.35 - (i % 4) * 0.04})`;
-        ctx.fill();
-      }
-      ctx.restore();
 
       const visible = [];
       state.regions.forEach((region, index) => {
@@ -1175,16 +1142,6 @@
           drawLabel(item.region, item.pt, item.screenRadius, tone);
         }
       });
-
-      ctx.restore();
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-      ctx.lineWidth = 1.15;
-      ctx.stroke();
-      ctx.restore();
 
       updateReadout(state.hoverIndex >= 0 ? state.regions[state.hoverIndex] : null);
     }
@@ -1274,6 +1231,10 @@
       },
       destroy() {
         window.removeEventListener('resize', resize);
+        if (drawFrame) {
+          cancelAnimationFrame(drawFrame);
+          drawFrame = 0;
+        }
         observer.disconnect();
       },
     };
@@ -1335,6 +1296,8 @@
   const discoveryTotalEl = document.getElementById('discovery-total');
   const discoveryCatalogsEl = document.getElementById('discovery-catalogs');
   const discoveryOverlapsEl = document.getElementById('discovery-overlaps');
+  const catalogLegendEl = document.getElementById('catalog-color-legend');
+  const objectClassLegendEl = document.getElementById('object-class-legend');
   const catalogSourceEl = document.getElementById('catalog-source-select');
   const catalogPathEl = document.getElementById('catalog-file-path');
   const catalogIngestBtn = document.getElementById('catalog-ingest-btn');
@@ -1396,10 +1359,14 @@
     discoveryOverlapsEl.textContent = fmt(overlaps.candidates_with_overlap || 0);
 
     discoveryCatalogRowEl.innerHTML = catalogSummary.length
-      ? catalogSummary.map((row) => `
-        <span class="catalog-pill" title="${escapeHtml(row.catalog_source)} catalog currently contributes ${fmt(row.count)} rows">${escapeHtml(row.catalog_source)} · ${fmt(row.count)}</span>
-      `).join('')
+      ? catalogSummary.map((row) => catalogChipMarkup(
+        row.catalog_source,
+        row.count,
+        `${normalizeCatalogName(row.catalog_source)} catalog currently contributes ${fmt(row.count)} rows`
+      )).join('')
       : '<span class="catalog-pill">No catalogs yet</span>';
+
+    renderCatalogLegend(catalogSummary);
 
     if (!candidates.length) {
       discoveryListEl.innerHTML = `<div style="color:var(--dashboard-panel-text-muted);font-size:12px;padding:10px 0;">No discovery candidates yet in ${escapeHtml(mode)} mode.</div>`;
@@ -1413,6 +1380,7 @@
         item.distance_pc != null ? `${item.distance_pc.toFixed(1)} pc` : null,
         item.phot_g_mean_mag != null ? `G ${item.phot_g_mean_mag.toFixed(2)}` : null,
         item.ruwe != null ? `RUWE ${item.ruwe.toFixed(2)}` : null,
+        item.object_class != null ? `Class ${item.object_class}` : null,
         item.local_density != null ? `${item.local_density} neighbors` : null,
       ].filter(Boolean).join(' · ');
 
@@ -1427,13 +1395,14 @@
               <div class="discovery-score-label">Discovery Score</div>
               <div class="discovery-score" title="Higher means the object is more unusual by the current ${escapeHtml(mode)} ranking profile">${Number(item.score || 0).toFixed(1)}</div>
             </div>
-          </div>
-          <div class="discovery-reasons">
-            <span class="catalog-pill" title="Primary catalog for this object">${escapeHtml(item.catalog_source || 'UNKNOWN')}</span>
-            ${(item.matched_catalogs || []).map((catalog) => `<span class="reason-pill" title="Cross-match catalog: ${escapeHtml(catalog)}">${escapeHtml(catalog)}</span>`).join('')}
-            ${reasons.map((reason) => `<span class="reason-pill" title="${escapeHtml(reasonTooltip(reason))}">${escapeHtml(reason)}</span>`).join('')}
-          </div>
-        </div>`;
+        </div>
+        <div class="discovery-reasons">
+          ${catalogChipMarkup(item.catalog_source || 'UNKNOWN', null, 'Primary catalog for this object')}
+          ${item.object_class ? classChipMarkup(item.object_class, null, `Astrophysical class: ${item.object_class}`) : ''}
+          ${(item.matched_catalogs || []).map((catalog) => catalogChipMarkup(catalog, null, `Cross-match catalog: ${normalizeCatalogName(catalog)}`)).join('')}
+          ${reasons.map((reason) => `<span class="reason-pill" title="${escapeHtml(reasonTooltip(reason))}">${escapeHtml(reason)}</span>`).join('')}
+        </div>
+      </div>`;
     }).join('');
   }
 
@@ -1452,12 +1421,13 @@
 
     const [regionData, volumeData] = await Promise.all([
       api.regions(),
-      api.spaceVolume({ limit: 8000, ...filters }),
+      api.spaceVolume({ limit: 5000, ...filters }),
     ]);
 
     const regions = regionData.regions || [];
     const volumePoints = volumeData.points || [];
     renderRegions(regions);
+    renderObjectClassLegend(volumePoints);
     spaceMap.setScene({
       points: volumePoints,
       regions,
@@ -1600,7 +1570,7 @@
 
   function adjustZoom(delta) {
     const next = Number(volumeZoomEl.value || 1) + delta;
-    volumeZoomEl.value = String(clamp(next, 0.65, 1.8));
+    volumeZoomEl.value = String(clamp(next, 0.2, 12));
     volumeZoomEl.dispatchEvent(new Event('input'));
   }
 
@@ -1609,8 +1579,8 @@
     volumeZoomValueEl.textContent = `${nextZoom.toFixed(2)}x`;
     spaceMap.setZoom(nextZoom);
   });
-  zoomOutBtn.addEventListener('click', () => adjustZoom(-0.08));
-  zoomInBtn.addEventListener('click', () => adjustZoom(0.08));
+  zoomOutBtn.addEventListener('click', () => adjustZoom(-0.35));
+  zoomInBtn.addEventListener('click', () => adjustZoom(0.35));
   zoomResetBtn.addEventListener('click', () => {
     spaceMap.resetView();
   });
@@ -1675,6 +1645,233 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function hashString(text) {
+    let hash = 2166136261;
+    const input = String(text ?? '');
+    for (let i = 0; i < input.length; i += 1) {
+      hash ^= input.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function hslaString(hue, saturation, lightness, alpha = 1) {
+    return `hsla(${Math.round(hue)}, ${Math.round(saturation)}%, ${Math.round(lightness)}%, ${clamp(alpha, 0, 1)})`;
+  }
+
+  function normalizeCatalogName(value) {
+    const raw = String(value ?? 'UNKNOWN').trim();
+    if (!raw) return 'UNKNOWN';
+    const upper = raw.toUpperCase();
+    if (upper.includes('PAN-STARRS') || upper.includes('PANSTARRS') || upper === 'PS1' || upper === 'PAN STARRS') {
+      return 'PAN-STARRS';
+    }
+    if (upper.includes('2MASS')) return '2MASS';
+    if (upper.includes('WISE')) return 'WISE';
+    if (upper.includes('GAIA')) return 'GAIA';
+    return upper;
+  }
+
+  function normalizeObjectClass(value) {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    return raw
+      .replace(/_/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toUpperCase();
+  }
+
+  function objectClassSeed(label) {
+    const canonical = normalizeObjectClass(label);
+    if (!canonical) return null;
+    const known = {
+      'PLANET': { hue: 210, saturation: 84, lightness: 62 },
+      'EXOPLANET': { hue: 210, saturation: 84, lightness: 62 },
+      'GAS GIANT': { hue: 200, saturation: 78, lightness: 60 },
+      'BROWN DWARF': { hue: 28, saturation: 82, lightness: 58 },
+      'L DWARF': { hue: 22, saturation: 84, lightness: 58 },
+      'T DWARF': { hue: 18, saturation: 76, lightness: 56 },
+      'Y DWARF': { hue: 14, saturation: 74, lightness: 55 },
+      'RED DWARF': { hue: 8, saturation: 82, lightness: 58 },
+      'M DWARF': { hue: 8, saturation: 82, lightness: 58 },
+      'WHITE DWARF': { hue: 205, saturation: 18, lightness: 92 },
+      'GIANT': { hue: 42, saturation: 90, lightness: 60 },
+      'SUPERGIANT': { hue: 36, saturation: 92, lightness: 58 },
+      'NEBULA': { hue: 286, saturation: 74, lightness: 62 },
+      'GALAXY': { hue: 180, saturation: 58, lightness: 56 },
+      'STAR': { hue: 52, saturation: 76, lightness: 72 },
+      'MAIN SEQUENCE': { hue: 52, saturation: 76, lightness: 72 },
+      'CLUSTER': { hue: 262, saturation: 68, lightness: 60 },
+    };
+    for (const [pattern, palette] of Object.entries(known)) {
+      if (canonical === pattern || canonical.includes(pattern)) {
+        return { label: canonical, ...palette };
+      }
+    }
+    const seed = hashString(canonical);
+    const mixed = Math.imul(seed, 2246822519) >>> 0;
+    return {
+      label: canonical,
+      hue: mixed % 360,
+      saturation: 64 + (mixed % 16),
+      lightness: 56 + ((mixed >>> 8) % 12),
+    };
+  }
+
+  function objectClassColor(label, alpha = 1, variant = 'core') {
+    const palette = objectClassSeed(label);
+    if (!palette) return null;
+    const glowLight = Math.min(palette.lightness + 12, 90);
+    const strokeLight = Math.max(palette.lightness - 10, 38);
+    if (variant === 'glow') {
+      return hslaString(palette.hue, Math.min(palette.saturation + 6, 96), glowLight, Math.min(alpha * 0.28, 0.65));
+    }
+    if (variant === 'stroke') {
+      return hslaString(palette.hue, Math.min(palette.saturation + 4, 96), strokeLight, Math.min(alpha, 1));
+    }
+    return hslaString(palette.hue, palette.saturation, palette.lightness, alpha);
+  }
+
+  function makeCatalogPalette(label) {
+    const canonical = normalizeCatalogName(label);
+    const seed = hashString(canonical);
+    const mixed = Math.imul(seed, 2654435761) >>> 0;
+    const hue = mixed % 360;
+    const saturation = 70 + (mixed % 18);
+    const lightness = 58 + ((mixed >>> 9) % 10);
+    return { label: canonical, hue, saturation, lightness };
+  }
+
+  function catalogColor(label, alpha = 1, variant = 'core') {
+    const palette = makeCatalogPalette(label);
+    const coreLight = palette.lightness;
+    const glowLight = Math.min(coreLight + 10, 80);
+    const strokeLight = Math.max(coreLight - 8, 42);
+    const glowAlpha = Math.min(alpha * 0.35, 0.7);
+
+    if (variant === 'glow') {
+      return hslaString(palette.hue, Math.min(palette.saturation + 6, 96), glowLight, glowAlpha);
+    }
+    if (variant === 'stroke') {
+      return hslaString(palette.hue, Math.min(palette.saturation + 4, 96), strokeLight, Math.min(alpha, 1));
+    }
+    return hslaString(palette.hue, palette.saturation, coreLight, alpha);
+  }
+
+  function spectralColor(point, alpha = 1, variant = 'core') {
+    const bp = Number(point?.bp_rp);
+    const t = Number.isFinite(bp) ? clamp((bp + 0.2) / 3.4, 0, 1) : 0.45;
+    const hue = 220 - t * 185;
+    const saturation = 94 - t * 28;
+    const lightness = 76 - t * 18;
+    if (variant === 'glow') {
+      return hslaString(hue, Math.min(saturation + 6, 98), Math.min(lightness + 12, 86), Math.min(alpha * 0.38, 0.72));
+    }
+    if (variant === 'stroke') {
+      return hslaString(hue, Math.min(saturation + 4, 96), Math.max(lightness - 10, 40), Math.min(alpha, 1));
+    }
+    return hslaString(hue, saturation, lightness, alpha);
+  }
+
+  function pointCatalogName(point) {
+    return normalizeCatalogName(
+      point?.catalog_source ||
+      point?.catalog ||
+      point?.dataset ||
+      point?.dataset_source ||
+      'UNKNOWN'
+    );
+  }
+
+  function pointObjectClass(point) {
+    return normalizeObjectClass(
+      point?.object_class ||
+      point?.object_type ||
+      point?.source_type ||
+      point?.kind ||
+      point?.class ||
+      point?.class_name
+    );
+  }
+
+  function pointColor(point, alpha = 1, variant = 'core') {
+    const objectClass = pointObjectClass(point);
+    if (objectClass) {
+      return objectClassColor(objectClass, alpha, variant);
+    }
+    const catalog = pointCatalogName(point);
+    if (catalog === 'GAIA' && Number.isFinite(Number(point?.bp_rp))) {
+      return spectralColor(point, alpha, variant);
+    }
+    return catalogColor(catalog, alpha, variant);
+  }
+
+  function catalogChipMarkup(label, count = null, title = '', kind = 'catalog-pill') {
+    const canonical = normalizeCatalogName(label);
+    const suffix = count == null ? '' : `<span class="catalog-color-count">${fmt(count)}</span>`;
+    return `
+      <span class="${kind} catalog-tone"
+        style="--chip-color:${catalogColor(canonical, 1, 'core')};--chip-glow:${catalogColor(canonical, 1, 'glow')};"
+        title="${escapeHtml(title || canonical)}">
+        <span class="catalog-pill-swatch"></span>
+        <span>${escapeHtml(canonical)}</span>
+        ${suffix}
+      </span>`;
+  }
+
+  function renderCatalogLegend(catalogSummary) {
+    if (!catalogLegendEl) return;
+    const rows = Array.isArray(catalogSummary) ? catalogSummary : [];
+    const note = '<span class="legend-chip catalog-legend-note">Catalog colors auto-map to any future dataset</span>';
+    if (!rows.length) {
+      catalogLegendEl.innerHTML = note;
+      return;
+    }
+
+    catalogLegendEl.innerHTML = `
+      ${note}
+      ${rows.map((row) => catalogChipMarkup(
+        row.catalog_source,
+        row.count,
+        `${normalizeCatalogName(row.catalog_source)} catalog currently contributes ${fmt(row.count)} rows`,
+        'catalog-color-chip'
+      )).join('')}
+    `;
+  }
+
+  function classChipMarkup(label, count = null, title = '', kind = 'catalog-tone') {
+    const canonical = normalizeObjectClass(label);
+    if (!canonical) return '';
+    const suffix = count == null ? '' : `<span class="catalog-color-count">${fmt(count)}</span>`;
+    return `
+      <span class="${kind}"
+        style="--chip-color:${objectClassColor(canonical, 1, 'core')};--chip-glow:${objectClassColor(canonical, 1, 'glow')};"
+        title="${escapeHtml(title || canonical)}">
+        <span class="catalog-pill-swatch"></span>
+        <span>${escapeHtml(canonical)}</span>
+        ${suffix}
+      </span>`;
+  }
+
+  function renderObjectClassLegend(points) {
+    if (!objectClassLegendEl) return;
+    const classes = Array.from(new Set((points || []).map(pointObjectClass).filter(Boolean)));
+    if (!classes.length) {
+      objectClassLegendEl.innerHTML = '<span class="legend-chip catalog-legend-note">Object-class colors will appear when future catalogs provide them</span>';
+      return;
+    }
+    const priority = ['PLANET', 'EXOPLANET', 'WHITE DWARF', 'RED DWARF', 'BROWN DWARF', 'GIANT', 'NEBULA', 'GALAXY'];
+    const ordered = [
+      ...priority.filter((label) => classes.some((entry) => entry.includes(label))),
+      ...classes.filter((entry) => !priority.some((label) => entry.includes(label))),
+    ].slice(0, 8);
+    objectClassLegendEl.innerHTML = `
+      <span class="legend-chip catalog-legend-note">Object class colors</span>
+      ${ordered.map((entry) => classChipMarkup(entry, null, `Objects tagged as ${entry}`)).join('')}
+    `;
   }
 
   function reasonTooltip(reason) {
@@ -1742,6 +1939,15 @@
       scale: 1,
       center: { x: 0, y: 0, z: 0 },
     };
+    let drawFrame = 0;
+
+    function scheduleDraw() {
+      if (drawFrame) return;
+      drawFrame = requestAnimationFrame(() => {
+        drawFrame = 0;
+        draw();
+      });
+    }
 
     function syncZoomUI() {
       const slider = document.getElementById('volume-zoom');
@@ -1751,9 +1957,9 @@
     }
 
     function setZoom(nextZoom) {
-      state.zoom = clamp(nextZoom, 0.65, 1.8);
+      state.zoom = clamp(nextZoom, 0.2, 24);
       syncZoomUI();
-      draw();
+      scheduleDraw();
     }
 
     function resetView() {
@@ -1774,7 +1980,7 @@
       canvas.height = Math.round(state.height * state.dpr);
       canvas.style.width = '100%';
       canvas.style.height = '100%';
-      draw();
+      scheduleDraw();
     }
 
     function deriveBounds(points) {
@@ -1832,9 +2038,10 @@
     }
 
     function project(vec, cx, cy, baseRadius) {
-      const camera = 2.6;
-      const depth = camera - vec.z * state.zoom;
-      const perspective = camera / Math.max(depth, 0.65);
+      const camera = 3.4;
+      const zoomScale = 0.28 + state.zoom * 0.12;
+      const depth = camera - vec.z * zoomScale;
+      const perspective = camera / Math.max(depth, 0.42);
       return {
         x: cx + vec.x * baseRadius * perspective,
         y: cy - vec.y * baseRadius * perspective,
@@ -1843,20 +2050,8 @@
       };
     }
 
-    function starColor(point, alpha = 0.9) {
-      if (point.bp_rp != null) {
-        const t = clamp((point.bp_rp + 0.2) / 3.0, 0, 1);
-        const hue = 220 - t * 190;
-        const sat = 92 - t * 30;
-        const light = 78 - t * 18;
-        return `hsla(${hue.toFixed(0)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, ${alpha})`;
-      }
-      const mag = point.phot_g_mean_mag != null ? point.phot_g_mean_mag : 12;
-      const t = clamp((mag - 2) / 13, 0, 1);
-      const hue = 214 - t * 150;
-      const sat = 18 + t * 22;
-      const light = 94 - t * 24;
-      return `hsla(${hue.toFixed(0)}, ${sat.toFixed(0)}%, ${light.toFixed(0)}%, ${alpha})`;
+    function starColor(point, alpha = 0.9, variant = 'core') {
+      return pointColor(point, alpha, variant);
     }
 
     function starAlpha(point) {
@@ -1878,7 +2073,8 @@
           ? `PM ${point.pmra.toFixed(1)}, ${point.pmdec.toFixed(1)} mas/yr`
           : 'PM n/a';
         const quality = point.ruwe != null ? `RUWE ${point.ruwe.toFixed(2)}` : 'RUWE n/a';
-        readoutEl.textContent = `${point.source_id} | ${distance} | G ${point.phot_g_mean_mag != null ? point.phot_g_mean_mag.toFixed(2) : 'n/a'} | ${colorInfo} | ${motion} | ${quality}`;
+        const objectClass = point.object_class ? `Class ${point.object_class}` : 'class n/a';
+        readoutEl.textContent = `${point.source_id} | ${distance} | G ${point.phot_g_mean_mag != null ? point.phot_g_mean_mag.toFixed(2) : 'n/a'} | ${colorInfo} | ${objectClass} | ${motion} | ${quality}`;
         return;
       }
       if (region) {
@@ -1912,6 +2108,20 @@
       ctx.restore();
     }
 
+    function makeSeededRandom(seed) {
+      let value = seed >>> 0;
+      if (!value) value = 0x9E3779B9;
+      return () => {
+        value ^= value << 13;
+        value >>>= 0;
+        value ^= value >>> 17;
+        value >>>= 0;
+        value ^= value << 5;
+        value >>>= 0;
+        return value / 4294967296;
+      };
+    }
+
     function draw() {
       if (!state.width || !state.height) return;
 
@@ -1924,27 +2134,13 @@
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
+      ctx.filter = 'none';
 
-      const bg = ctx.createRadialGradient(cx, cy - size * 0.2, size * 0.1, cx, cy, size * 2.2);
-      bg.addColorStop(0, 'rgba(255,255,255,0.08)');
-      bg.addColorStop(0.28, 'rgba(59,130,246,0.06)');
-      bg.addColorStop(0.56, 'rgba(168,85,247,0.05)');
-      bg.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = bg;
+      ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, h);
-
-      ctx.save();
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
-      for (let i = 0; i < 46; i += 1) {
-        const angle = (i * 137.5) * DEG2RAD;
-        const r = (0.15 + (i % 7) * 0.03) * size;
-        const x = cx + Math.cos(angle + state.yaw * 0.2) * r * 1.8;
-        const y = cy + Math.sin(angle + state.pitch * 0.2) * r * 1.1;
-        ctx.beginPath();
-        ctx.arc(x, y, 0.75 + (i % 3) * 0.15, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
 
       state.projectedPoints = [];
       state.projectedRegions = [];
@@ -1953,16 +2149,32 @@
         const rotated = rotatePoint(point._normalized);
         const projected = project(rotated, cx, cy, size);
         return { point, index, rotated, projected };
-      }).filter(item => item.projected.depth > 0.2);
+      }).filter(item => {
+        return item.projected.depth > 0.15 && item.point._alpha >= 0.42;
+      });
 
       visiblePoints.sort((a, b) => a.projected.depth - b.projected.depth);
       visiblePoints.forEach((item) => {
-        const bright = item.point.phot_g_mean_mag != null ? clamp((14 - item.point.phot_g_mean_mag) / 10, 0.2, 1) : 0.45;
-        const sizePx = clamp(0.55 + bright * 1.8, 0.6, 3.4) * item.projected.perspective;
+        const bright = item.point._bright ?? 0.45;
+        const sizePx = clamp(0.35 + bright * 1.15, 0.45, 2.4) * item.projected.perspective;
+        const alpha = item.point._alpha ?? starAlpha(item.point);
+        const coreColor = item.point._coreColor || starColor(item.point, alpha, 'core');
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = alpha;
         ctx.beginPath();
         ctx.arc(item.projected.x, item.projected.y, sizePx, 0, Math.PI * 2);
-        ctx.fillStyle = starColor(item.point, starAlpha(item.point));
+        ctx.fillStyle = coreColor;
         ctx.fill();
+        if (bright >= 0.7) {
+          ctx.lineWidth = 0.6;
+          ctx.strokeStyle = coreColor;
+          ctx.globalAlpha = Math.min(alpha, 0.72);
+          ctx.stroke();
+        }
+        ctx.restore();
         state.projectedPoints.push({
           index: item.index,
           x: item.projected.x,
@@ -1982,23 +2194,50 @@
       regionAnchors.sort((a, b) => a.projected.depth - b.projected.depth);
       regionAnchors.forEach((item, i) => {
         const tone = REGION_TONES[i % REGION_TONES.length];
-        const sizePx = 3.5 + Math.min(Number(item.region.count || 0) / 900, 6);
+        const count = Number(item.region.count || 0);
+        const density = clamp(count / 2200, 0.08, 1);
+        const coreSize = 7 + Math.min(count / 150, 22);
+        const cloudRadius = coreSize * (1.75 + density * 1.35);
+        const fogParticles = clamp(Math.round(18 + density * 30), 18, 48);
+        const random = makeSeededRandom(hashString(`${item.region.name}|${count}|${item.index}`));
+        const hovered = item.index === state.hoverRegion;
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over';
+        for (let p = 0; p < fogParticles; p += 1) {
+          const angle = random() * Math.PI * 2;
+          const radial = Math.pow(random(), 0.56) * cloudRadius;
+          const stretch = 0.7 + density * 0.5 + random() * 0.22;
+          const px = item.projected.x + Math.cos(angle) * radial;
+          const py = item.projected.y + Math.sin(angle) * radial * stretch;
+          const dot = clamp(cloudRadius * (0.045 + random() * 0.1), 0.8, 4.4) * (hovered ? 1.2 : 1);
+          const alpha = clamp((0.04 + density * 0.08 + random() * 0.03) * (hovered ? 1.5 : 1), 0.03, 0.22);
+          ctx.beginPath();
+          ctx.arc(px, py, dot, 0, Math.PI * 2);
+          ctx.fillStyle = hexToRgba(tone, alpha);
+          ctx.fill();
+        }
         ctx.beginPath();
-        ctx.arc(item.projected.x, item.projected.y, sizePx, 0, Math.PI * 2);
-        ctx.fillStyle = hexToRgba(tone, 0.42);
+        ctx.arc(item.projected.x, item.projected.y, Math.max(2.2, coreSize * 0.18), 0, Math.PI * 2);
+        ctx.fillStyle = hexToRgba(tone, hovered ? 0.46 : 0.18);
         ctx.fill();
-        ctx.strokeStyle = hexToRgba(tone, 0.92);
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-        if (sizePx > 6 || item.index === state.hoverRegion) {
-          drawLabel(`${item.region.name} â€¢ ${Number(item.region.count || 0).toLocaleString()}`, item.projected, tone);
+        ctx.restore();
+        if (hovered) {
+          ctx.beginPath();
+          ctx.arc(item.projected.x, item.projected.y, Math.max(2.6, coreSize * 0.26), 0, Math.PI * 2);
+          ctx.strokeStyle = hexToRgba(tone, 0.82);
+          ctx.lineWidth = 1.0;
+          ctx.stroke();
+        }
+        if (hovered || cloudRadius > 11) {
+          drawLabel(`${item.region.name} | ${count.toLocaleString()}`, item.projected, tone);
         }
         state.projectedRegions.push({
           index: item.index,
           x: item.projected.x,
           y: item.projected.y,
           depth: item.projected.depth,
-          radius: sizePx,
+          radius: cloudRadius,
         });
       });
 
@@ -2047,10 +2286,18 @@
       const spanZ = state.bounds.z_max - state.bounds.z_min;
       state.scale = Math.max(spanX, spanY, spanZ, 1);
 
-      state.points = points.map((point) => ({
-        ...point,
-        _normalized: normalizePoint(point),
-      }));
+      state.points = points.map((point) => {
+        const alpha = starAlpha(point);
+        return {
+          ...point,
+          _normalized: normalizePoint(point),
+          _catalog: pointCatalogName(point),
+          _objectClass: pointObjectClass(point),
+          _alpha: alpha,
+          _bright: point.phot_g_mean_mag != null ? clamp((14 - point.phot_g_mean_mag) / 10, 0.2, 1) : 0.45,
+          _coreColor: pointColor(point, alpha, 'core'),
+        };
+      });
       state.regions = regions.map((region, index) => ({
         ...region,
         name: region.name || `Region ${index + 1}`,
@@ -2080,7 +2327,7 @@
         state.pointerY = event.clientY;
         state.yaw += dx * 0.009;
         state.pitch = clamp(state.pitch + dy * 0.007, -1.2, 1.2);
-        draw();
+        scheduleDraw();
         return;
       }
 
@@ -2088,7 +2335,7 @@
       if (picked.bestPoint !== state.hoverPoint || picked.bestRegion !== state.hoverRegion) {
         state.hoverPoint = picked.bestPoint;
         state.hoverRegion = picked.bestRegion;
-        draw();
+        scheduleDraw();
       }
     });
 
@@ -2102,15 +2349,15 @@
       if (state.hoverPoint !== -1 || state.hoverRegion !== -1) {
         state.hoverPoint = -1;
         state.hoverRegion = -1;
-        draw();
+        scheduleDraw();
       }
     });
 
     canvas.addEventListener('wheel', (event) => {
       event.preventDefault();
-      state.zoom = clamp(state.zoom + (event.deltaY > 0 ? 0.06 : -0.06), 0.72, 1.7);
+      state.zoom = clamp(state.zoom + (event.deltaY > 0 ? 0.35 : -0.35), 0.2, 24);
       syncZoomUI();
-      draw();
+      scheduleDraw();
     }, { passive: false });
 
     window.addEventListener('resize', resize);
@@ -2123,6 +2370,10 @@
       resetView,
       destroy() {
         window.removeEventListener('resize', resize);
+        if (drawFrame) {
+          cancelAnimationFrame(drawFrame);
+          drawFrame = 0;
+        }
         observer.disconnect();
       },
     };

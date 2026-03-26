@@ -21,6 +21,7 @@ CANONICAL_COLUMNS = [
     "phot_rp_mean_mag",
     "ruwe",
     "catalog_source",
+    "object_class",
 ]
 
 
@@ -61,6 +62,11 @@ class CatalogParser:
             "phot_bp_mean_mag": "phot_bp_mean_mag",
             "phot_rp_mean_mag": "phot_rp_mean_mag",
             "ruwe": "ruwe",
+            "object_class": "object_class",
+            "class": "object_class",
+            "object_type": "object_class",
+            "source_type": "object_class",
+            "kind": "object_class",
         },
         "WISE": {
             "source_id": "source_id",
@@ -104,6 +110,11 @@ class CatalogParser:
             "r_mean_psf_mag": "phot_bp_mean_mag",
             "imag": "phot_rp_mean_mag",
             "i_mean_psf_mag": "phot_rp_mean_mag",
+            "object_class": "object_class",
+            "class": "object_class",
+            "object_type": "object_class",
+            "source_type": "object_class",
+            "kind": "object_class",
         },
     }
 

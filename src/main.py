@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from sqlalchemy import text
 
 from src.config import settings
 from src.utils.logger import setup_logging
@@ -30,6 +31,16 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = PROJECT_ROOT / "static"
 
 
+def _ensure_star_schema() -> None:
+    """Add optional columns needed by newer visualizations without breaking old installs."""
+    postgres_conn.connect()
+    try:
+        with postgres_conn.engine.begin() as conn:
+            conn.execute(text("ALTER TABLE stars ADD COLUMN IF NOT EXISTS object_class VARCHAR(40)"))
+    except Exception as exc:
+        logger.warning(f"Star schema migration skipped or already applied: {exc}")
+
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -43,6 +54,7 @@ async def lifespan(app: FastAPI):
         from src.models import Base
 
         Base.metadata.create_all(postgres_conn.engine)
+        _ensure_star_schema()
         logger.info("Database tables: ensured")
 
         qdrant_conn.connect()
