@@ -22,6 +22,16 @@ def _finite_float(value: Any) -> Optional[float]:
     return number if math.isfinite(number) else None
 
 
+def _normalize_object_class(value: Any) -> Optional[str]:
+    """Normalize optional object class labels for display and scoring."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    return " ".join(text.replace("_", " ").replace("/", " ").split()).upper()
+
+
 def _discovery_profile(mode: str) -> Dict[str, float]:
     """Return scoring weights for the requested discovery mode."""
     normalized = (mode or "balanced").strip().lower()
@@ -151,7 +161,7 @@ class SpatialSearch:
         query = text("""
             SELECT source_id, ra, dec, parallax, pmra, pmdec,
                    phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe,
-                   catalog_source,
+                   catalog_source, object_class,
                    q3c_dist(ra, dec, :center_ra, :center_dec) AS angular_distance
             FROM stars
             WHERE q3c_radial_query(ra, dec, :center_ra, :center_dec, :radius)
@@ -217,7 +227,7 @@ class SpatialSearch:
         query = text(f"""
             SELECT source_id, ra, dec, parallax, pmra, pmdec,
                    phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe,
-                   catalog_source,
+                   catalog_source, object_class,
                    q3c_dist(ra, dec, :center_ra, :center_dec) AS angular_distance
             FROM stars
             WHERE {where_clause}
@@ -267,6 +277,7 @@ class SpatialSearch:
                 "phot_rp_mean_mag": _finite_float(star.phot_rp_mean_mag),
                 "ruwe": _finite_float(star.ruwe),
                 "catalog_source": star.catalog_source,
+                "object_class": _normalize_object_class(getattr(star, "object_class", None)),
             }
     
     def nearby_stars(
@@ -347,7 +358,7 @@ class SpatialSearch:
             SELECT
                 source_id, ra, dec, parallax, pmra, pmdec,
                 phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe,
-                catalog_source
+                catalog_source, object_class
             FROM stars
             WHERE {where_clause}
             ORDER BY COALESCE(phot_g_mean_mag, 99.0), parallax DESC, source_id
@@ -409,6 +420,7 @@ class SpatialSearch:
                 "bp_rp": bp_rp,
                 "ruwe": _finite_float(row.get("ruwe")),
                 "catalog_source": row.get("catalog_source"),
+                "object_class": _normalize_object_class(row.get("object_class")),
             }
             points.append(point)
 
@@ -466,7 +478,7 @@ class SpatialSearch:
         gaia_query = text("""
             SELECT source_id, ra, dec, parallax, pmra, pmdec,
                    phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe,
-                   catalog_source
+                   catalog_source, object_class
             FROM stars
             WHERE ra IS NOT NULL AND dec IS NOT NULL
               AND UPPER(COALESCE(catalog_source, 'GAIA')) = 'GAIA'
@@ -486,7 +498,7 @@ class SpatialSearch:
             other_query = text("""
                 SELECT source_id, ra, dec, parallax, pmra, pmdec,
                        phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe,
-                       catalog_source
+                       catalog_source, object_class
                 FROM stars
                 WHERE ra IS NOT NULL AND dec IS NOT NULL
                   AND UPPER(COALESCE(catalog_source, 'GAIA')) <> 'GAIA'
@@ -517,6 +529,7 @@ class SpatialSearch:
             rp = _finite_float(row.get("phot_rp_mean_mag"))
             bp_rp = (bp - rp) if bp is not None and rp is not None else None
             ruwe = _finite_float(row.get("ruwe"))
+            object_class = _normalize_object_class(row.get("object_class"))
 
             score = 0.0
             reasons: List[str] = []
@@ -582,6 +595,7 @@ class SpatialSearch:
                     "distance_pc": distance_pc,
                     "phot_g_mean_mag": phot_g,
                     "ruwe": ruwe,
+                    "object_class": object_class,
                     "bp_rp": bp_rp,
                     "pm_total": motion,
                     "score": score,
@@ -684,6 +698,7 @@ class SpatialSearch:
                 "distance_pc": item["distance_pc"],
                 "phot_g_mean_mag": item["phot_g_mean_mag"],
                 "ruwe": item["ruwe"],
+                "object_class": item["object_class"],
                 "bp_rp": item["bp_rp"],
                 "local_density": item["local_density"],
                 "matched_catalogs": item["matched_catalogs"],

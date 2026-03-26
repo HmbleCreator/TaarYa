@@ -36,6 +36,7 @@ class Star(Base):
 
     # Catalog metadata
     catalog_source = Column(String(20), default="GAIA", doc="Source catalog")
+    object_class = Column(String(40), nullable=True, doc="Optional astrophysical object class")
 
     # Indexes for Q3C spatial queries
     __table_args__ = (

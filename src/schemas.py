@@ -17,6 +17,7 @@ class StarResponse(BaseModel):
     phot_bp_mean_mag: Optional[float] = None
     phot_rp_mean_mag: Optional[float] = None
     catalog_source: Optional[str] = None
+    object_class: Optional[str] = None
     angular_distance: Optional[float] = None
 
 
@@ -60,6 +61,7 @@ class SpaceVolumePoint(BaseModel):
     bp_rp: Optional[float] = None
     ruwe: Optional[float] = None
     catalog_source: Optional[str] = None
+    object_class: Optional[str] = None
 
 
 class SpaceVolumeBounds(BaseModel):
