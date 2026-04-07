@@ -15,35 +15,83 @@ logger = logging.getLogger(__name__)
 
 class Neo4jConnection:
     """Neo4j graph database connection manager."""
-    
+
+    # Background-retry settings (used after startup, non-blocking)
+    _BG_RETRY_DELAY  = 20  # seconds between background attempts
+
     def __init__(self):
         self.driver = None
-    
+
+    # ------------------------------------------------------------------
+    # connect() — single attempt, raises immediately if unreachable.
+    # Called at startup (once) and by the background retry task.
+    # ------------------------------------------------------------------
     def connect(self):
-        """Establish connection to Neo4j."""
-        if self.driver is None:
-            self.driver = GraphDatabase.driver(
-                settings.neo4j_uri,
-                auth=(settings.neo4j_user, settings.neo4j_password)
-            )
-            logger.info("Connected to Neo4j")
-    
+        """Try once to connect and verify Neo4j's Bolt port.
+
+        Raises on failure so the caller can decide whether to retry.
+        The driver constructor is lazy and never opens a socket on its own;
+        verify_connectivity() is what actually tests the connection.
+        """
+        if self.driver is not None:
+            return  # already connected
+
+        driver = GraphDatabase.driver(
+            settings.neo4j_uri,
+            auth=(settings.neo4j_user, settings.neo4j_password),
+        )
+        driver.verify_connectivity()   # raises if Bolt port not reachable
+        self.driver = driver
+        logger.info("Connected to Neo4j")
+
+    # ------------------------------------------------------------------
+    # connect_with_retry() — async, meant to run as a background task
+    # via asyncio.create_task().  Does NOT block the ASGI event loop.
+    # ------------------------------------------------------------------
+    async def connect_with_retry(self):
+        """Background coroutine: keep retrying until Neo4j is reachable.
+
+        Loops indefinitely — never gives up. Neo4j can take several
+        minutes to fully boot on a resource-constrained machine.
+        Uses asyncio.sleep so the ASGI event loop is never blocked.
+        """
+        import asyncio
+
+        attempt = 0
+        while True:
+            await asyncio.sleep(self._BG_RETRY_DELAY)
+            if self.driver is not None:
+                return  # already connected (e.g. reconnected elsewhere)
+            attempt += 1
+            try:
+                self.connect()
+                logger.info(f"Neo4j: background connection established ✓ (attempt {attempt})")
+                return
+            except Exception as exc:
+                logger.warning(f"Neo4j background retry #{attempt}: {exc}")
+
     def close(self):
         """Close Neo4j connection."""
         if self.driver:
             self.driver.close()
             self.driver = None
             logger.info("Neo4j connection closed")
-    
+
     @contextmanager
     def session(self):
-        """Context manager for Neo4j session."""
-        self.connect()
-        session = self.driver.session()
-        try:
+        """Context manager for Neo4j session.
+
+        Raises RuntimeError with a clear message if Neo4j hasn't connected
+        yet — the API layer's except blocks already surface this as a
+        graceful 'neo4j: error' stat rather than crashing.
+        """
+        if self.driver is None:
+            raise RuntimeError(
+                "Neo4j driver not initialised — container may still be starting. "
+                "Graph features are temporarily unavailable."
+            )
+        with self.driver.session() as session:
             yield session
-        finally:
-            session.close()
 
 
 class PostgresConnection:

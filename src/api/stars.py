@@ -10,6 +10,7 @@ from src.schemas import (
     StarCountResponse,
     NearbyStarsResponse,
     SpaceVolumeResponse,
+    SpaceClusterResponse,
 )
 
 router = APIRouter(prefix="/stars", tags=["Stars"])
@@ -81,6 +82,22 @@ async def space_volume(
         limit=limit,
         min_parallax=min_parallax,
         mag_limit=mag_limit,
+    )
+
+
+@router.get("/ml-clusters", response_model=SpaceClusterResponse)
+async def ml_clusters(
+    limit: int = Query(4000, ge=50, le=10000, description="Maximum points to sample for clustering"),
+    min_parallax: Optional[float] = Query(None, description="Minimum parallax in mas"),
+    mag_limit: Optional[float] = Query(None, description="Maximum G-band magnitude"),
+    cluster_count: Optional[int] = Query(None, ge=2, le=10, description="Optional manual cluster count"),
+):
+    """Return data-driven clusters for the 3D space volume."""
+    return _svc.ml_clusters(
+        limit=limit,
+        min_parallax=min_parallax,
+        mag_limit=mag_limit,
+        cluster_count=cluster_count,
     )
 
 

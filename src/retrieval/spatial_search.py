@@ -1,12 +1,14 @@
 """Spatial search using PostgreSQL Q3C extension."""
 import math
 import logging
-from typing import List, Optional, Dict, Any
+from collections import Counter
+from typing import List, Optional, Dict, Any, Tuple
 
+import numpy as np
 from sqlalchemy import text
 
 from src.database import postgres_conn
-from src.models import Star
+from src.models import Star, Region
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,46 @@ def _normalize_object_class(value: Any) -> Optional[str]:
     if not text:
         return None
     return " ".join(text.replace("_", " ").replace("/", " ").split()).upper()
+
+
+def _percentile(values: List[float], fraction: float) -> Optional[float]:
+    """Return a simple linear-interpolated percentile for a sorted numeric list."""
+    if not values:
+        return None
+    if len(values) == 1:
+        return float(values[0])
+    clamped = min(max(fraction, 0.0), 1.0)
+    ordered = sorted(float(v) for v in values)
+    index = clamped * (len(ordered) - 1)
+    lower = int(math.floor(index))
+    upper = int(math.ceil(index))
+    if lower == upper:
+        return ordered[lower]
+    weight = index - lower
+    return ordered[lower] * (1.0 - weight) + ordered[upper] * weight
+
+
+def _vector_to_radec(x: float, y: float, z: float) -> Tuple[Optional[float], Optional[float], Optional[float]]:
+    """Convert a Cartesian vector back to RA/Dec plus radial distance."""
+    distance = math.sqrt(x * x + y * y + z * z)
+    if distance <= 0:
+        return None, None, None
+    ra = (math.degrees(math.atan2(z, x)) + 360.0) % 360.0
+    dec = math.degrees(math.asin(max(-1.0, min(1.0, y / distance))))
+    return ra, dec, distance
+
+
+def _angular_separation_deg(ra1: float, dec1: float, ra2: float, dec2: float) -> float:
+    """Return angular separation on the celestial sphere in degrees."""
+    ra1_rad = math.radians(ra1)
+    dec1_rad = math.radians(dec1)
+    ra2_rad = math.radians(ra2)
+    dec2_rad = math.radians(dec2)
+    cos_sep = (
+        math.sin(dec1_rad) * math.sin(dec2_rad)
+        + math.cos(dec1_rad) * math.cos(dec2_rad) * math.cos(ra1_rad - ra2_rad)
+    )
+    return math.degrees(math.acos(max(-1.0, min(1.0, cos_sep))))
 
 
 def _discovery_profile(mode: str) -> Dict[str, float]:
@@ -132,7 +174,280 @@ class SpatialSearch:
             logger.warning(f"Deduplicated {duplicate_count} repeated star rows from query results")
 
         return unique_stars
-    
+
+    def _apply_display_projection(
+        self,
+        points: List[Dict[str, Any]],
+        bounds: Dict[str, Optional[float]],
+    ) -> None:
+        """Compress radial depth for visualization so distant outliers do not form false spikes."""
+        distances = [
+            _finite_float(point.get("distance_pc"))
+            for point in points
+            if _finite_float(point.get("distance_pc")) is not None
+        ]
+        if not distances:
+            bounds["plot_x_min"] = bounds["x_min"]
+            bounds["plot_x_max"] = bounds["x_max"]
+            bounds["plot_y_min"] = bounds["y_min"]
+            bounds["plot_y_max"] = bounds["y_max"]
+            bounds["plot_z_min"] = bounds["z_min"]
+            bounds["plot_z_max"] = bounds["z_max"]
+            bounds["plot_distance_pc_min"] = bounds["distance_pc_min"]
+            bounds["plot_distance_pc_max"] = bounds["distance_pc_max"]
+            return
+
+        far_cap = max(_percentile(distances, 0.96) or max(distances), min(distances))
+        anchor = max(_percentile(distances, 0.55) or far_cap, 25.0)
+        denom = math.log1p(max(far_cap / anchor, 1.0))
+
+        plot_bounds = {
+            "plot_x_min": None,
+            "plot_x_max": None,
+            "plot_y_min": None,
+            "plot_y_max": None,
+            "plot_z_min": None,
+            "plot_z_max": None,
+            "plot_distance_pc_min": None,
+            "plot_distance_pc_max": None,
+        }
+
+        for point in points:
+            x_pc = _finite_float(point.get("x_pc")) or 0.0
+            y_pc = _finite_float(point.get("y_pc")) or 0.0
+            z_pc = _finite_float(point.get("z_pc")) or 0.0
+            distance_pc = _finite_float(point.get("distance_pc")) or math.sqrt(x_pc * x_pc + y_pc * y_pc + z_pc * z_pc)
+            if distance_pc <= 0:
+                point["display_x_pc"] = 0.0
+                point["display_y_pc"] = 0.0
+                point["display_z_pc"] = 0.0
+                point["display_distance_pc"] = 0.0
+                continue
+
+            capped = min(distance_pc, far_cap)
+            compressed_ratio = math.log1p(capped / anchor) / denom if denom > 0 else 1.0
+            display_distance = compressed_ratio * far_cap
+            factor = display_distance / distance_pc if distance_pc > 0 else 0.0
+            display_x = x_pc * factor
+            display_y = y_pc * factor
+            display_z = z_pc * factor
+            point["display_x_pc"] = display_x
+            point["display_y_pc"] = display_y
+            point["display_z_pc"] = display_z
+            point["display_distance_pc"] = display_distance
+
+            plot_bounds["plot_x_min"] = display_x if plot_bounds["plot_x_min"] is None else min(plot_bounds["plot_x_min"], display_x)
+            plot_bounds["plot_x_max"] = display_x if plot_bounds["plot_x_max"] is None else max(plot_bounds["plot_x_max"], display_x)
+            plot_bounds["plot_y_min"] = display_y if plot_bounds["plot_y_min"] is None else min(plot_bounds["plot_y_min"], display_y)
+            plot_bounds["plot_y_max"] = display_y if plot_bounds["plot_y_max"] is None else max(plot_bounds["plot_y_max"], display_y)
+            plot_bounds["plot_z_min"] = display_z if plot_bounds["plot_z_min"] is None else min(plot_bounds["plot_z_min"], display_z)
+            plot_bounds["plot_z_max"] = display_z if plot_bounds["plot_z_max"] is None else max(plot_bounds["plot_z_max"], display_z)
+            plot_bounds["plot_distance_pc_min"] = display_distance if plot_bounds["plot_distance_pc_min"] is None else min(plot_bounds["plot_distance_pc_min"], display_distance)
+            plot_bounds["plot_distance_pc_max"] = display_distance if plot_bounds["plot_distance_pc_max"] is None else max(plot_bounds["plot_distance_pc_max"], display_distance)
+
+        bounds.update(plot_bounds)
+
+    def _nearest_region_label(self, ra: Optional[float], dec: Optional[float]) -> Tuple[str, str]:
+        """Map a data-driven cluster to a known named region when the centroid is close enough."""
+        if ra is None or dec is None:
+            return "ML Cluster", "inferred"
+
+        postgres_conn.connect()
+        with postgres_conn.session() as session:
+            regions = session.query(Region).all()
+
+        best_name = "ML Cluster"
+        best_source = "inferred"
+        best_sep = None
+        for region in regions:
+            sep = _angular_separation_deg(ra, dec, float(region.ra), float(region.dec))
+            threshold = max(float(region.radius_deg or 0.0) * 1.9, 4.0)
+            if sep <= threshold and (best_sep is None or sep < best_sep):
+                best_sep = sep
+                best_name = region.name
+                best_source = "matched_region"
+        return best_name, best_source
+
+    def _cluster_points(
+        self,
+        points: List[Dict[str, Any]],
+        cluster_count: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Create deterministic data-driven clusters for the 3D fog layer."""
+        usable = [point for point in points if point.get("display_x_pc") is not None]
+        if len(usable) < 3:
+            return []
+
+        pm_values = []
+        for point in usable:
+            pmra = _finite_float(point.get("pmra"))
+            pmdec = _finite_float(point.get("pmdec"))
+            if pmra is not None:
+                pm_values.append(abs(pmra))
+            if pmdec is not None:
+                pm_values.append(abs(pmdec))
+        pm_scale = max(_percentile(pm_values, 0.75) or 1.0, 1.0)
+
+        X = np.array([
+            [
+                float(point.get("display_x_pc") or 0.0),
+                float(point.get("display_y_pc") or 0.0),
+                float(point.get("display_z_pc") or 0.0),
+                ((_finite_float(point.get("pmra")) or 0.0) / pm_scale) * 0.18,
+                ((_finite_float(point.get("pmdec")) or 0.0) / pm_scale) * 0.18,
+            ]
+            for point in usable
+        ], dtype=float)
+
+        postgres_conn.connect()
+        with postgres_conn.session() as session:
+            named_regions = session.query(Region).all()
+
+        n_points = X.shape[0]
+        k = cluster_count or 3
+        k = max(1, min(k, n_points))
+
+        centroid_indices: List[int] = [int(np.argmax(np.linalg.norm(X[:, :3], axis=1)))]
+        while len(centroid_indices) < k:
+            chosen = X[centroid_indices]
+            dist2 = np.min(np.sum((X[:, None, :] - chosen[None, :, :]) ** 2, axis=2), axis=1)
+            next_index = int(np.argmax(dist2))
+            if next_index in centroid_indices:
+                break
+            centroid_indices.append(next_index)
+
+        centroids = X[centroid_indices].copy()
+        assignments = np.zeros(n_points, dtype=int)
+        for _ in range(12):
+            dist2 = np.sum((X[:, None, :] - centroids[None, :, :]) ** 2, axis=2)
+            new_assignments = np.argmin(dist2, axis=1)
+            if np.array_equal(new_assignments, assignments):
+                break
+            assignments = new_assignments
+            for idx in range(len(centroids)):
+                members = X[assignments == idx]
+                if len(members):
+                    centroids[idx] = members.mean(axis=0)
+
+        clusters: List[Dict[str, Any]] = []
+        min_cluster_size = max(18, int(len(usable) * 0.025))
+        for cluster_idx in range(len(centroids)):
+            member_indices = np.where(assignments == cluster_idx)[0]
+            if len(member_indices) < min_cluster_size:
+                continue
+
+            members = [usable[int(idx)] for idx in member_indices]
+            centroid_x = float(np.mean([float(point.get("x_pc") or 0.0) for point in members]))
+            centroid_y = float(np.mean([float(point.get("y_pc") or 0.0) for point in members]))
+            centroid_z = float(np.mean([float(point.get("z_pc") or 0.0) for point in members]))
+            display_x = float(np.mean([float(point.get("display_x_pc") or 0.0) for point in members]))
+            display_y = float(np.mean([float(point.get("display_y_pc") or 0.0) for point in members]))
+            display_z = float(np.mean([float(point.get("display_z_pc") or 0.0) for point in members]))
+            unit_vectors = []
+            for point in members:
+                ra_value = _finite_float(point.get("ra"))
+                dec_value = _finite_float(point.get("dec"))
+                if ra_value is None or dec_value is None:
+                    continue
+                ra_rad = math.radians(ra_value)
+                dec_rad = math.radians(dec_value)
+                cos_dec = math.cos(dec_rad)
+                unit_vectors.append((
+                    cos_dec * math.cos(ra_rad),
+                    math.sin(dec_rad),
+                    cos_dec * math.sin(ra_rad),
+                ))
+            if unit_vectors:
+                mean_unit_x = float(np.mean([vector[0] for vector in unit_vectors]))
+                mean_unit_y = float(np.mean([vector[1] for vector in unit_vectors]))
+                mean_unit_z = float(np.mean([vector[2] for vector in unit_vectors]))
+                ra, dec, _ = _vector_to_radec(mean_unit_x, mean_unit_y, mean_unit_z)
+            else:
+                ra, dec, _ = _vector_to_radec(centroid_x, centroid_y, centroid_z)
+            _, _, centroid_distance = _vector_to_radec(centroid_x, centroid_y, centroid_z)
+
+            spreads = [
+                math.sqrt(
+                    (float(point.get("display_x_pc") or 0.0) - display_x) ** 2
+                    + (float(point.get("display_y_pc") or 0.0) - display_y) ** 2
+                    + (float(point.get("display_z_pc") or 0.0) - display_z) ** 2
+                )
+                for point in members
+            ]
+            spread = sum(spreads) / len(spreads) if spreads else 0.0
+            fog_radius = max(spread * 1.65, 6.0)
+            suggested_zoom = max(1.6, min(18.0, 10.5 / max(spread, 0.8)))
+
+            dominant_catalogs = [
+                catalog
+                for catalog, _ in Counter(
+                    (str(point.get("catalog_source") or "UNKNOWN").strip().upper() for point in members)
+                ).most_common(3)
+            ]
+            dominant_classes = [
+                label
+                for label, _ in Counter(
+                    _normalize_object_class(point.get("object_class")) or "UNCLASSIFIED"
+                    for point in members
+                ).most_common(3)
+            ]
+
+            clusters.append({
+                "count": len(members),
+                "ra": ra,
+                "dec": dec,
+                "distance_pc": centroid_distance,
+                "centroid_x_pc": centroid_x,
+                "centroid_y_pc": centroid_y,
+                "centroid_z_pc": centroid_z,
+                "display_x_pc": display_x,
+                "display_y_pc": display_y,
+                "display_z_pc": display_z,
+                "fog_radius": fog_radius,
+                "suggested_zoom": suggested_zoom,
+                "dominant_catalogs": dominant_catalogs,
+                "dominant_object_classes": dominant_classes,
+                "_region_scores": {
+                    region.name: sum(
+                        1
+                        for point in members
+                        if _angular_separation_deg(
+                            float(point.get("ra") or 0.0),
+                            float(point.get("dec") or 0.0),
+                            float(region.ra),
+                            float(region.dec),
+                        ) <= max(float(region.radius_deg or 0.0) * 1.7, 3.0)
+                    )
+                    for region in named_regions
+                },
+            })
+
+        clusters.sort(key=lambda item: -item["count"])
+        used_region_names = set()
+        finalized: List[Dict[str, Any]] = []
+        for index, cluster in enumerate(clusters, start=1):
+            region_scores = cluster.pop("_region_scores", {})
+            matched_name = None
+            matched_score = 0
+            for region_name, score in sorted(region_scores.items(), key=lambda item: (-item[1], item[0])):
+                if region_name in used_region_names:
+                    continue
+                if score >= max(12, int(cluster["count"] * 0.24)):
+                    matched_name = region_name
+                    matched_score = score
+                    break
+
+            label_source = "matched_region" if matched_name else "inferred"
+            cluster["id"] = f"cluster-{index}"
+            cluster["name"] = matched_name or f"ML Cluster {index}"
+            cluster["label_source"] = label_source
+            if matched_name:
+                used_region_names.add(matched_name)
+            cluster["match_score"] = matched_score
+            finalized.append(cluster)
+
+        return finalized
+
     def cone_search(
         self,
         ra: float,
@@ -433,6 +748,8 @@ class SpatialSearch:
             bounds["distance_pc_min"] = distance_pc if bounds["distance_pc_min"] is None else min(bounds["distance_pc_min"], distance_pc)
             bounds["distance_pc_max"] = distance_pc if bounds["distance_pc_max"] is None else max(bounds["distance_pc_max"], distance_pc)
 
+        self._apply_display_projection(points, bounds)
+
         return {
             "count": len(points),
             "points": points,
@@ -441,6 +758,31 @@ class SpatialSearch:
                 "limit": limit,
                 "min_parallax": min_parallax,
                 "mag_limit": mag_limit,
+            },
+        }
+
+    def ml_clusters(
+        self,
+        limit: int = 4000,
+        min_parallax: Optional[float] = None,
+        mag_limit: Optional[float] = None,
+        cluster_count: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Return data-driven clusters derived from the current 3D volume sample."""
+        volume = self.space_volume(
+            limit=limit,
+            min_parallax=min_parallax,
+            mag_limit=mag_limit,
+        )
+        clusters = self._cluster_points(volume["points"], cluster_count=cluster_count)
+        return {
+            "count": len(clusters),
+            "clusters": clusters,
+            "filters": {
+                "limit": limit,
+                "min_parallax": min_parallax,
+                "mag_limit": mag_limit,
+                "cluster_count": cluster_count,
             },
         }
 

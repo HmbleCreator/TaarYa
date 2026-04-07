@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ES-452 Dissertation Format Review</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #18212b;
+      --muted: #5d6670;
+      --accent: #7a1f1f;
+      --line: #d8dde6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+      color: var(--text);
+    }
+    main {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+    section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px 26px;
+      margin-bottom: 20px;
+      box-shadow: 0 14px 34px rgba(18, 32, 54, 0.08);
+    }
+    h1, h2 { margin: 0 0 12px; }
+    p, li { font-size: 18px; line-height: 1.55; }
+    ul { margin: 0; padding-left: 24px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .note {
+      border-left: 4px solid var(--accent);
+      padding-left: 14px;
+      color: var(--muted);
+    }
+    img {
+      width: 180px;
+      display: block;
+      margin-top: 12px;
+    }
+    code {
+      font-family: Consolas, monospace;
+      background: #f2f4f8;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <h1>USICT ES-452 Dissertation Report Format Review</h1>
+      <p>
+        This document is both a rule sheet and a template pack. It defines the mandatory front matter,
+        chapter order, formatting rules, reference style, and sample pages for the final dissertation report.
+      </p>
+      <p class="note">
+        Important: the written guidelines are clearer than the embedded Word styles. A few template settings
+        do not fully match the written rules, so the text instructions should be treated as the source of truth.
+      </p>
+    </section>
+
+    <div class="grid">
+      <section>
+        <h2>Mandatory Sequence</h2>
+        <ul>
+          <li>Cover Page</li>
+          <li>Declaration</li>
+          <li>Certificate</li>
+          <li>Acknowledgement</li>
+          <li>Abstract: 1 page only</li>
+          <li>Table of Contents</li>
+          <li>List of Figures</li>
+          <li>List of Tables</li>
+          <li>Chapters</li>
+          <li>Bibliography</li>
+          <li>Appendix</li>
+          <li>Plagiarism report below 20%</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Formatting Rules</h2>
+        <ul>
+          <li>Paper size: A4, single-side printing</li>
+          <li>Margins: Left 1.5", Right 1.0", Top 1.0", Bottom 1.0"</li>
+          <li>Chapter title: Times New Roman, 16 pt, bold, centered</li>
+          <li>Main heading: Times New Roman, 14 pt, bold, left aligned</li>
+          <li>Sub-heading: Times New Roman, 12 pt, italic, left aligned</li>
+          <li>Body text: Times New Roman, 12 pt, justified</li>
+          <li>Line spacing: 1.5</li>
+          <li>Footer: department name on left, page number on right, 10 pt</li>
+        </ul>
+      </section>
+    </div>
+
+    <section>
+      <h2>Page Numbering</h2>
+      <ul>
+        <li>No page number on the cover page.</li>
+        <li>Roman numbering for preliminary pages up to the Table of Contents.</li>
+        <li>Arabic numerals start from Chapter 1.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Development-Based Chapter Structure</h2>
+      <ul>
+        <li>Chapter 1: Introduction</li>
+        <li>Chapter 2: Problem Statement
+        <li>2.1 Problem Definition</li>
+        <li>2.2 Objectives</li>
+        <li>Chapter 3: Analysis
+        <li>3.1 Software Requirement Specifications</li>
+        <li>3.1.1 Functional Requirements</li>
+        <li>3.1.2 Non-functional Requirements</li>
+        <li>3.2 Feasibility Study</li>
+        <li>3.3 Tools / Technologies / Platform used</li>
+        <li>3.4 Use Case Diagrams / Data Flow Diagrams</li>
+        <li>Chapter 4: Design and Architecture</li>
+        <li>4.1 Structure Chart / Work Breakdown Structure</li>
+        <li>4.2 Explanation of Modules</li>
+        <li>4.3 Flow Chart / Activity Diagram</li>
+        <li>4.4 ER Diagram / Class Diagram</li>
+        <li>Chapter 5: Implementation</li>
+        <li>5.1 Screenshots</li>
+        <li>5.2 Source code of some modules</li>
+        <li>Chapter 6: Testing</li>
+        <li>Chapter 7: Summary and Conclusion</li>
+        <li>Chapter 8: Limitation of the Project and Future Work</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Research-Based Chapter Structure</h2>
+      <ul>
+        <li>Chapter 1: Introduction</li>
+        <li>Chapter 2: Problem Statement
+        <li>2.1 Problem Definition</li>
+        <li>2.2 Objectives</li>
+        <li>Chapter 3: Literature Review</li>
+        <li>Chapter 4: Research Methodology</li>
+        <li>4.1 Methodology used</li>
+        <li>4.2 Data Collection and Analysis</li>
+        <li>4.3 Tools / Technology used</li>
+        <li>Chapter 5: Analysis and Research Implementation</li>
+        <li>5.1 Data Presentation</li>
+        <li>5.2 Implementation of the Work</li>
+        <li>5.3 Analysis and Interpretation</li>
+        <li>Chapter 6: Results and Discussion</li>
+        <li>6.1 Results</li>
+        <li>6.2 Discussion</li>
+        <li>6.3 Findings</li>
+        <li>Chapter 7: Summary and Conclusion</li>
+        <li>Chapter 8: Limitation of the Project and Future Work</li>
+      </ul>
+    </section>
+
+    <div class="grid">
+      <section>
+        <h2>Figures, Tables, References</h2>
+        <ul>
+          <li>List of Figures and List of Tables must be included.</li>
+          <li>Do not draw manual tables for TOC, List of Figures, or List of Tables.</li>
+          <li>Figure captions go below the figure, centered, 10 pt.</li>
+          <li>Table captions go above the table, centered, 10 pt.</li>
+          <li>Figures and tables must be cited where required.</li>
+          <li>References must follow IEEE style.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Binding and Submission</h2>
+        <ul>
+          <li>Hard bound report</li>
+          <li>Golden engraved print on maroon binding</li>
+          <li>Minimum 40 pages</li>
+          <li>Spine/side print should include <code>PROJECT TITLE (2025-26)</code></li>
+        </ul>
+      </section>
+    </div>
+
+    <section>
+      <h2>Observed Template Notes</h2>
+      <ul>
+        <li>The written guideline says the left margin should be 1.5", but the current `.docx` section is saved with 1.0" on all sides.</li>
+        <li>The template includes the DTC logo as embedded artwork for the cover page.</li>
+        <li>The footer XML is present but mostly empty in this file, so footer text and page numbering should be added when preparing the final report.</li>
+        <li>The reference section includes IEEE-style sample citations you can imitate directly.</li>
+      </ul>
+      <img src="./image1.png" alt="DTC logo" />
+    </section>
+  </main>
+</body>
+</html>

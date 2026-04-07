@@ -55,6 +55,10 @@ class SpaceVolumePoint(BaseModel):
     x_pc: Optional[float] = None
     y_pc: Optional[float] = None
     z_pc: Optional[float] = None
+    display_x_pc: Optional[float] = None
+    display_y_pc: Optional[float] = None
+    display_z_pc: Optional[float] = None
+    display_distance_pc: Optional[float] = None
     phot_g_mean_mag: Optional[float] = None
     phot_bp_mean_mag: Optional[float] = None
     phot_rp_mean_mag: Optional[float] = None
@@ -74,6 +78,14 @@ class SpaceVolumeBounds(BaseModel):
     z_max: Optional[float] = None
     distance_pc_min: Optional[float] = None
     distance_pc_max: Optional[float] = None
+    plot_x_min: Optional[float] = None
+    plot_x_max: Optional[float] = None
+    plot_y_min: Optional[float] = None
+    plot_y_max: Optional[float] = None
+    plot_z_min: Optional[float] = None
+    plot_z_max: Optional[float] = None
+    plot_distance_pc_min: Optional[float] = None
+    plot_distance_pc_max: Optional[float] = None
 
 
 class SpaceVolumeResponse(BaseModel):
@@ -81,6 +93,34 @@ class SpaceVolumeResponse(BaseModel):
     count: int
     points: List[SpaceVolumePoint]
     bounds: SpaceVolumeBounds
+    filters: Dict[str, Any]
+
+
+class SpaceCluster(BaseModel):
+    """Data-driven cluster summary for the 3D space view."""
+    id: str
+    name: str
+    label_source: str
+    count: int
+    ra: Optional[float] = None
+    dec: Optional[float] = None
+    distance_pc: Optional[float] = None
+    centroid_x_pc: Optional[float] = None
+    centroid_y_pc: Optional[float] = None
+    centroid_z_pc: Optional[float] = None
+    display_x_pc: Optional[float] = None
+    display_y_pc: Optional[float] = None
+    display_z_pc: Optional[float] = None
+    fog_radius: Optional[float] = None
+    suggested_zoom: Optional[float] = None
+    dominant_catalogs: List[str] = Field(default_factory=list)
+    dominant_object_classes: List[str] = Field(default_factory=list)
+
+
+class SpaceClusterResponse(BaseModel):
+    """Response for ML-derived space clusters."""
+    count: int
+    clusters: List[SpaceCluster]
     filters: Dict[str, Any]
 
 
@@ -103,6 +143,7 @@ class DiscoveryCandidate(BaseModel):
     phot_g_mean_mag: Optional[float] = None
     ruwe: Optional[float] = None
     bp_rp: Optional[float] = None
+    object_class: Optional[str] = None
     local_density: Optional[int] = None
     matched_catalogs: List[str] = Field(default_factory=list)
     score: float

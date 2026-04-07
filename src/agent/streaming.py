@@ -1,7 +1,19 @@
 """Streaming agent — SSE endpoint that emits real-time tool events."""
 import json
 import logging
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
 import re
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 from typing import Optional, List, Any
 from queue import Queue, Empty
 from threading import Thread
@@ -44,7 +56,19 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         super().__init__()
         self.queue = event_queue
         self._tool_by_run_id = {}
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
         self.final_answer_candidate = None
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 
     def _push(self, event_type: str, data: dict):
         self.queue.put({"type": event_type, "data": data})
@@ -102,11 +126,27 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         })
 
     def on_agent_action(self, action, **kwargs):
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
         if getattr(action, "tool", None) == "Final Answer":
             answer = self._extract_final_answer_candidate(action)
             if answer:
                 self.final_answer_candidate = answer
         # Deliberately do not stream agent scratchpad thoughts/actions.
+=======
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+        self._push("decision", {
+            "message": action.log[:400] if getattr(action, "log", None) else f"Selecting tool: {action.tool}",
+            "tool": action.tool,
+        })
+>>>>>>> theirs
 
     def on_agent_finish(self, finish, **kwargs):
         pass  # We handle final answer separately
