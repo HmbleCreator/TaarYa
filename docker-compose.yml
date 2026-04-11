@@ -19,7 +19,6 @@ services:
     # Remove stale neo4j.pid before starting — prevents the "Neo4j is already
     # running (pid:X)" false-positive that occurs after unclean container exits
     # (Docker Desktop restart, Windows update, etc.)
-    entrypoint: ["sh", "-c", "rm -f /data/run/neo4j.pid && exec /startup/docker-entrypoint.sh neo4j"]
     ports:
       - "7474:7474" # HTTP
       - "7687:7687" # Bolt
