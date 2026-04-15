@@ -53,6 +53,13 @@
                 min_parallax: minParallax,
                 mag_limit: magLimit,
             })),
+        mlClusters: ({ limit = 4000, minParallax, magLimit, clusterCount } = {}) =>
+            _get('/api/stars/ml-clusters' + qs({
+                limit,
+                min_parallax: minParallax,
+                mag_limit: magLimit,
+                cluster_count: clusterCount,
+            })),
         discovery: ({ limit = 15, poolLimit = 3000, radiusDeg = 0.08, mode = 'balanced' } = {}) =>
             _get('/api/stars/discovery' + qs({
                 limit,

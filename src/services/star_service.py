@@ -98,3 +98,22 @@ class StarService:
         except Exception as e:
             logger.error(f"Discovery scoring failed: {e}")
             raise HTTPException(status_code=503, detail=f"Star database unavailable: {e}")
+
+    def ml_clusters(
+        self,
+        limit: int = 4000,
+        min_parallax: Optional[float] = None,
+        mag_limit: Optional[float] = None,
+        cluster_count: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Return ML-derived cluster summaries for the 3D view."""
+        try:
+            return self._spatial.ml_clusters(
+                limit=limit,
+                min_parallax=min_parallax,
+                mag_limit=mag_limit,
+                cluster_count=cluster_count,
+            )
+        except Exception as e:
+            logger.error(f"ML clustering failed: {e}")
+            raise HTTPException(status_code=503, detail=f"Star database unavailable: {e}")

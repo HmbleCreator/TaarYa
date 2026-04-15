@@ -860,7 +860,7 @@
       <!-- Region list panel -->
       <div class="side-stack">
         <div class="region-list">
-          <div class="sky-map-title">Seeded Regions</div>
+          <div class="sky-map-title">Data-Driven Clusters</div>
           <div id="region-rows">
             <div style="text-align:center;padding:24px;color:var(--dashboard-panel-text-muted);font-size:12px;">Loadingâ€¦</div>
           </div>
@@ -1326,20 +1326,24 @@
 
   function renderRegions(regions) {
     if (!regions.length) {
-      volumeRowsEl.innerHTML = '<div style="color:var(--dashboard-panel-text-muted);font-size:12px;padding:12px 0;">No regions found.</div>';
+      volumeRowsEl.innerHTML = '<div style="color:var(--dashboard-panel-text-muted);font-size:12px;padding:12px 0;">No clusters found for the current space-volume filters.</div>';
       return;
     }
 
     let rowsHTML = '';
     regions.forEach((r, i) => {
       const color = REGION_TONES[i % REGION_TONES.length];
+      const sourceLabel = r.label_source === 'matched_region' ? 'matched named region' : 'inferred from point cloud';
+      const distance = r.distance_pc != null ? `${r.distance_pc.toFixed(1)} pc` : 'distance n/a';
+      const zoomHint = r.suggested_zoom != null ? `${r.suggested_zoom.toFixed(1)}x focus` : 'focus ready';
       rowsHTML += `
-        <div class="region-row">
+        <div class="region-row" data-cluster-index="${i}" style="cursor:pointer;">
           <div style="display:flex;align-items:center;">
             <div class="region-dot" style="background:${color};box-shadow:0 0 6px ${color}66;"></div>
             <div>
               <div class="region-name">${r.name}</div>
-              <div class="region-coords">RA ${r.ra} deg | Dec ${r.dec} deg | r=${r.radius} deg</div>
+              <div class="region-coords">RA ${Number(r.ra || 0).toFixed(1)} deg | Dec ${Number(r.dec || 0).toFixed(1)} deg | ${distance}</div>
+              <div class="region-coords">${sourceLabel} | ${zoomHint}</div>
             </div>
           </div>
           <div class="region-count">${fmt(r.count)}</div>
@@ -1419,12 +1423,12 @@
       volumeReadout.textContent = 'Loading space volume...';
     }
 
-    const [regionData, volumeData] = await Promise.all([
-      api.regions(),
+    const [clusterData, volumeData] = await Promise.all([
+      api.mlClusters({ limit: 3500, ...filters }),
       api.spaceVolume({ limit: 5000, ...filters }),
     ]);
 
-    const regions = regionData.regions || [];
+    const regions = clusterData.clusters || [];
     const volumePoints = volumeData.points || [];
     renderRegions(regions);
     renderObjectClassLegend(volumePoints);
@@ -1474,6 +1478,15 @@
       discoveryListEl.innerHTML =
         `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
     });
+  });
+
+  volumeRowsEl.addEventListener('click', (event) => {
+    const row = event.target.closest('[data-cluster-index]');
+    if (!row) return;
+    const index = Number(row.getAttribute('data-cluster-index'));
+    if (Number.isFinite(index)) {
+      spaceMap.focusRegionByIndex(index);
+    }
   });
 
   volumeResetBtn.addEventListener('click', () => {
@@ -1859,18 +1872,27 @@
   function renderObjectClassLegend(points) {
     if (!objectClassLegendEl) return;
     const classes = Array.from(new Set((points || []).map(pointObjectClass).filter(Boolean)));
-    if (!classes.length) {
-      objectClassLegendEl.innerHTML = '<span class="legend-chip catalog-legend-note">Object-class colors will appear when future catalogs provide them</span>';
-      return;
-    }
-    const priority = ['PLANET', 'EXOPLANET', 'WHITE DWARF', 'RED DWARF', 'BROWN DWARF', 'GIANT', 'NEBULA', 'GALAXY'];
+    const priority = ['PLANET', 'WHITE DWARF', 'RED DWARF', 'BROWN DWARF', 'GIANT', 'NEBULA', 'GALAXY'];
     const ordered = [
       ...priority.filter((label) => classes.some((entry) => entry.includes(label))),
       ...classes.filter((entry) => !priority.some((label) => entry.includes(label))),
-    ].slice(0, 8);
+    ];
+    const dedicated = priority.map((label) => {
+      const present = classes.some((entry) => entry.includes(label));
+      const title = present
+        ? `Objects tagged as ${label} are present in the current loaded volume`
+        : `${label} colors are reserved and will activate when future catalogs provide those objects`;
+      return classChipMarkup(
+        label,
+        null,
+        title,
+        present ? 'catalog-tone' : 'catalog-tone catalog-legend-note'
+      );
+    });
     objectClassLegendEl.innerHTML = `
       <span class="legend-chip catalog-legend-note">Object class colors</span>
-      ${ordered.map((entry) => classChipMarkup(entry, null, `Objects tagged as ${entry}`)).join('')}
+      ${dedicated.join('')}
+      ${ordered.filter((entry) => !priority.includes(entry)).slice(0, 4).map((entry) => classChipMarkup(entry, null, `Objects tagged as ${entry}`)).join('')}
     `;
   }
 
@@ -1934,12 +1956,15 @@
       dragging: false,
       pointerX: 0,
       pointerY: 0,
+      dragged: false,
       hoverPoint: -1,
       hoverRegion: -1,
       scale: 1,
       center: { x: 0, y: 0, z: 0 },
+      defaultView: { ...initialView },
     };
     let drawFrame = 0;
+    let focusFrame = 0;
 
     function scheduleDraw() {
       if (drawFrame) return;
@@ -1963,10 +1988,10 @@
     }
 
     function resetView() {
-      state.yaw = initialView.yaw;
-      state.pitch = initialView.pitch;
-      state.roll = initialView.roll;
-      setZoom(initialView.zoom);
+      state.yaw = state.defaultView.yaw;
+      state.pitch = state.defaultView.pitch;
+      state.roll = state.defaultView.roll;
+      setZoom(state.defaultView.zoom);
     }
 
     function resize() {
@@ -1989,12 +2014,17 @@
         y_min: -1, y_max: 1,
         z_min: -1, z_max: 1,
         distance_pc_min: 0, distance_pc_max: 1,
+        plot_x_min: -1, plot_x_max: 1,
+        plot_y_min: -1, plot_y_max: 1,
+        plot_z_min: -1, plot_z_max: 1,
+        plot_distance_pc_min: 0, plot_distance_pc_max: 1,
       };
       if (!points.length) return fallback;
-      const xs = points.map(p => p.x_pc);
-      const ys = points.map(p => p.y_pc);
-      const zs = points.map(p => p.z_pc);
+      const xs = points.map(p => p.display_x_pc != null ? p.display_x_pc : p.x_pc);
+      const ys = points.map(p => p.display_y_pc != null ? p.display_y_pc : p.y_pc);
+      const zs = points.map(p => p.display_z_pc != null ? p.display_z_pc : p.z_pc);
       const ds = points.map(p => p.distance_pc).filter(v => Number.isFinite(v));
+      const pds = points.map(p => p.display_distance_pc).filter(v => Number.isFinite(v));
       return {
         x_min: Math.min(...xs),
         x_max: Math.max(...xs),
@@ -2004,24 +2034,53 @@
         z_max: Math.max(...zs),
         distance_pc_min: ds.length ? Math.min(...ds) : 0,
         distance_pc_max: ds.length ? Math.max(...ds) : 1,
+        plot_x_min: Math.min(...xs),
+        plot_x_max: Math.max(...xs),
+        plot_y_min: Math.min(...ys),
+        plot_y_max: Math.max(...ys),
+        plot_z_min: Math.min(...zs),
+        plot_z_max: Math.max(...zs),
+        plot_distance_pc_min: pds.length ? Math.min(...pds) : 0,
+        plot_distance_pc_max: pds.length ? Math.max(...pds) : 1,
       };
     }
 
     function normalizePoint(point) {
+      const x = point.display_x_pc != null ? point.display_x_pc : point.x_pc;
+      const y = point.display_y_pc != null ? point.display_y_pc : point.y_pc;
+      const z = point.display_z_pc != null ? point.display_z_pc : point.z_pc;
       return {
-        x: (point.x_pc - state.center.x) / state.scale,
-        y: (point.y_pc - state.center.y) / state.scale,
-        z: (point.z_pc - state.center.z) / state.scale,
+        x: ((x ?? 0) - state.center.x) / state.scale,
+        y: ((y ?? 0) - state.center.y) / state.scale,
+        z: ((z ?? 0) - state.center.z) / state.scale,
       };
     }
 
-    function rotatePoint(vec) {
-      const cosY = Math.cos(state.yaw);
-      const sinY = Math.sin(state.yaw);
-      const cosP = Math.cos(state.pitch);
-      const sinP = Math.sin(state.pitch);
-      const cosR = Math.cos(state.roll);
-      const sinR = Math.sin(state.roll);
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function normalizeAngle(angle) {
+      let value = angle;
+      while (value > Math.PI) value -= Math.PI * 2;
+      while (value < -Math.PI) value += Math.PI * 2;
+      return value;
+    }
+
+    function cancelFocusAnimation() {
+      if (focusFrame) {
+        cancelAnimationFrame(focusFrame);
+        focusFrame = 0;
+      }
+    }
+
+    function rotateVector(vec, yaw, pitch, roll) {
+      const cosY = Math.cos(yaw);
+      const sinY = Math.sin(yaw);
+      const cosP = Math.cos(pitch);
+      const sinP = Math.sin(pitch);
+      const cosR = Math.cos(roll);
+      const sinR = Math.sin(roll);
 
       let x = vec.x * cosY - vec.z * sinY;
       let z = vec.x * sinY + vec.z * cosY;
@@ -2037,6 +2096,80 @@
       return { x: x2, y: y2, z };
     }
 
+    function rotatePoint(vec) {
+      return rotateVector(vec, state.yaw, state.pitch, state.roll);
+    }
+
+    function scoreView(vectors, yaw, pitch) {
+      const rotated = vectors.map((vec) => rotateVector(vec, yaw, pitch, 0));
+      if (rotated.length < 2) return 0;
+
+      const xs = rotated.map((vec) => vec.x);
+      const ys = rotated.map((vec) => vec.y);
+      const spanX = Math.max(...xs) - Math.min(...xs);
+      const spanY = Math.max(...ys) - Math.min(...ys);
+
+      let pairwise = 0;
+      let closest = Infinity;
+      for (let i = 0; i < rotated.length; i += 1) {
+        for (let j = i + 1; j < rotated.length; j += 1) {
+          const dist = Math.hypot(rotated[i].x - rotated[j].x, rotated[i].y - rotated[j].y);
+          pairwise += dist;
+          closest = Math.min(closest, dist);
+        }
+      }
+
+      return (spanX * spanY * 2.2) + (pairwise * 0.8) + (closest * 1.4);
+    }
+
+    function deriveBestView(vectors) {
+      const usable = vectors.filter((vec) =>
+        vec &&
+        Number.isFinite(vec.x) &&
+        Number.isFinite(vec.y) &&
+        Number.isFinite(vec.z)
+      );
+      if (usable.length < 2) {
+        return { ...initialView };
+      }
+
+      let bestYaw = initialView.yaw;
+      let bestPitch = initialView.pitch;
+      let bestScore = scoreView(usable, bestYaw, bestPitch);
+
+      for (let pitch = -1.0; pitch <= 1.0; pitch += 0.16) {
+        for (let yaw = -Math.PI; yaw <= Math.PI; yaw += Math.PI / 12) {
+          const score = scoreView(usable, yaw, pitch);
+          if (score > bestScore) {
+            bestScore = score;
+            bestYaw = yaw;
+            bestPitch = pitch;
+          }
+        }
+      }
+
+      for (const [yawStep, pitchStep] of [[0.18, 0.12], [0.08, 0.05]]) {
+        for (let pitch = bestPitch - pitchStep * 2; pitch <= bestPitch + pitchStep * 2; pitch += pitchStep) {
+          const clampedPitch = clamp(pitch, -1.1, 1.1);
+          for (let yaw = bestYaw - yawStep * 2; yaw <= bestYaw + yawStep * 2; yaw += yawStep) {
+            const score = scoreView(usable, yaw, clampedPitch);
+            if (score > bestScore) {
+              bestScore = score;
+              bestYaw = yaw;
+              bestPitch = clampedPitch;
+            }
+          }
+        }
+      }
+
+      return {
+        yaw: bestYaw,
+        pitch: clamp(bestPitch, -1.1, 1.1),
+        roll: 0,
+        zoom: initialView.zoom,
+      };
+    }
+
     function project(vec, cx, cy, baseRadius) {
       const camera = 3.4;
       const zoomScale = 0.28 + state.zoom * 0.12;
@@ -2048,6 +2181,12 @@
         perspective,
         depth,
       };
+    }
+
+    function worldRadiusToScreen(radius, perspective, baseRadius) {
+      const numeric = Number(radius);
+      if (!Number.isFinite(numeric) || numeric <= 0) return 0;
+      return (numeric / Math.max(state.scale, 1)) * baseRadius * perspective;
     }
 
     function starColor(point, alpha = 0.9, variant = 'core') {
@@ -2078,7 +2217,9 @@
         return;
       }
       if (region) {
-        readoutEl.textContent = `${region.name} | ${Number(region.count || 0).toLocaleString()} stars | RA ${Number(region.ra).toFixed(1)} deg Dec ${Number(region.dec).toFixed(1)} deg`;
+        const sourceLabel = region.label_source === 'matched_region' ? 'matched named region' : 'ML-inferred';
+        const distance = region.distance_pc != null ? `${Number(region.distance_pc).toFixed(1)} pc` : 'distance n/a';
+        readoutEl.textContent = `${region.name} | ${Number(region.count || 0).toLocaleString()} stars | ${distance} | ${sourceLabel}`;
         return;
       }
       const range = state.bounds && state.bounds.distance_pc_min != null && state.bounds.distance_pc_max != null
@@ -2087,14 +2228,35 @@
       readoutEl.textContent = `${state.points.length} stars in volume | ${range}`;
     }
 
-    function drawLabel(text, pt, tone) {
+    function labelRect(text, pt) {
       ctx.save();
       ctx.font = '10px JetBrains Mono, monospace';
       const width = Math.min(180, Math.max(80, ctx.measureText(text).width + 14));
-      const x = clamp(pt.x - width / 2, 8, state.width - width - 8);
-      const y = clamp(pt.y - 24, 8, state.height - 22);
+      ctx.restore();
+      return {
+        x: clamp(pt.x - width / 2, 8, state.width - width - 8),
+        y: clamp(pt.y - 24, 8, state.height - 22),
+        width,
+        height: 18,
+      };
+    }
+
+    function rectsOverlap(a, b, padding = 6) {
+      return !(
+        a.x + a.width + padding < b.x ||
+        b.x + b.width + padding < a.x ||
+        a.y + a.height + padding < b.y ||
+        b.y + b.height + padding < a.y
+      );
+    }
+
+    function drawLabel(text, pt, tone) {
+      const rect = labelRect(text, pt);
+      const { x, y, width, height } = rect;
+
+      ctx.save();
       ctx.beginPath();
-      ctx.roundRect(x, y, width, 18, 999);
+      ctx.roundRect(x, y, width, height, 999);
       ctx.fillStyle = 'rgba(8,8,8,0.78)';
       ctx.fill();
       ctx.strokeStyle = tone;
@@ -2106,6 +2268,48 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(text, x + width / 2, y + 9.5);
       ctx.restore();
+      return rect;
+    }
+
+    function focusRegion(region) {
+      if (!region || !region._normalized) return;
+      cancelFocusAnimation();
+
+      const target = region._normalized;
+      const horizontal = Math.sqrt(target.x * target.x + target.z * target.z) || 1e-6;
+      const targetYaw = Math.atan2(target.x, target.z);
+      const targetPitch = clamp(Math.atan2(target.y, horizontal), -1.15, 1.15);
+      const targetZoom = clamp(
+        Number(region.suggested_zoom || region.focus_zoom || 6.5),
+        1.2,
+        24
+      );
+
+      const startYaw = state.yaw;
+      const startPitch = state.pitch;
+      const startZoom = state.zoom;
+      const deltaYaw = normalizeAngle(targetYaw - startYaw);
+      const deltaPitch = targetPitch - startPitch;
+      const deltaZoom = targetZoom - startZoom;
+      const startedAt = performance.now();
+      const duration = 420;
+
+      const step = (now) => {
+        const progress = Math.min((now - startedAt) / duration, 1);
+        const eased = easeInOutCubic(progress);
+        state.yaw = startYaw + deltaYaw * eased;
+        state.pitch = startPitch + deltaPitch * eased;
+        state.roll = 0;
+        state.zoom = clamp(startZoom + deltaZoom * eased, 0.2, 24);
+        syncZoomUI();
+        scheduleDraw();
+        if (progress < 1) {
+          focusFrame = requestAnimationFrame(step);
+        } else {
+          focusFrame = 0;
+        }
+      };
+      focusFrame = requestAnimationFrame(step);
     }
 
     function makeSeededRandom(seed) {
@@ -2150,13 +2354,13 @@
         const projected = project(rotated, cx, cy, size);
         return { point, index, rotated, projected };
       }).filter(item => {
-        return item.projected.depth > 0.15 && item.point._alpha >= 0.42;
+        return item.projected.depth > 0.15 && item.point._alpha >= 0.36;
       });
 
       visiblePoints.sort((a, b) => a.projected.depth - b.projected.depth);
       visiblePoints.forEach((item) => {
         const bright = item.point._bright ?? 0.45;
-        const sizePx = clamp(0.35 + bright * 1.15, 0.45, 2.4) * item.projected.perspective;
+        const sizePx = clamp(0.26 + bright * 0.82, 0.3, 1.55) * item.projected.perspective;
         const alpha = item.point._alpha ?? starAlpha(item.point);
         const coreColor = item.point._coreColor || starColor(item.point, alpha, 'core');
         ctx.save();
@@ -2168,12 +2372,6 @@
         ctx.arc(item.projected.x, item.projected.y, sizePx, 0, Math.PI * 2);
         ctx.fillStyle = coreColor;
         ctx.fill();
-        if (bright >= 0.7) {
-          ctx.lineWidth = 0.6;
-          ctx.strokeStyle = coreColor;
-          ctx.globalAlpha = Math.min(alpha, 0.72);
-          ctx.stroke();
-        }
         ctx.restore();
         state.projectedPoints.push({
           index: item.index,
@@ -2185,19 +2383,29 @@
       });
 
       const regionAnchors = state.regions.map((region, index) => {
-        const shell = sphereToVec(Number(region.ra || 0), Number(region.dec || 0));
-        const scaled = rotatePoint({ x: shell.x * 1.12, y: shell.y * 1.12, z: shell.z * 1.12 });
+        const anchor = region._normalized || sphereToVec(Number(region.ra || 0), Number(region.dec || 0));
+        const scaled = rotatePoint(anchor);
         const projected = project(scaled, cx, cy, size);
         return { region, index, projected };
       }).filter(item => item.projected.depth > 0.15);
 
       regionAnchors.sort((a, b) => a.projected.depth - b.projected.depth);
+      const occupiedLabels = [];
       regionAnchors.forEach((item, i) => {
         const tone = REGION_TONES[i % REGION_TONES.length];
         const count = Number(item.region.count || 0);
         const density = clamp(count / 2200, 0.08, 1);
-        const coreSize = 7 + Math.min(count / 150, 22);
-        const cloudRadius = coreSize * (1.75 + density * 1.35);
+        const fogRadiusWorld = Math.max(Number(item.region.fog_radius || 0), 6);
+        const cloudRadius = clamp(
+          Math.max(worldRadiusToScreen(fogRadiusWorld, item.projected.perspective, size), 10),
+          10,
+          Math.min(w, h) * 0.18
+        );
+        const coreSize = clamp(
+          cloudRadius * (0.18 + density * 0.06) + Math.min(count / 420, 4.5),
+          3.2,
+          20
+        );
         const fogParticles = clamp(Math.round(18 + density * 30), 18, 48);
         const random = makeSeededRandom(hashString(`${item.region.name}|${count}|${item.index}`));
         const hovered = item.index === state.hoverRegion;
@@ -2229,8 +2437,13 @@
           ctx.lineWidth = 1.0;
           ctx.stroke();
         }
-        if (hovered || cloudRadius > 11) {
-          drawLabel(`${item.region.name} | ${count.toLocaleString()}`, item.projected, tone);
+        if (hovered || cloudRadius > 18) {
+          const text = `${item.region.name} | ${count.toLocaleString()}`;
+          const nextLabel = labelRect(text, item.projected);
+          const overlapsExisting = occupiedLabels.some((rect) => rectsOverlap(rect, nextLabel));
+          if (hovered || !overlapsExisting) {
+            occupiedLabels.push(drawLabel(text, item.projected, tone));
+          }
         }
         state.projectedRegions.push({
           index: item.index,
@@ -2276,14 +2489,20 @@
 
     function setScene({ points = [], regions = [], bounds = null }) {
       state.bounds = bounds || deriveBounds(points);
+      const xMin = state.bounds.plot_x_min != null ? state.bounds.plot_x_min : state.bounds.x_min;
+      const xMax = state.bounds.plot_x_max != null ? state.bounds.plot_x_max : state.bounds.x_max;
+      const yMin = state.bounds.plot_y_min != null ? state.bounds.plot_y_min : state.bounds.y_min;
+      const yMax = state.bounds.plot_y_max != null ? state.bounds.plot_y_max : state.bounds.y_max;
+      const zMin = state.bounds.plot_z_min != null ? state.bounds.plot_z_min : state.bounds.z_min;
+      const zMax = state.bounds.plot_z_max != null ? state.bounds.plot_z_max : state.bounds.z_max;
       state.center = {
-        x: (state.bounds.x_min + state.bounds.x_max) / 2,
-        y: (state.bounds.y_min + state.bounds.y_max) / 2,
-        z: (state.bounds.z_min + state.bounds.z_max) / 2,
+        x: (xMin + xMax) / 2,
+        y: (yMin + yMax) / 2,
+        z: (zMin + zMax) / 2,
       };
-      const spanX = state.bounds.x_max - state.bounds.x_min;
-      const spanY = state.bounds.y_max - state.bounds.y_min;
-      const spanZ = state.bounds.z_max - state.bounds.z_min;
+      const spanX = xMax - xMin;
+      const spanY = yMax - yMin;
+      const spanZ = zMax - zMin;
       state.scale = Math.max(spanX, spanY, spanZ, 1);
 
       state.points = points.map((point) => {
@@ -2302,14 +2521,29 @@
         ...region,
         name: region.name || `Region ${index + 1}`,
         count: Number(region.count || 0),
+        _normalized: normalizePoint(region),
       }));
+      const framingVectors = (state.regions.length >= 2
+        ? state.regions.map((region) => region._normalized)
+        : state.points
+            .filter((point, index) => index % Math.max(1, Math.floor(points.length / 48)) === 0)
+            .map((point) => point._normalized)
+      );
+      state.defaultView = deriveBestView(framingVectors);
+      state.yaw = state.defaultView.yaw;
+      state.pitch = state.defaultView.pitch;
+      state.roll = state.defaultView.roll;
+      state.zoom = state.defaultView.zoom;
+      syncZoomUI();
       state.hoverPoint = -1;
       state.hoverRegion = -1;
       resize();
     }
 
     canvas.addEventListener('pointerdown', (event) => {
+      cancelFocusAnimation();
       state.dragging = true;
+      state.dragged = false;
       state.pointerX = event.clientX;
       state.pointerY = event.clientY;
       canvas.setPointerCapture(event.pointerId);
@@ -2323,6 +2557,9 @@
       if (state.dragging) {
         const dx = event.clientX - state.pointerX;
         const dy = event.clientY - state.pointerY;
+        if (Math.abs(dx) + Math.abs(dy) > 2) {
+          state.dragged = true;
+        }
         state.pointerX = event.clientX;
         state.pointerY = event.clientY;
         state.yaw += dx * 0.009;
@@ -2340,12 +2577,17 @@
     });
 
     canvas.addEventListener('pointerup', (event) => {
+      const didDrag = state.dragged;
       state.dragging = false;
       try { canvas.releasePointerCapture(event.pointerId); } catch (error) {}
+      if (!didDrag && state.hoverRegion >= 0) {
+        focusRegion(state.regions[state.hoverRegion]);
+      }
     });
 
     canvas.addEventListener('pointerleave', () => {
       state.dragging = false;
+      state.dragged = false;
       if (state.hoverPoint !== -1 || state.hoverRegion !== -1) {
         state.hoverPoint = -1;
         state.hoverRegion = -1;
@@ -2368,7 +2610,12 @@
       setScene,
       setZoom,
       resetView,
+      focusRegionByIndex(index) {
+        const region = state.regions[index];
+        if (region) focusRegion(region);
+      },
       destroy() {
+        cancelFocusAnimation();
         window.removeEventListener('resize', resize);
         if (drawFrame) {
           cancelAnimationFrame(drawFrame);

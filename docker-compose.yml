@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Vector Database for semantic search
   qdrant:
@@ -17,6 +15,10 @@ services:
   neo4j:
     image: neo4j:5.15-community
     container_name: taarya-neo4j
+    restart: unless-stopped          # auto-recover if Docker or the OS restarts
+    # Remove stale neo4j.pid before starting — prevents the "Neo4j is already
+    # running (pid:X)" false-positive that occurs after unclean container exits
+    # (Docker Desktop restart, Windows update, etc.)
     ports:
       - "7474:7474" # HTTP
       - "7687:7687" # Bolt
@@ -27,10 +29,10 @@ services:
       - NEO4J_AUTH=neo4j/taarya123
     healthcheck:
       test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "taarya123", "RETURN 1"]
-      interval: 15s
+      interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s              # give Neo4j a full minute to initialise
 
   # Spatial Database with Q3C extension
   postgres:

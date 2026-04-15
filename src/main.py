@@ -66,7 +66,13 @@ async def lifespan(app: FastAPI):
         neo4j_conn.connect()
         logger.info("Neo4j: connected")
     except Exception as e:
-        logger.warning(f"Neo4j unavailable — graph features disabled: {e}")
+        logger.warning(
+            f"Neo4j not ready at startup — launching background retry: {e}"
+        )
+        # Fire-and-forget: retries every 15 s in the background without
+        # blocking the server. The UI will show 'connected' automatically
+        # once the container finishes booting.
+        asyncio.create_task(neo4j_conn.connect_with_retry())
 
     logger.info("TaarYa ready. Ingestion pipelines idle — trigger via POST /api/ingest/gaia or /api/ingest/arxiv")
     yield  # App is running

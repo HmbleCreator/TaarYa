@@ -236,7 +236,26 @@ class GraphSearch:
             return [dict(record) for record in result]
     
     def get_graph_stats(self) -> Dict[str, int]:
-        """Get counts of nodes and relationships in the graph."""
+        """Get counts of nodes and relationships in the graph.
+
+        Runs a lightweight liveness probe first so that a stale/dropped
+        driver is re-established via the retry logic before the real
+        stat queries execute.  This prevents the UI from flipping to
+        'not running' after Neo4j restarts or after a long idle period.
+        """
+
+        # Liveness probe — handles three cases:
+        #   1. driver is None  → background retry still in progress, raise immediately
+        #   2. driver is stale → verify_connectivity() fails, reconnect and continue
+        #   3. driver is fine  → proceed to stat queries
+        if neo4j_conn.driver is None:
+            raise RuntimeError("Neo4j driver not yet initialised (background retry in progress)")
+        try:
+            neo4j_conn.driver.verify_connectivity()
+        except Exception:
+            logger.warning("Neo4j liveness check failed — attempting reconnect...")
+            neo4j_conn.close()
+            neo4j_conn.connect()
 
         def _count(query: str) -> int:
             """Run a COUNT query and return 0 if the graph is empty."""
