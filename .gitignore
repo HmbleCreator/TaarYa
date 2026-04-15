@@ -41,3 +41,26 @@ logs/
 
 # Docker
 docker-compose.override.yml
+
+# Project documents and reports
+stitch_research_command_center/
+CorrectedReportContent.pdf
+project ppt sample.ppt
+RAG_Astronomy_Review.pptx
+TaarYa_Major_Project_Report_ES452.docx
+USICT ES-452 Major Project - Dissertation  Report Format-(2025-26).docx
+synopsis.txt
+NewScreens/
+synopsisImages/
+
+# Unused static HTML files
+static/agentic_workspace.html
+static/analysis.html
+static/code_console.html
+static/command_center.html
+static/index.html
+static/kg_explorer.html
+static/literature_browser.html
+static/onboarding.html
+static/profile.html
+static/research_chat.html
