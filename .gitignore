@@ -9,6 +9,8 @@ venv/
 ENV/
 .venv
 desktop.py
+run_tests.bat
+run_tests.sh
 
 # Environment variables
 .env
