@@ -22,14 +22,24 @@ class Star(Base):
 
     # Astrometric parameters
     parallax = Column(Float, doc="Parallax in milliarcseconds")
-    parallax_error = Column(Float)
+    parallax_error = Column(Float, doc="Standard error of parallax")
     pmra = Column(Float, doc="Proper motion in RA (mas/yr)")
+    pmra_error = Column(Float, doc="Standard error of proper motion in RA")
     pmdec = Column(Float, doc="Proper motion in Dec (mas/yr)")
+    pmdec_error = Column(Float, doc="Standard error of proper motion in Dec")
+
+    # Kinematics
+    radial_velocity = Column(Float, doc="Radial velocity in km/s")
+    radial_velocity_error = Column(Float, doc="Standard error of radial velocity")
 
     # Photometric data
     phot_g_mean_mag = Column(Float, doc="G-band mean magnitude")
     phot_bp_mean_mag = Column(Float, doc="BP-band mean magnitude")
     phot_rp_mean_mag = Column(Float, doc="RP-band mean magnitude")
+    
+    # Signal-to-Noise / Quality
+    phot_g_mean_flux_over_error = Column(Float, doc="G-band flux SNR")
+    astrometric_sigma5d_max = Column(Float, doc="Astrometric five-parameter semi-major axis")
 
     # Quality flags
     ruwe = Column(Float, doc="Renormalized unit weight error")

@@ -125,6 +125,7 @@ from src.api.search import router as search_router, stats_router
 from src.api.agent import router as agent_router
 from src.api.sessions import router as sessions_router
 from src.api.ingestion import router as ingestion_router
+from src.api.scientific import router as scientific_router
 
 app.include_router(stars_router, prefix="/api")
 app.include_router(papers_router, prefix="/api")
@@ -134,6 +135,7 @@ app.include_router(agent_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
 app.include_router(regions_router.router, prefix="/api")
 app.include_router(ingestion_router, prefix="/api")
+app.include_router(scientific_router, prefix="/api")
 
 
 

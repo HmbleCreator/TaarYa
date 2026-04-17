@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taarya"
+version = "0.1.0"
+description = "Agentic astronomy retrieval and discovery system."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Amit Kumar" }
+]
+dependencies = [
+  "fastapi==0.109.0",
+  "uvicorn[standard]==0.27.0",
+  "pydantic>=2.10.0",
+  "pydantic-settings==2.1.0",
+  "langchain==0.1.4",
+  "langchain-openai==0.0.5",
+  "langgraph==0.0.20",
+  "langchain-community==0.0.16",
+  "openai==1.10.0",
+  "sentence-transformers==2.3.1",
+  "qdrant-client>=1.12.0",
+  "neo4j==5.16.0",
+  "psycopg2-binary==2.9.9",
+  "sqlalchemy==2.0.25",
+  "astropy==6.0.0",
+  "astroquery==0.4.7",
+  "arxiv==2.1.0",
+  "pandas==2.2.0",
+  "numpy==1.26.3",
+  "pypdf==4.0.1",
+  "pymupdf==1.23.21",
+  "unstructured==0.12.0",
+  "python-dotenv==1.0.1",
+  "httpx==0.26.0",
+  "tenacity==8.2.3",
+  "pywebview==5.0.5",
+  "matplotlib>=3.10.8",
+  "networkx>=3.4.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.0.0",
+  "black==24.1.1",
+  "ruff==0.1.15",
+]
+
+[project.scripts]
+taarya-api = "src.cli:run_api"
+taarya-init-db = "src.cli:init_db_cli"
+taarya-seed = "src.cli:seed_cli"
+taarya-ingest-gaia = "src.cli:ingest_gaia_cli"
+taarya-ingest-arxiv = "src.cli:ingest_arxiv_cli"
+taarya-tool = "src.cli:tool_cli"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

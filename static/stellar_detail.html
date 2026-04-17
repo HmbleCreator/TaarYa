@@ -329,6 +329,30 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Physical Analysis Card -->
+                    <div class="glass-panel p-5 rounded-xl card-glow border-l-4 border-l-star-cyan">
+                        <h3
+                            class="text-[11px] font-bold text-star-cyan uppercase tracking-widest mb-4 flex items-center gap-2 font-display">
+                            <span class="material-symbols-outlined text-[16px]">science</span>Scientific Analysis
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center bg-slate-50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-white/5">
+                                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Absolute G Mag</span>
+                                <span class="text-sm font-bold text-slate-900 dark:text-white font-mono" id="ty-val-abs-g">--</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-slate-50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-white/5">
+                                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Population</span>
+                                <span class="text-[11px] font-bold text-primary dark:text-star-cyan" id="ty-val-population">--</span>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-white/5">
+                                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Binary Indication</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] text-slate-800 dark:text-slate-300 font-mono" id="ty-val-binary-info">Analyzing...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Center Column (Visualization, Biography, HR Diagram) -->
@@ -565,8 +589,34 @@
                     dot.setAttribute('cy', cy);
                 }
 
-                // AI Bio Generation (mock basic generation if real agent call is omitted to save time)
+                // AI Bio Generation
                 generateBio(star);
+                
+                // Physics Analysis
+                fetchPhysics(star.source_id);
+            }
+
+            async function fetchPhysics(id) {
+                const absGEl = document.getElementById('ty-val-abs-g');
+                const popEl = document.getElementById('ty-val-population');
+                const binaryEl = document.getElementById('ty-val-binary-info');
+
+                try {
+                    const res = await TaarYa.api.getStarPhysics(id);
+                    if (res) {
+                        absGEl.textContent = res.absolute_g_mag != null ? res.absolute_g_mag.toFixed(2) : '--';
+                        popEl.textContent = res.stellar_class || 'Unknown';
+                        
+                        if (res.binary_sep_limit_au > 0) {
+                            binaryEl.innerHTML = `<span class="material-icons text-[14px] text-yellow-500">warning</span> Potential companion at ~${res.binary_sep_limit_au} AU`;
+                        } else {
+                            binaryEl.textContent = 'Nominal single star';
+                        }
+                    }
+                } catch (e) {
+                    console.error("Physics fetch failed:", e);
+                    binaryEl.textContent = "Analysis unavailable";
+                }
             }
 
             async function generateBio(star) {

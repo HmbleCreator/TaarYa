@@ -19,16 +19,18 @@ _svc = StarService()
 
 @router.get("/cone-search", response_model=ConeSearchResponse)
 async def cone_search(
-    ra: float = Query(..., ge=0, le=360, description="Right Ascension in degrees"),
-    dec: float = Query(..., ge=-90, le=90, description="Declination in degrees"),
-    radius: float = Query(..., gt=0, le=10, description="Search radius in degrees"),
+    ra: float = Query(..., description="Right Ascension or Longitude"),
+    dec: float = Query(..., description="Declination or Latitude"),
+    radius: float = Query(..., gt=0, description="Search radius"),
+    unit: str = Query("deg", description="Radius unit: deg, arcmin, arcsec"),
+    frame: str = Query("icrs", description="Coordinate frame: icrs, galactic"),
     mag_limit: Optional[float] = Query(None, description="Max G-band magnitude"),
     min_parallax: Optional[float] = Query(None, description="Min parallax in mas"),
     limit: int = Query(100, ge=1, le=1000, description="Max results"),
 ):
-    """Find stars within a cone around given coordinates."""
+    """Find stars within a cone around given coordinates (multi-frame)."""
     stars = _svc.cone_search(
-        ra=ra, dec=dec, radius_deg=radius,
+        ra=ra, dec=dec, radius=radius, unit=unit, frame=frame,
         mag_limit=mag_limit, min_parallax=min_parallax, limit=limit,
     )
     return ConeSearchResponse(
@@ -36,6 +38,22 @@ async def cone_search(
         count=len(stars),
         stars=stars,
     )
+
+
+@router.get("/physics/{source_id}")
+async def get_star_physics(source_id: str):
+    """Get derived physical parameters (absolute mag, stellar class) for a star."""
+    return _svc.get_physics_analysis(source_id)
+
+
+@router.get("/convert-coords")
+async def convert_coordinates(
+    ra: float = Query(..., description="RA or Longitude"),
+    dec: float = Query(..., description="Dec or Latitude"),
+    from_frame: str = Query(..., description="Source frame: galactic, icrs"),
+):
+    """Convert coordinates from specified frame to ICRS."""
+    return _svc.convert_coords(ra, dec, from_frame)
 
 
 @router.get("/lookup/{source_id}")

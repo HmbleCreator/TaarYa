@@ -45,6 +45,7 @@ Guidelines:
   - If they only give RA, assume Dec=0.
   - If they give a star identifier, use star_lookup.
 - Summarize findings clearly and briefly.
+- **IMPORTANT**: When stars are returned with "discovery_score", always mention why they are interesting (e.g., high RUWE, color extremes) and prioritize listing the top-scoring candidates.
 - If you find 20 or fewer stars, list all of them in a markdown table.
 - Use tools whenever real data is needed.
 - If there are no grounded results, say so plainly instead of filling the gap with general astronomy knowledge.

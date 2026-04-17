@@ -1,0 +1,415 @@
+{
+  "timestamp": "2026-04-16T03:50:42.571783",
+  "stats": {
+    "spatial": {
+      "total": 10,
+      "passed": 2,
+      "failed": 8
+    },
+    "semantic": {
+      "total": 12,
+      "passed": 11,
+      "failed": 1
+    },
+    "discovery": {
+      "total": 9,
+      "passed": 5,
+      "failed": 4
+    },
+    "graph": {
+      "total": 0,
+      "passed": 0,
+      "failed": 0
+    },
+    "hybrid": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0
+    }
+  },
+  "results": [
+    {
+      "id": "Q01",
+      "status": "PASS",
+      "stars_found": 100,
+      "expected": 100,
+      "score": 1.0,
+      "latency_ms": 218.61,
+      "top_discovery": 0.0,
+      "anomalous_count": 0,
+      "query": "Find all stars in the Pleiades open cluster",
+      "category": "spatial_cluster",
+      "difficulty": "easy"
+    },
+    {
+      "id": "Q02",
+      "status": "FAIL",
+      "stars_found": 100,
+      "expected": 200,
+      "score": 0.5,
+      "latency_ms": 19.44,
+      "top_discovery": 0.0,
+      "anomalous_count": 0,
+      "query": "Find all stars in the Hyades moving group",
+      "category": "spatial_cluster",
+      "difficulty": "easy"
+    },
+    {
+      "id": "Q03",
+      "status": "PASS",
+      "stars_found": 100,
+      "expected": 50,
+      "score": 1.0,
+      "latency_ms": 15.68,
+      "top_discovery": 0.0,
+      "anomalous_count": 0,
+      "query": "Find stars in the Orion OB1 association",
+      "category": "spatial_cluster",
+      "difficulty": "medium"
+    },
+    {
+      "id": "Q04",
+      "status": "FAIL",
+      "stars_found": 0,
+      "expected": 5,
+      "score": 0.0,
+      "latency_ms": 8.52,
+      "top_discovery": 0,
+      "anomalous_count": 0,
+      "query": "Find stars near Sirius (RA=101.29, Dec=-16.72)",
+      "category": "spatial_specific",
+      "difficulty": "easy"
+    },
+    {
+      "id": "Q05",
+      "status": "FAIL",
+      "stars_found": 0,
+      "expected": 3,
+      "score": 0.0,
+      "latency_ms": 8.46,
+      "top_discovery": 0,
+      "anomalous_count": 0,
+      "query": "Find stars near Betelgeuse (RA=88.79, Dec=7.41)",
+      "category": "spatial_specific",
+      "difficulty": "easy"
+    },
+    {
+      "id": "Q06",
+      "status": "FAIL",
+      "stars_found": 0,
+      "expected": 500,
+      "score": 0.0,
+      "latency_ms": 10.07,
+      "top_discovery": 0,
+      "anomalous_count": 0,
+      "query": "Find the densest region near the galactic center",
+      "category": "spatial_density",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q07",
+      "status": "FAIL",
+      "stars_found": 0,
+      "expected": 10,
+      "score": 0.0,
+      "latency_ms": 7.79,
+      "top_discovery": 0,
+      "anomalous_count": 0,
+      "query": "Find stars in a quiet sky region away from the plane",
+      "category": "spatial_density",
+      "difficulty": "medium"
+    },
+    {
+      "id": "Q08",
+      "status": "FAIL",
+      "candidates_found": 0,
+      "expected": 1,
+      "score": 0,
+      "latency_ms": 88.65,
+      "query": "Find stars with very high proper motion indicating possible nearby objects",
+      "category": "discovery_anomaly",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q09",
+      "status": "FAIL",
+      "candidates_found": 0,
+      "expected": 1,
+      "score": 0,
+      "latency_ms": 76.39,
+      "query": "Find stars with unusually high RUWE values indicating possible binarity",
+      "category": "discovery_anomaly",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q10",
+      "status": "PASS",
+      "candidates_found": 4,
+      "expected": 1,
+      "score": 1.0,
+      "latency_ms": 74.08,
+      "query": "Find extremely blue stars (BP-RP < -0.1)",
+      "category": "discovery_anomaly",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q11",
+      "status": "PASS",
+      "candidates_found": 21,
+      "expected": 1,
+      "score": 1.0,
+      "latency_ms": 70.81,
+      "query": "Find extremely red stars (BP-RP > 2.8)",
+      "category": "discovery_anomaly",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q12",
+      "status": "PASS",
+      "candidates_found": 500,
+      "expected": 1,
+      "score": 1.0,
+      "latency_ms": 71.3,
+      "query": "Find bright but distant stars suggesting overluminous objects",
+      "category": "discovery_anomaly",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q13",
+      "status": "UNKNOWN_TYPE",
+      "query": "Find stars that appear in multiple catalogs"
+    },
+    {
+      "id": "Q14",
+      "status": "UNKNOWN_TYPE",
+      "query": "Compare stellar density in Pleiades vs Hyades"
+    },
+    {
+      "id": "Q15",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 5,
+      "score": 1.0,
+      "latency_ms": 50.37,
+      "query": "Find all papers discussing the Hyades cluster",
+      "category": "graph_exploration"
+    },
+    {
+      "id": "Q16",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 5,
+      "score": 1.0,
+      "latency_ms": 42.31,
+      "query": "Find all papers about the Pleiades",
+      "category": "graph_exploration"
+    },
+    {
+      "id": "Q17",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 5,
+      "score": 1.0,
+      "latency_ms": 70.34,
+      "query": "Find papers about stellar kinematics and proper motions",
+      "category": "graph_exploration"
+    },
+    {
+      "id": "Q18",
+      "status": "PASS",
+      "stars_found": 50,
+      "papers_found": 10,
+      "score": 1.0,
+      "latency_ms": 69.19,
+      "query": "Find Hyades members and related literature",
+      "category": "hybrid"
+    },
+    {
+      "id": "Q19",
+      "status": "PASS",
+      "stars_found": 50,
+      "papers_found": 10,
+      "score": 1.0,
+      "latency_ms": 55.31,
+      "query": "Find Pleiades members with literature context",
+      "category": "hybrid"
+    },
+    {
+      "id": "Q20",
+      "status": "FAIL",
+      "stars_found": 0,
+      "expected": 1,
+      "score": 0.0,
+      "latency_ms": 15.52,
+      "top_discovery": 0,
+      "anomalous_count": 0,
+      "query": "Find stars near the north celestial pole",
+      "category": "edge_cases",
+      "difficulty": "medium"
+    },
+    {
+      "id": "Q21",
+      "status": "FAIL",
+      "stars_found": 0,
+      "expected": 20,
+      "score": 0.0,
+      "latency_ms": 12.51,
+      "top_discovery": 0,
+      "anomalous_count": 0,
+      "query": "Find stars near the ecliptic plane at RA=180",
+      "category": "edge_cases",
+      "difficulty": "easy"
+    },
+    {
+      "id": "Q22",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 3,
+      "score": 1.0,
+      "latency_ms": 56.69,
+      "query": "Find literature about variable stars in open clusters",
+      "category": "time_domain"
+    },
+    {
+      "id": "Q23",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 5,
+      "score": 1.0,
+      "latency_ms": 66.66,
+      "query": "Find papers about transient events and stellar explosions",
+      "category": "time_domain"
+    },
+    {
+      "id": "Q24",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 5,
+      "score": 1.0,
+      "latency_ms": 53.54,
+      "query": "Find literature about Milky Way disk kinematics",
+      "category": "galactic_structure"
+    },
+    {
+      "id": "Q25",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 5,
+      "score": 1.0,
+      "latency_ms": 80.95,
+      "query": "Find papers about exoplanet atmosphere spectroscopy",
+      "category": "exoplanets"
+    },
+    {
+      "id": "Q26",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 3,
+      "score": 1.0,
+      "latency_ms": 39.37,
+      "query": "Find papers about brown dwarf spectral classification",
+      "category": "stellar_evolution"
+    },
+    {
+      "id": "Q27",
+      "status": "FAIL",
+      "candidates_found": 0,
+      "expected": 5,
+      "score": 0,
+      "latency_ms": 111.3,
+      "query": "Find candidate binary stars in the solar neighborhood",
+      "category": "discovery",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q28",
+      "status": "PASS",
+      "candidates_found": 173,
+      "expected": 10,
+      "score": 1.0,
+      "latency_ms": 23.19,
+      "query": "Find candidate young stellar objects near known star-forming regions",
+      "category": "discovery",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q29",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 3,
+      "score": 1.0,
+      "latency_ms": 60.78,
+      "query": "Find papers connecting Gaia astrometry to radio astronomy",
+      "category": "multi_wavelength"
+    },
+    {
+      "id": "Q30",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 5,
+      "score": 1.0,
+      "latency_ms": 42.62,
+      "query": "Find standard candles (Cepheids, RR Lyrae) mentioned in literature",
+      "category": "calibration"
+    },
+    {
+      "id": "Q31",
+      "status": "FAIL",
+      "candidates_found": 0,
+      "expected": 1,
+      "score": 0,
+      "latency_ms": 101.05,
+      "query": "Find hypervelocity stars or unusual kinematic populations",
+      "category": "special",
+      "difficulty": "very_hard"
+    },
+    {
+      "id": "Q32",
+      "status": "PASS",
+      "candidates_found": 273,
+      "expected": 5,
+      "score": 1.0,
+      "latency_ms": 112.65,
+      "query": "Find white dwarfs in the solar neighborhood",
+      "category": "special",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q33",
+      "status": "FAIL",
+      "stars_found": 0,
+      "expected": 1,
+      "score": 0.0,
+      "latency_ms": 8.99,
+      "top_discovery": 0,
+      "anomalous_count": 0,
+      "query": "Find star clusters in the Magellanic Clouds",
+      "category": "special",
+      "difficulty": "hard"
+    },
+    {
+      "id": "Q34",
+      "status": "ERROR",
+      "error": "'topic'",
+      "query": "Compare literature coverage of globular vs open clusters"
+    },
+    {
+      "id": "Q35",
+      "status": "PASS",
+      "papers_found": 10,
+      "expected": 5,
+      "score": 1.0,
+      "latency_ms": 50.5,
+      "query": "Find literature about binary star formation",
+      "category": "multi_look"
+    }
+  ],
+  "summary": {
+    "pass_rate": 57.14285714285714,
+    "avg_score": 0.640625,
+    "avg_latency": 56.05125,
+    "total_stars": 400,
+    "total_papers": 130,
+    "total_candidates": 971
+  }
+}

@@ -90,10 +90,18 @@
         },
 
         // Stars
-        coneSearch: (ra, dec, radius, { magLimit, minParallax, limit = 100 } = {}) =>
-            _get('/api/stars/cone-search' + qs({ ra, dec, radius, mag_limit: magLimit, min_parallax: minParallax, limit })),
+        coneSearch: (ra, dec, radius, { unit = 'deg', frame = 'icrs', magLimit, minParallax, limit = 100 } = {}) =>
+            _get('/api/stars/cone-search' + qs({ 
+                ra, dec, radius, unit, frame, 
+                mag_limit: magLimit, min_parallax: minParallax, limit 
+            })),
 
         lookupStar: (sourceId) => _get(`/api/stars/lookup/${encodeURIComponent(sourceId)}`),
+
+        getStarPhysics: (sourceId) => _get(`/api/stars/physics/${encodeURIComponent(sourceId)}`),
+
+        convertCoords: (ra, dec, fromFrame) => 
+            _get('/api/stars/convert-coords' + qs({ ra, dec, from_frame: fromFrame })),
 
         nearbyStar: (sourceId, { radius = 0.5, limit = 50 } = {}) =>
             _get(`/api/stars/nearby/${encodeURIComponent(sourceId)}` + qs({ radius, limit })),

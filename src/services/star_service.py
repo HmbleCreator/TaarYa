@@ -5,6 +5,8 @@ from typing import List, Optional, Dict, Any
 from fastapi import HTTPException
 
 from src.retrieval.spatial_search import SpatialSearch
+from src.retrieval.hybrid_search import HybridSearch
+from src.utils.scientific_orchestrator import ScientificOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -14,27 +16,48 @@ class StarService:
 
     def __init__(self):
         self._spatial = SpatialSearch()
+        self._hybrid = HybridSearch()
 
     def cone_search(
         self,
         ra: float,
         dec: float,
-        radius_deg: float,
+        radius: float,
+        unit: str = "deg",
+        frame: str = "icrs",
         mag_limit: Optional[float] = None,
         min_parallax: Optional[float] = None,
         limit: int = 100,
     ) -> List[Dict[str, Any]]:
-        """Run a cone search with optional filters."""
+        """Run a cone search with optional filters (multi-frame)."""
         try:
             if mag_limit is not None or min_parallax is not None:
                 return self._spatial.radial_search(
-                    ra=ra, dec=dec, radius_deg=radius_deg,
+                    ra=ra, dec=dec, radius=radius, unit=unit, frame=frame,
                     mag_limit=mag_limit, min_parallax=min_parallax, limit=limit,
                 )
-            return self._spatial.cone_search(ra=ra, dec=dec, radius_deg=radius_deg, limit=limit)
+            return self._spatial.cone_search(
+                ra=ra, dec=dec, radius=radius, unit=unit, frame=frame, limit=limit
+            )
         except Exception as e:
             logger.error(f"Cone search failed: {e}")
             raise HTTPException(status_code=503, detail=f"Star database unavailable: {e}")
+
+    def get_physics_analysis(self, source_id: str) -> Dict[str, Any]:
+        """Get derived physical parameters for a star."""
+        try:
+            return self._hybrid.get_stellar_analysis(source_id)
+        except Exception as e:
+            logger.error(f"Physics analysis failed for {source_id}: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    def convert_coords(self, ra: float, dec: float, from_frame: str) -> Dict[str, Any]:
+        """Convert coordinates between astronomical frames."""
+        try:
+            ra_out, dec_out = ScientificOrchestrator.parse_coordinates(ra, dec, from_frame)
+            return {"ra": ra_out, "dec": dec_out, "frame": "icrs"}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     def lookup(self, source_id: str) -> Dict[str, Any]:
         """Look up a single star by source ID."""

@@ -1,0 +1,6 @@
+[console_scripts]
+taarya-api = src.cli:run_api
+taarya-ingest-arxiv = src.cli:ingest_arxiv_cli
+taarya-ingest-gaia = src.cli:ingest_gaia_cli
+taarya-init-db = src.cli:init_db_cli
+taarya-seed = src.cli:seed_cli

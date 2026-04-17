@@ -105,6 +105,36 @@ If you prefer manual control:
 
 ---
 
+## 🔬 Research & Reproducibility
+
+TaarYa is designed for rigorous scientific use. To reproduce the results in our [PAPER_DRAFT.md](file:///c:/Users/amiku/Downloads/8th_Sem/TaarYa/PAPER_DRAFT.md), use the following tools:
+
+### 1. Research Seeding
+Seed the evaluation regions used in the paper:
+```bash
+uv run python scripts/seed_research_regions.py
+```
+
+### 2. Run Benchmark
+Evaluate the system against the 3-query research benchmark:
+```bash
+uv run python -m eval.benchmark
+```
+
+### 3. Ablation Study
+Quantify the benefit of hybrid retrieval over single-backend baselines:
+```bash
+uv run python eval/ablation.py
+```
+
+### 4. Scientific Audit
+Verify discovery candidates against the gold-standard SIMBAD database:
+```bash
+uv run python src/utils/scientific_audit.py
+```
+
+---
+
 ## 📥 Data Ingestion
 
 The server **never** runs ingestion automatically on startup. Pipelines are triggered explicitly while the server is running:
@@ -198,4 +228,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 * **[Author]** - [Amit Kumar](https://github.com/HmbleCreator)
 
 Special thanks to the Gaia Collaboration, SIMBAD, and the global open-source AI community for the tools that made this project possible.
+
+---
+
+## 📝 Citing TaarYa
+
+If you use TaarYa in your research, please cite our paper:
+
+```bibtex
+@article{kumar2026taarya,
+  title={TaarYa: Cross-Catalog Discovery Support for Astronomy with Hybrid Retrieval},
+  author={Kumar, Amit and others},
+  journal={Astronomy and Computing},
+  year={2026},
+  url={https://github.com/HmbleCreator/TaarYa}
+}
+```
 
