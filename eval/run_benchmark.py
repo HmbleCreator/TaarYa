@@ -1,6 +1,7 @@
 """Comprehensive evaluation with 35 expert-curated astronomical queries."""
 
 import json
+import math
 import time
 import logging
 import statistics
@@ -50,6 +51,61 @@ class TaarYaBenchmark:
             except Exception as e:
                 logger.warning(f"Vector backend unavailable: {e}")
 
+    @staticmethod
+    def _semantic_topic(params: Dict[str, Any]) -> str:
+        """Normalize benchmark semantic query params to a single topic string."""
+        topic = params.get("topic")
+        if isinstance(topic, str) and topic.strip():
+            return topic.strip()
+
+        parts = []
+        for key in ("topic1", "topic2"):
+            value = params.get(key)
+            if isinstance(value, str) and value.strip():
+                parts.append(value.strip())
+
+        if parts:
+            return " vs ".join(parts)
+
+        raise KeyError("topic")
+
+    @staticmethod
+    def _bp_rp(star: Dict[str, Any]) -> Any:
+        """Return BP-RP color if available."""
+        if star.get("bp_rp") is not None:
+            return star.get("bp_rp")
+        bp = star.get("phot_bp_mean_mag")
+        rp = star.get("phot_rp_mean_mag")
+        if bp is None or rp is None:
+            return None
+        return bp - rp
+
+    @staticmethod
+    def _proper_motion_total(star: Dict[str, Any]) -> float:
+        """Return total proper motion using any available field layout."""
+        for key in ("total_proper_motion", "pm_total", "pm"):
+            value = star.get(key)
+            if isinstance(value, (int, float)):
+                return float(value)
+
+        pmra = star.get("pmra")
+        pmdec = star.get("pmdec")
+        if isinstance(pmra, (int, float)) and isinstance(pmdec, (int, float)):
+            return math.sqrt(pmra ** 2 + pmdec ** 2)
+        return 0.0
+
+    @staticmethod
+    def _distance_pc(star: Dict[str, Any]) -> Any:
+        """Return distance in parsec if available or computable from parallax."""
+        value = star.get("distance_pc")
+        if isinstance(value, (int, float)) and value > 0:
+            return float(value)
+
+        parallax = star.get("parallax")
+        if isinstance(parallax, (int, float)) and parallax > 0:
+            return 1000.0 / parallax
+        return None
+
     def _evaluate_spatial(self, item: Dict) -> Dict[str, Any]:
         self._init_backends()
         start = time.time()
@@ -57,7 +113,7 @@ class TaarYaBenchmark:
             stars = self.spatial.cone_search(
                 ra=item["params"]["ra"],
                 dec=item["params"]["dec"],
-                radius_deg=item["params"]["radius_deg"],
+                radius=item["params"]["radius_deg"],
                 limit=100,
                 include_discovery=True
             )
@@ -115,7 +171,7 @@ class TaarYaBenchmark:
                 }
 
             results = self.vector.search_similar(
-                item["params"]["topic"],
+                self._semantic_topic(item["params"]),
                 limit=item["params"].get("limit", 10)
             )
             latency = time.time() - start
@@ -162,13 +218,13 @@ class TaarYaBenchmark:
                 stars = self.spatial.cone_search(
                     ra=params["ra"],
                     dec=params["dec"],
-                    radius_deg=params.get("radius_deg", 1.0),
+                    radius=params.get("radius_deg", 1.0),
                     limit=200,
                     include_discovery=True
                 )
             else:
                 stars = self.spatial.cone_search(
-                    ra=0, dec=0, radius_deg=180,
+                    ra=0, dec=0, radius=180,
                     limit=500,
                     include_discovery=True
                 )
@@ -178,21 +234,30 @@ class TaarYaBenchmark:
                 ruwe = s.get("ruwe")
                 if "min_ruwe" in params and (ruwe is None or ruwe < params["min_ruwe"]):
                     continue
-                bp = s.get("phot_bp_mean_mag")
-                rp = s.get("phot_rp_mean_mag")
+                bp_rp = self._bp_rp(s)
                 if "max_bp_rp" in params:
-                    if bp is not None and rp is not None:
-                        bp_rp = bp - rp
-                        if bp_rp >= params["max_bp_rp"]:
-                            continue
+                    if bp_rp is None or bp_rp >= params["max_bp_rp"]:
+                        continue
                 if "min_bp_rp" in params:
-                    if bp is not None and rp is not None:
-                        bp_rp = bp - rp
-                        if bp_rp < params["min_bp_rp"]:
-                            continue
+                    if bp_rp is None or bp_rp < params["min_bp_rp"]:
+                        continue
                 if "min_proper_motion" in params:
-                    pm = s.get("total_proper_motion", 0)
+                    pm = self._proper_motion_total(s)
                     if pm < params["min_proper_motion"]:
+                        continue
+                distance_pc = self._distance_pc(s)
+                if "max_distance_pc" in params:
+                    if distance_pc is None or distance_pc > params["max_distance_pc"]:
+                        continue
+                if "min_distance_pc" in params:
+                    if distance_pc is None or distance_pc < params["min_distance_pc"]:
+                        continue
+                phot_g = s.get("phot_g_mean_mag")
+                if "max_g_mag" in params:
+                    if phot_g is None or phot_g > params["max_g_mag"]:
+                        continue
+                if "min_g_mag" in params:
+                    if phot_g is None or phot_g < params["min_g_mag"]:
                         continue
                 filtered.append(s)
 
@@ -291,7 +356,7 @@ class TaarYaBenchmark:
             spatial_result = self.spatial.cone_search(
                 ra=item["params"]["ra"],
                 dec=item["params"]["dec"],
-                radius_deg=item["params"]["radius_deg"],
+                radius=item["params"]["radius_deg"],
                 limit=50,
                 include_discovery=True
             )

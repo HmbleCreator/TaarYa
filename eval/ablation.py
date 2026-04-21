@@ -34,7 +34,7 @@ def run_ablation():
     
     # 1. Spatial Only
     start = time.time()
-    stars_only = spatial.cone_search(**params)
+    stars_only = spatial.cone_search(ra=params["ra"], dec=params["dec"], radius=params["radius_deg"])
     lat = time.time() - start
     print(f"{'Spatial Only':<20} | {len(stars_only):<8} | {'N/A':<8} | {lat:<12.4f}")
     
@@ -46,7 +46,7 @@ def run_ablation():
     
     # 3. Hybrid (Spatial + Graph context)
     start = time.time()
-    hybrid_res = hybrid.cone_search_with_context(**params)
+    hybrid_res = hybrid.cone_search_with_context(ra=params["ra"], dec=params["dec"], radius_deg=params["radius_deg"])
     lat = time.time() - start
     print(f"{'Hybrid (S+G)':<20} | {len(hybrid_res['stars']):<8} | {len(hybrid_res.get('related_papers', [])):<8} | {lat:<12.4f}")
 

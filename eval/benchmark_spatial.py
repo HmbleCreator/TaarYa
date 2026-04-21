@@ -47,7 +47,7 @@ def run_spatial_benchmark():
             output = spatial.cone_search(
                 ra=item["params"]["ra"],
                 dec=item["params"]["dec"],
-                radius_deg=item["params"]["radius_deg"],
+                radius=item["params"]["radius_deg"],
                 limit=100,
                 include_discovery=True
             )
@@ -94,8 +94,6 @@ def run_spatial_benchmark():
         print(f"AVERAGES: Score={avg_score:.3f} | Latency={avg_latency:.4f}s")
         print("=" * 60)
         print("\nSYSTEM STATUS: SPATIAL RETRIEVAL FUNCTIONAL")
-        print("NOTE: Semantic (Qdrant) and Graph (Neo4j) backends require")
-        print("      package fixes - see ongoing dependency resolution.")
     else:
         print("\nNO RESULTS - check database connectivity")
 

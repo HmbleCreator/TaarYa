@@ -66,13 +66,15 @@ class TaarYaEvaluator:
             start_time = time.time()
             
             if item["type"] == "spatial":
-                output = self.spatial.cone_search(**item["params"])
+                p = item["params"]
+                output = self.spatial.cone_search(ra=p["ra"], dec=p["dec"], radius=p["radius_deg"])
                 metric = self._eval_spatial(output, item)
             elif item["type"] == "semantic":
                 output = self.vector.search_similar(item["text"])
                 metric = self._eval_semantic(output, item)
             elif item["type"] == "hybrid":
-                output = self.hybrid.cone_search_with_context(**item["params"])
+                p = item["params"]
+                output = self.hybrid.cone_search_with_context(ra=p["ra"], dec=p["dec"], radius_deg=p["radius_deg"])
                 metric = self._eval_hybrid(output, item)
             
             latency = time.time() - start_time
