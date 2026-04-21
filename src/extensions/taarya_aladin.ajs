@@ -1,0 +1,26 @@
+// Aladin toolbar script for TaarYa Discovery Layer
+// Save as taarya_aladin.ajs and load in Aladin
+
+var taarya_base_url = "http://localhost:8000";
+
+function loadTaarYaDiscoveryLayer() {
+    var ra = aladin.getRaDec()[0];
+    var dec = aladin.getRaDec()[1];
+    var radius = 0.5; // Default radius in degrees
+
+    var url = taarya_base_url + "/api/interop/export?format=votable&ra=" + ra + "&dec=" + dec + "&radius=" + radius;
+    
+    aladin.addCatalog(Aladin.catalogFromURL(url, {
+        name: "TaarYa Discoveries",
+        color: "red",
+        onClick: function(source) {
+            // Send SAMP highlight message back to TaarYa
+            // Requires SAMP Hub to be running
+            console.log("TaarYa: Selected source " + source.data.source_id);
+        }
+    }));
+}
+
+// Add button to Aladin UI if possible (Aladin Desktop specific)
+// In Aladin Lite, this would be a custom UI component
+console.log("TaarYa Aladin extension loaded. Use loadTaarYaDiscoveryLayer() to refresh.");
