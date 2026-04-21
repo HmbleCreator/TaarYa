@@ -401,12 +401,217 @@
         window.location.href = `/static/stellar_detail.html?id=${encodeURIComponent(sourceId)}`;
     }
 
-    /* ── CSS keyframe for spinner ───────────────────────────── */
-    const style = document.createElement('style');
-    style.textContent = '@keyframes ty-spin { to { transform: rotate(360deg); } }';
-    document.head.appendChild(style);
+    /* ── Error boundary ────────────────────────────────────── */
+    function withErrorBoundary(promise, { fallbackMsg, onError, containerSelector } = {}) {
+        const container = containerSelector ? document.querySelector(containerSelector) : null;
+        if (container) {
+            container.innerHTML = render.spinner();
+        }
+        return promise
+            .catch(err => {
+                const msg = err?.message || String(err);
+                console.error('[TaarYa API error]', msg, err);
+                if (container) {
+                    container.innerHTML = `
+                        <div style="padding:20px;text-align:center;color:#ef4444;">
+                            <span class="material-icons" style="font-size:32px;display:block;margin-bottom:8px;">error_outline</span>
+                            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Request failed</div>
+                            <div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">${_escHtml(fallbackMsg || msg)}</div>
+                            <button onclick="TaarYa.retryLast(this)"
+                                style="padding:6px 16px;border-radius:6px;border:1px solid #ef4444;background:transparent;
+                                       color:#ef4444;cursor:pointer;font-size:12px;">
+                                Retry
+                            </button>
+                        </div>`;
+                }
+                if (onError) onError(err);
+                return null;
+            });
+    }
 
-    /* ── Expose globals ─────────────────────────────────────── */
-    global.TaarYa = { api, render, goToStar, exportCSV, exportJSON };
+    function _escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    /* ── Retry with exponential backoff ────────────────────── */
+    async function withRetry(fn, { retries = 3, baseDelayMs = 800, onRetry } = {}) {
+        let lastError;
+        for (let attempt = 0; attempt <= retries; attempt++) {
+            try {
+                return await fn();
+            } catch (err) {
+                lastError = err;
+                const isRetryable = err?.message?.match(/network|timeout|ECONNREFUSED|50[0-4]/i)
+                    || (err?.status >= 500 && err?.status < 600);
+                if (attempt < retries && isRetryable) {
+                    const delay = baseDelayMs * Math.pow(2, attempt);
+                    if (onRetry) onRetry({ attempt: attempt + 1, delay, error: err?.message });
+                    await new Promise(r => setTimeout(r, delay));
+                } else {
+                    throw err;
+                }
+            }
+        }
+        throw lastError;
+    }
+
+    /* ── Timeout wrapper ───────────────────────────────────── */
+    function withTimeout(promise, ms = 15000) {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) =>
+                setTimeout(() => reject(Object.assign(new Error(`Request timed out after ${ms}ms`), { code: 'TIMEOUT' })), ms)
+            ),
+        ]);
+    }
+
+    /* ── Toast notification system ─────────────────────────── */
+    const _toasts = [];
+    let _toastZ = 9000;
+
+    function _removeToast(id) {
+        const el = document.getElementById('ty-toast-' + id);
+        if (el) el.remove();
+        const idx = _toasts.findIndex(t => t.id === id);
+        if (idx >= 0) _toasts.splice(idx, 1);
+    }
+
+    function toast(message, { type = 'info', duration = 4000, title } = {}) {
+        const id = Date.now() + Math.random();
+        const icons = { success: 'check_circle', error: 'error', warning: 'warning', info: 'info' };
+        const colors = {
+            success: '#10b981', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6',
+        };
+        const bgColors = {
+            success: 'rgba(16,185,129,0.12)', error: 'rgba(239,68,68,0.12)',
+            warning: 'rgba(245,158,11,0.12)', info: 'rgba(59,130,246,0.12)',
+        };
+        const color = colors[type] || colors.info;
+        const bg = bgColors[type] || bgColors.info;
+        const icon = icons[type] || icons.info;
+
+        let container = document.getElementById('ty-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'ty-toast-container';
+            container.style.cssText = 'position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999;max-width:380px;width:100%;';
+            document.body.appendChild(container);
+        }
+
+        const el = document.createElement('div');
+        el.id = 'ty-toast-' + id;
+        el.style.cssText = `
+            display:flex;align-items:flex-start;gap:10px;
+            background:${bg};border:1px solid ${color}44;
+            border-left:3px solid ${color};
+            border-radius:8px;padding:12px 14px;
+            color:var(--text-primary, #f1f5f9);
+            font-size:13px;line-height:1.4;
+            animation:ty-toast-in .25s ease;
+            box-shadow:0 8px 24px rgba(0,0,0,0.3);
+            position:relative;z-index:${_toastZ++};
+        `;
+        el.innerHTML = `
+            <span class="material-icons" style="font-size:18px;color:${color};flex-shrink:0;margin-top:1px;">${icon}</span>
+            <div style="flex:1;min-width:0;">
+                ${title ? `<div style="font-size:11px;font-weight:700;margin-bottom:2px;color:${color};text-transform:uppercase;letter-spacing:.5px;">${_escHtml(title)}</div>` : ''}
+                <div>${_escHtml(String(message))}</div>
+            </div>
+            <button onclick="TaarYa.dismissToast('${id}')"
+                style="background:none;border:none;color:var(--text-muted,#64748b);cursor:pointer;padding:0;line-height:1;font-size:16px;flex-shrink:0;">&times;</button>
+        `;
+        container.appendChild(el);
+
+        if (duration > 0) {
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(20px)';
+                el.style.transition = 'opacity .3s, transform .3s';
+                setTimeout(() => _removeToast(id), 300);
+            }, duration);
+        }
+
+        _toasts.push({ id, el });
+        return id;
+    }
+
+    /* ── Loading skeleton rows ─────────────────────────────── */
+    function skeletonRows(n = 3, { height = 48, gap = 8 } = {}) {
+        return Array.from({ length: n }, (_, i) => `
+            <div style="height:${height}px;background:rgba(255,255,255,0.04);
+                        border-radius:8px;margin-bottom:${gap}px;
+                        background:linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 75%);
+                        background-size:200% 100%;
+                        animation:ty-skeleton 1.4s ease-in-out infinite;
+                        animation-delay:${i * 0.12}s;">
+            </div>`).join('');
+    }
+
+    /* ── Retry last failed request ────────────────────────── */
+    const _lastRetry = { fn: null, args: null };
+    global.TaarYa = global.TaarYa || {};
+    global.TaarYa.retryLast = function(btn) {
+        if (_lastRetry.fn) {
+            const container = btn?.closest('[data-retry-container]') || document.activeElement?.closest('.panel') || document.body;
+            if (container) container.innerHTML = render.spinner();
+            _lastRetry.fn(...(_lastRetry.args || [])).catch(console.error);
+        }
+    };
+    global.TaarYa.dismissToast = function(id) {
+        const el = document.getElementById('ty-toast-' + id);
+        if (el) { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; el.style.transition = 'opacity .3s, transform .3s'; setTimeout(() => _removeToast(id), 300); }
+    };
+
+    /* ── Patch api methods with global error + retry ─────── */
+    const _rawApi = { ...api };
+    function _wrap(method) {
+        return function(...args) {
+            _lastRetry.fn = _rawApi[method];
+            _lastRetry.args = args;
+            return withErrorBoundary(
+                withRetry(withTimeout(_rawApi[method](...args), 15000)),
+                { fallbackMsg: 'API request failed. Check back-end status and retry.' }
+            );
+        };
+    }
+    for (const m of ['stats', 'regions', 'spaceVolume', 'mlClusters', 'discovery',
+                       'ingestionStatus', 'coneSearch', 'lookupStar', 'getStarPhysics',
+                       'papersByStar', 'hybridSearch', 'coneWithContext']) {
+        api[m] = _wrap(m);
+    }
+
+    /* ── Expose helpers globally ──────────────────────────── */
+    global.TaarYa = {
+        ...global.TaarYa,
+        api: _rawApi,
+        render: { ...render,
+            skeleton: skeletonRows,
+            toast,
+            errorBoundary: withErrorBoundary,
+            withRetry,
+            withTimeout,
+        },
+        goToStar,
+        exportCSV,
+        exportJSON,
+        toast,
+        dismissToast: (id) => _removeToast(id),
+    };
+
+    /* ── CSS keyframes ────────────────────────────────────── */
+    const _style = document.createElement('style');
+    _style.textContent = `
+        @keyframes ty-spin { to { transform: rotate(360deg); } }
+        @keyframes ty-toast-in { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes ty-skeleton {
+            0% { background-position:200% 0; }
+            100% { background-position:-200% 0; }
+        }
+    `;
+    document.head.appendChild(_style);
 
 })(window);
