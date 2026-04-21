@@ -25,10 +25,17 @@ class PaperService:
             logger.error(f"Semantic search failed: {e}")
             raise HTTPException(status_code=503, detail=f"Vector database unavailable: {e}")
 
-    def by_star(self, source_id: str) -> List[Dict[str, Any]]:
+    def by_star(
+        self,
+        source_id: str,
+        include_cluster_context: bool = True,
+    ) -> List[Dict[str, Any]]:
         """Find papers mentioning a specific star via the knowledge graph."""
         try:
-            return self._graph.find_star_papers(source_id)
+            return self._graph.find_star_papers(
+                source_id,
+                include_cluster_context=include_cluster_context,
+            )
         except Exception as e:
             logger.error(f"Paper-by-star lookup failed: {e}")
             raise HTTPException(status_code=503, detail=f"Graph database unavailable: {e}")

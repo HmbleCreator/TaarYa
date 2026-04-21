@@ -27,6 +27,45 @@ def _get_simbad():
     return _simbad
 
 
+def query_simbad_by_name(name: str) -> Optional[Dict[str, Any]]:
+    """Query SIMBAD for an object by name.
+
+    Args:
+        name: Common name of the object (e.g., "Betelgeuse", "M31")
+
+    Returns:
+        Matching SIMBAD object with main identifier and coordinates, or None
+    """
+    Simbad = _get_simbad()
+    if Simbad is None:
+        return None
+
+    try:
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            result = Simbad.query_object(name)
+
+        if result is None or len(result) == 0:
+            return None
+
+        row = result[0]
+        obj = {}
+        for col in result.colnames:
+            try:
+                # result RA/DEC are often strings like "05 55 10.3053"
+                obj[col.lower()] = str(row[col])
+            except Exception:
+                pass
+        
+        logger.info(f"SIMBAD found object '{name}' at RA={obj.get('ra')}, Dec={obj.get('dec')}")
+        return obj
+
+    except Exception as e:
+        logger.error(f"SIMBAD name query failed for '{name}': {e}")
+        return None
+
+
 def query_simbad_by_coords(
     ra: float, dec: float, radius_arcsec: float = 5.0
 ) -> List[Dict[str, Any]]:

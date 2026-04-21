@@ -8,7 +8,8 @@ import csv
 import io
 import json
 import logging
-from datetime import datetime
+import math
+import datetime
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -18,59 +19,67 @@ VOTABLE_TEMPLATE = """<?xml version="1.0" encoding="utf-8"?>
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/VOTable-1.3.xsd">
   <RESOURCE name="TaarYa_Results" type="results">
+    <COOSYS ID="ICRS" system="ICRS" epoch="J2016.0"/>
     <TABLE name="stars">
       <DESCRIPTION>Stars retrieved from TaarYa hybrid search with discovery scoring</DESCRIPTION>
-      <FIELD ID="source_id" name="source_id" datatype="char" arraysize="*">
+      <FIELD ID="source_id" name="source_id" ucd="meta.id;meta.main" datatype="char" arraysize="*">
         <DESCRIPTION>Gaia DR3 Source ID</DESCRIPTION>
       </FIELD>
-      <FIELD ID="ra" name="ra" datatype="double" unit="deg" precision="7">
+      <FIELD ID="ra" name="ra" ucd="pos.eq.ra;meta.main" ref="ICRS" datatype="double" unit="deg" precision="7">
         <DESCRIPTION>Right Ascension (ICRS)</DESCRIPTION>
       </FIELD>
-      <FIELD ID="dec" name="dec" datatype="double" unit="deg" precision="7">
+      <FIELD ID="dec" name="dec" ucd="pos.eq.dec;meta.main" ref="ICRS" datatype="double" unit="deg" precision="7">
         <DESCRIPTION>Declination (ICRS)</DESCRIPTION>
       </FIELD>
-      <FIELD ID="parallax" name="parallax" datatype="double" unit="mas" precision="4">
+      <FIELD ID="parallax" name="parallax" ucd="pos.parallax" datatype="double" unit="mas" precision="4">
         <DESCRIPTION>Parallax</DESCRIPTION>
       </FIELD>
-      <FIELD ID="parallax_error" name="parallax_error" datatype="double" unit="mas" precision="4">
+      <FIELD ID="parallax_error" name="parallax_error" ucd="stat.error;pos.parallax" datatype="double" unit="mas" precision="4">
         <DESCRIPTION>Parallax uncertainty</DESCRIPTION>
       </FIELD>
-      <FIELD ID="pmra_error" name="pmra_error" datatype="double" unit="mas/yr" precision="4">
+      <FIELD ID="pmra" name="pmra" ucd="pos.pm;pos.eq.ra" datatype="double" unit="mas/yr" precision="4">
+        <DESCRIPTION>Proper motion in RA</DESCRIPTION>
+      </FIELD>
+      <FIELD ID="pmra_error" name="pmra_error" ucd="stat.error;pos.pm;pos.eq.ra" datatype="double" unit="mas/yr" precision="4">
         <DESCRIPTION>Proper motion in RA uncertainty</DESCRIPTION>
       </FIELD>
-      <FIELD ID="pmdec" name="pmdec" datatype="double" unit="mas/yr" precision="4">
+      <FIELD ID="pmdec" name="pmdec" ucd="pos.pm;pos.eq.dec" datatype="double" unit="mas/yr" precision="4">
         <DESCRIPTION>Proper motion in Dec</DESCRIPTION>
       </FIELD>
-      <FIELD ID="pmdec_error" name="pmdec_error" datatype="double" unit="mas/yr" precision="4">
+      <FIELD ID="pmdec_error" name="pmdec_error" ucd="stat.error;pos.pm;pos.eq.dec" datatype="double" unit="mas/yr" precision="4">
         <DESCRIPTION>Proper motion in Dec uncertainty</DESCRIPTION>
       </FIELD>
-      <FIELD ID="radial_velocity" name="radial_velocity" datatype="double" unit="km/s" precision="2">
+      <FIELD ID="radial_velocity" name="radial_velocity" ucd="spect.dopplerVeloc.opt;stat.mean" datatype="double" unit="km/s" precision="2">
         <DESCRIPTION>Radial velocity</DESCRIPTION>
       </FIELD>
-      <FIELD ID="radial_velocity_error" name="radial_velocity_error" datatype="double" unit="km/s" precision="2">
+      <FIELD ID="radial_velocity_error" name="radial_velocity_error" ucd="stat.error;spect.dopplerVeloc.opt;stat.mean" datatype="double" unit="km/s" precision="2">
         <DESCRIPTION>Radial velocity uncertainty</DESCRIPTION>
       </FIELD>
-      <FIELD ID="phot_g_mean_mag" name="phot_g_mean_mag" datatype="double" unit="mag" precision="3">
+      <FIELD ID="phot_g_mean_mag" name="phot_g_mean_mag" ucd="phot.mag;em.opt.gaia.g" datatype="double" unit="mag" precision="3">
         <DESCRIPTION>Gaia G-band mean magnitude</DESCRIPTION>
       </FIELD>
-      <FIELD ID="phot_bp_mean_mag" name="phot_bp_mean_mag" datatype="double" unit="mag" precision="3">
+      <FIELD ID="phot_bp_mean_mag" name="phot_bp_mean_mag" ucd="phot.mag;em.opt.gaia.bp" datatype="double" unit="mag" precision="3">
         <DESCRIPTION>Gaia BP-band mean magnitude</DESCRIPTION>
       </FIELD>
-      <FIELD ID="phot_rp_mean_mag" name="phot_rp_mean_mag" datatype="double" unit="mag" precision="3">
+      <FIELD ID="phot_rp_mean_mag" name="phot_rp_mean_mag" ucd="phot.mag;em.opt.gaia.rp" datatype="double" unit="mag" precision="3">
         <DESCRIPTION>Gaia RP-band mean magnitude</DESCRIPTION>
       </FIELD>
-      <FIELD ID="bp_rp" name="bp_rp" datatype="double" unit="mag" precision="3">
+      <FIELD ID="bp_rp" name="bp_rp" ucd="phot.color;em.opt.gaia.bp;em.opt.gaia.rp" datatype="double" unit="mag" precision="3">
         <DESCRIPTION>BP - RP color index</DESCRIPTION>
       </FIELD>
-      <FIELD ID="ruwe" name="ruwe" datatype="double" precision="3">
+      <FIELD ID="ruwe" name="ruwe" ucd="stat.fit.goodness" datatype="double" precision="3">
         <DESCRIPTION>Renormalized Unit Weight Error (astrometric quality)</DESCRIPTION>
       </FIELD>
-      <FIELD ID="discovery_score" name="discovery_score" datatype="float" precision="2">
+      <FIELD ID="discovery_score" name="discovery_score" ucd="meta.code.qual" datatype="float" precision="2">
         <DESCRIPTION>Anomaly score (higher = more interesting)</DESCRIPTION>
       </FIELD>
-      <FIELD ID="discovery_reasons" name="discovery_reasons" datatype="char" arraysize="*">
+      <FIELD ID="discovery_reasons" name="discovery_reasons" ucd="meta.note" datatype="char" arraysize="*">
         <DESCRIPTION>Reasons for discovery score</DESCRIPTION>
       </FIELD>
+      <PARAM name="TaarYa_Version" datatype="char" arraysize="*" value="1.0.0"/>
+      <PARAM name="Query_Time" ucd="time.epoch" datatype="char" arraysize="*" value="{query_time}"/>
+      <PARAM name="Provenance_Type" datatype="char" arraysize="*" value="{provenance_type}"/>
+      <PARAM name="Provenance_Query" datatype="char" arraysize="*" value="{provenance_query}"/>
       <DATA>
         <TABLEDATA>
 {table_data}        </TABLEDATA>
@@ -105,17 +114,15 @@ ROW_TEMPLATE = """          <TR>
             <TD>{discovery_reasons}</TD>
           </TR>"""
 
-
 def _sanitize_value(val: Any) -> str:
     """Convert value to safe string for VOTable."""
     if val is None:
         return ""
     if isinstance(val, float):
-        if str(val) == "nan" or str(val) == "inf":
+        if not math.isfinite(val):
             return ""
         return f"{val:.7g}"
     return str(val)
-
 
 def _format_row(star: Dict) -> str:
     """Format a single star as VOTable TR element."""
@@ -151,6 +158,7 @@ def _format_row(star: Dict) -> str:
     )
 
 
+
 def export_to_votable(stars: List[Dict], query_time: Optional[str] = None) -> str:
     """Export stars to VOTable format (IVOA standard).
 
@@ -162,7 +170,7 @@ def export_to_votable(stars: List[Dict], query_time: Optional[str] = None) -> st
         VOTable XML string
     """
     if query_time is None:
-        query_time = datetime.utcnow().isoformat()
+        query_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     table_data = "\n".join(_format_row(s) for s in stars)
     
@@ -238,7 +246,7 @@ def export_to_json(stars: List[Dict], include_metadata: bool = True) -> str:
     """
     data = {
         "source": "TaarYa",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "total_results": len(stars),
         "stars": stars
     }
@@ -272,7 +280,7 @@ def format_for_topcat(stars: List[Dict]) -> str:
     This function returns CSV with a header comment block.
     """
     comment = f"""# TaarYa Output for TOPCAT
-# Generated: {datetime.utcnow().isoformat()}
+# Generated: {datetime.datetime.now(datetime.timezone.utc).isoformat()}
 # Total Stars: {len(stars)}
 #
 # Column Descriptions:

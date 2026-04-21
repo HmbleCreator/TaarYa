@@ -38,15 +38,19 @@ class MultiSeedDiscovery:
         # 1. Collect scores across seeds
         for seed in self.seeds:
             perturbed_profile = self._perturb_profile(base_profile, seed)
-            # Use the base ranker but with perturbed profile
-            # Note: rank_discovery_candidates doesn't accept a profile object yet, 
-            # we might need to monkeypatch or refactor. 
-            # For now, let's simulate the logic here for the 'Multi-Seed' claim.
             
-            trial_scores = {}
-            for row in rows:
-                score, _ = self._score_single_row(row, perturbed_profile)
-                trial_scores[row["source_id"]] = score
+            # Use the base ranker with the perturbed profile to ensure consistency
+            ranking_result = rank_discovery_candidates(
+                rows, 
+                mode=mode, 
+                override_profile=perturbed_profile,
+                limit=len(rows) # Get all scores
+            )
+            
+            trial_scores = {
+                item["source_id"]: item["score"] 
+                for item in ranking_result["top_candidates"]
+            }
             all_results.append(trial_scores)
 
         # 2. Aggregate results
@@ -55,6 +59,9 @@ class MultiSeedDiscovery:
             sid = row["source_id"]
             scores = [res[sid] for res in all_results if sid in res]
             
+            if not scores:
+                continue
+                
             mean_score = np.mean(scores)
             std_score = np.std(scores)
             
@@ -70,32 +77,6 @@ class MultiSeedDiscovery:
             })
             
         return sorted(robust_results, key=lambda x: x["mean_score"], reverse=True)
-
-    def _score_single_row(self, row: Dict[str, Any], profile: Dict[str, float]) -> tuple[float, List[str]]:
-        """Internal scoring logic identical to discovery.py but accepts profile."""
-        score = 0.0
-        reasons = []
-        
-        ruwe = row.get("ruwe")
-        if ruwe:
-            if ruwe >= 2.0: score += profile["ruwe_high"]
-            elif ruwe >= 1.4: score += profile["ruwe_elevated"]
-        
-        bp = row.get("phot_bp_mean_mag")
-        rp = row.get("phot_rp_mean_mag")
-        if bp and rp:
-            bp_rp = bp - rp
-            if bp_rp <= -0.1 or bp_rp >= 2.8:
-                score += profile["color_extreme"]
-
-        pmra = row.get("pmra")
-        pmdec = row.get("pmdec")
-        if pmra and pmdec:
-            motion = math.sqrt(pmra**2 + pmdec**2)
-            if motion >= 80: score += profile["motion_high"]
-            elif motion >= 40: score += profile["motion_mid"]
-
-        return score, reasons
 
     def _calculate_feature_importance(self, row: Dict[str, Any], profile: Dict[str, float]) -> Dict[str, float]:
         """Simple SHAP-like feature importance based on contribution to total score."""
@@ -115,7 +96,7 @@ class MultiSeedDiscovery:
 
         pmra = row.get("pmra")
         pmdec = row.get("pmdec")
-        if pmra and pmdec:
+        if pmra is not None and pmdec is not None:
             motion = math.sqrt(pmra**2 + pmdec**2)
             if motion >= 80: contributions["Kinematics (Motion)"] = profile["motion_high"]
             elif motion >= 40: contributions["Kinematics (Motion)"] = profile["motion_mid"]

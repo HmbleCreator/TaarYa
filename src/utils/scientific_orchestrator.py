@@ -70,7 +70,7 @@ class ScientificOrchestrator:
         Create a provenance record for reproducibility.
         """
         return {
-            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "query_type": query_type,
             "parameters": params,
             "raw_query": raw_query,
