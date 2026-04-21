@@ -1,16 +1,17 @@
 """Database connection managers."""
-from typing import Optional
+from typing import Any, Optional, TYPE_CHECKING
 from contextlib import contextmanager
 import logging
 
-from neo4j import GraphDatabase
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from qdrant_client import QdrantClient
 
 from src.config import settings
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from qdrant_client import QdrantClient
 
 
 class Neo4jConnection:
@@ -20,7 +21,7 @@ class Neo4jConnection:
     _BG_RETRY_DELAY  = 20  # seconds between background attempts
 
     def __init__(self):
-        self.driver = None
+        self.driver: Optional[Any] = None
 
     # ------------------------------------------------------------------
     # connect() — single attempt, raises immediately if unreachable.
@@ -35,6 +36,8 @@ class Neo4jConnection:
         """
         if self.driver is not None:
             return  # already connected
+
+        from neo4j import GraphDatabase
 
         driver = GraphDatabase.driver(
             settings.neo4j_uri,
@@ -134,11 +137,13 @@ class QdrantConnection:
     """Qdrant vector database connection manager."""
     
     def __init__(self):
-        self.client: Optional[QdrantClient] = None
+        self.client: Optional["QdrantClient"] = None
     
     def connect(self):
         """Establish connection to Qdrant."""
         if self.client is None:
+            from qdrant_client import QdrantClient
+
             self.client = QdrantClient(
                 host=settings.qdrant_host,
                 port=settings.qdrant_port
@@ -152,7 +157,7 @@ class QdrantConnection:
             self.client = None
             logger.info("Qdrant connection closed")
     
-    def get_client(self) -> QdrantClient:
+    def get_client(self) -> "QdrantClient":
         """Get Qdrant client instance."""
         self.connect()
         return self.client

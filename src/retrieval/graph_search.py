@@ -1,6 +1,14 @@
 """Knowledge graph traversal using Neo4j."""
 import logging
+import time
 from typing import List, Optional, Dict, Any
+
+try:
+    from astropy.coordinates import SkyCoord
+    import astropy.units as u
+except ImportError:
+    SkyCoord = None
+    u = None
 
 from src.database import neo4j_conn
 
@@ -93,15 +101,26 @@ class GraphSearch:
     
     # --- Relationship Creation ---
     
-    def link_star_to_paper(self, source_id: str, arxiv_id: str) -> None:
-        """Create MENTIONED_IN relationship between a star and a paper."""
+    def link_star_to_paper(self, source_id: str, arxiv_id: str) -> bool:
+        """Create a MENTIONED_IN relationship and report whether it was newly created."""
+        marker = time.time_ns()
         query = """
         MATCH (s:Star {source_id: $source_id})
         MATCH (p:Paper {arxiv_id: $arxiv_id})
-        MERGE (s)-[:MENTIONED_IN]->(p)
+        MERGE (s)-[r:MENTIONED_IN]->(p)
+        ON CREATE SET r.ingested_at = $ingested_at
+        RETURN r.ingested_at = $ingested_at AS created
         """
         with neo4j_conn.session() as session:
-            session.run(query, {"source_id": source_id, "arxiv_id": arxiv_id})
+            record = session.run(
+                query,
+                {
+                    "source_id": source_id,
+                    "arxiv_id": arxiv_id,
+                    "ingested_at": marker,
+                },
+            ).single()
+            return bool(record and record["created"])
     
     def link_star_to_cluster(self, source_id: str, cluster_name: str) -> None:
         """Create MEMBER_OF relationship between a star and a cluster."""
@@ -125,26 +144,104 @@ class GraphSearch:
     
     # --- Queries ---
     
-    def find_star_papers(self, source_id: str) -> List[Dict[str, Any]]:
+    def find_star_papers(
+        self,
+        source_id: str,
+        include_cluster_context: bool = False,
+        limit: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
         """
-        Find all papers that mention a star.
+        Find literature connected to a star.
         
         Args:
             source_id: Gaia source ID
+            include_cluster_context: Include papers linked via cluster membership
+            limit: Optional maximum number of returned papers
             
         Returns:
             List of paper records
         """
-        query = """
-        MATCH (s:Star {source_id: $source_id})-[:MENTIONED_IN]->(p:Paper)
-        RETURN p.arxiv_id AS arxiv_id, p.title AS title,
-               p.categories AS categories, p.published_date AS published_date
-        ORDER BY p.published_date DESC
-        """
-        
+        if include_cluster_context:
+            query = """
+            CALL {
+                MATCH (s:Star {source_id: $source_id})-[:MENTIONED_IN]->(p:Paper)
+                RETURN p.arxiv_id AS arxiv_id,
+                       p.title AS title,
+                       p.abstract AS abstract,
+                       p.categories AS categories,
+                       p.published_date AS published_date,
+                       "direct" AS link_type,
+                       null AS cluster_name
+                UNION
+                MATCH (s:Star {source_id: $source_id})-[:MEMBER_OF]->(c:Cluster)<-[:COVERS]-(p:Paper)
+                RETURN p.arxiv_id AS arxiv_id,
+                       p.title AS title,
+                       p.abstract AS abstract,
+                       p.categories AS categories,
+                       p.published_date AS published_date,
+                       "cluster_context" AS link_type,
+                       c.name AS cluster_name
+            }
+            RETURN arxiv_id, title, abstract, categories, published_date, link_type, cluster_name
+            """
+        else:
+            query = """
+            MATCH (s:Star {source_id: $source_id})-[:MENTIONED_IN]->(p:Paper)
+            RETURN p.arxiv_id AS arxiv_id,
+                   p.title AS title,
+                   p.abstract AS abstract,
+                   p.categories AS categories,
+                   p.published_date AS published_date,
+                   "direct" AS link_type,
+                   null AS cluster_name
+            """
+
         with neo4j_conn.session() as session:
             result = session.run(query, {"source_id": source_id})
-            return [dict(record) for record in result]
+            records = [dict(record) for record in result]
+
+        deduped: Dict[str, Dict[str, Any]] = {}
+        for record in records:
+            arxiv_id = record.get("arxiv_id")
+            if not arxiv_id:
+                continue
+            existing = deduped.get(arxiv_id)
+            if existing is None:
+                deduped[arxiv_id] = record
+                continue
+            if existing.get("link_type") != "direct" and record.get("link_type") == "direct":
+                deduped[arxiv_id] = record
+
+        ordered = sorted(
+            deduped.values(),
+            key=lambda record: ((record.get("published_date") or ""), record.get("arxiv_id") or ""),
+            reverse=True,
+        )
+        if limit is not None:
+            return ordered[:limit]
+        return ordered
+
+    def find_cluster_papers_for_star(
+        self,
+        source_id: str,
+        limit: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Find papers covering clusters that the given star belongs to."""
+        query = """
+        MATCH (s:Star {source_id: $source_id})-[:MEMBER_OF]->(c:Cluster)<-[:COVERS]-(p:Paper)
+        RETURN DISTINCT p.arxiv_id AS arxiv_id,
+               p.title AS title,
+               p.abstract AS abstract,
+               p.categories AS categories,
+               p.published_date AS published_date,
+               c.name AS cluster_name
+        ORDER BY p.published_date DESC, p.arxiv_id
+        """
+        with neo4j_conn.session() as session:
+            records = [dict(record) for record in session.run(query, {"source_id": source_id})]
+        if limit is not None:
+            return records[:limit]
+        return records
     
     def find_related_stars(
         self,
@@ -187,11 +284,11 @@ class GraphSearch:
     ) -> List[Dict[str, Any]]:
         """
         Find all stars that are members of a cluster.
-        
+
         Args:
             cluster_name: Name of the cluster
             limit: Maximum results
-            
+
         Returns:
             List of star records
         """
@@ -202,11 +299,73 @@ class GraphSearch:
         ORDER BY s.phot_g_mean_mag
         LIMIT $limit
         """
-        
+
         with neo4j_conn.session() as session:
             result = session.run(query, {"cluster_name": cluster_name, "limit": limit})
             return [dict(record) for record in result]
-    
+
+    def find_star_by_name(self, name: str) -> List[Dict[str, Any]]:
+        """
+        Find a star in the graph by common name or alias via SIMBAD/local resolution.
+
+        Resolution order:
+          1. Exact match on Star.name property
+          2. SIMBAD name → coordinate → cone search in local DB
+
+        Args:
+            name: Common name (e.g. "Sirius", "Betelgeuse")
+
+        Returns:
+            List of matching star records (usually 1)
+        """
+        with neo4j_conn.session() as session:
+            result = session.run(
+                "MATCH (s:Star) WHERE s.name = $name RETURN s.source_id AS source_id, "
+                "s.ra AS ra, s.dec AS dec, s.phot_g_mean_mag AS phot_g_mean_mag, s.name AS name",
+                {"name": name},
+            )
+            direct = [dict(r) for r in result]
+        if direct:
+            return direct
+
+        coords = self._resolve_name_to_coordinates(name)
+        if coords is None:
+            return []
+        stars = self._cone_search_near(coords["ra"], coords["dec"], radius_arcsec=10)
+        return [{"source_id": s["source_id"], "ra": s["ra"], "dec": s["dec"],
+                 "phot_g_mean_mag": s.get("phot_g_mean_mag"), "name": name,
+                 "resolution_method": "coordinate"} for s in stars]
+
+    def _resolve_name_to_coordinates(self, name: str) -> Optional[Dict[str, float]]:
+        """Resolve a common star name to RA/Dec using local map then SIMBAD."""
+        from src.utils.ner_extractor import NERExtractor
+        ner = NERExtractor()
+        coords = ner.resolve_local_coordinates(name)
+        if coords:
+            return coords
+        try:
+            from src.utils.simbad_validation import query_simbad_by_name
+            obj = query_simbad_by_name(name)
+            if not obj or not obj.get("ra") or not obj.get("dec"):
+                return None
+            if SkyCoord is None:
+                return None
+            ra_str = " ".join(str(obj["ra"]).split())
+            dec_str = " ".join(str(obj["dec"]).split())
+            coord = SkyCoord(ra_str, dec_str, unit=(u.hourangle, u.deg))
+            return {"ra": coord.ra.deg, "dec": coord.dec.deg}
+        except Exception:
+            return None
+
+    def _cone_search_near(
+        self, ra: float, dec: float, radius_arcsec: float = 10
+    ) -> List[Dict[str, Any]]:
+        """Query local PostgreSQL for stars near RA/Dec."""
+        from src.retrieval.spatial_search import SpatialSearch
+        spatial = SpatialSearch()
+        radius_deg = radius_arcsec / 3600.0
+        return spatial.cone_search(ra=ra, dec=dec, radius=radius_deg, limit=3)
+
     def find_papers_about_topic(
         self,
         keyword: str,

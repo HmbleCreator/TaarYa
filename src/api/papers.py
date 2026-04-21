@@ -19,9 +19,15 @@ async def semantic_search(
 
 
 @router.get("/by-star/{source_id}", response_model=PapersByStarResponse)
-async def papers_for_star(source_id: str):
+async def papers_for_star(
+    source_id: str,
+    include_cluster_context: bool = Query(
+        True,
+        description="Include papers linked through the star's cluster membership",
+    ),
+):
     """Find papers that mention a specific star (via knowledge graph)."""
-    papers = _svc.by_star(source_id)
+    papers = _svc.by_star(source_id, include_cluster_context=include_cluster_context)
     return PapersByStarResponse(source_id=source_id, count=len(papers), papers=papers)
 
 

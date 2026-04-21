@@ -275,6 +275,32 @@
 
       updateProcessSummary(thinkingId, streamState);
       setLiveMessage(thinkingId, `<strong>${escapeHtml(step.tool)}</strong> · ${escapeHtml(preview)}`);
+
+      // ── Sky Panel: auto-navigate on cone_search / navigate_sky ──
+      if (window.TaarYaAladin && window.TaarYaSkyPanel && step.params && typeof step.params === 'object') {
+        const toolName = step.tool;
+        if (toolName === 'cone_search' || toolName === 'scientific_cone_search') {
+          const ra = Number(step.params.ra);
+          const dec = Number(step.params.dec);
+          const rad = Number(step.params.radius_deg || step.params.radius || 0.5);
+          if (Number.isFinite(ra) && Number.isFinite(dec)) {
+            TaarYaSkyPanel.open();
+            TaarYaSkyPanel.pulse();
+            TaarYaAladin.goto(ra, dec, Math.max(rad * 3, 0.5));
+            TaarYaAladin.drawSearchCone(ra, dec, rad);
+          }
+        } else if (toolName === 'navigate_sky' || toolName === 'fits_preview_link') {
+          const ra = Number(step.params.ra);
+          const dec = Number(step.params.dec);
+          const fov = Number(step.params.fov || 1.0);
+          if (Number.isFinite(ra) && Number.isFinite(dec)) {
+            TaarYaSkyPanel.open();
+            TaarYaSkyPanel.pulse();
+            TaarYaAladin.goto(ra, dec, fov);
+          }
+        }
+      }
+
       scrollBottom();
       return;
     }
@@ -736,9 +762,29 @@
               addAnswerCard(answer, event.data.tool_outputs || [], streamState);
             }
 
+            // ── Sky Panel: overlay star markers from tool outputs ──
+            if (window.TaarYaAladin && window.TaarYaSkyPanel) {
+              const outputs = event.data.tool_outputs || [];
+              for (const to of outputs) {
+                if (Array.isArray(to.data) && to.data.length > 0 && to.data[0].ra != null) {
+                  TaarYaAladin.addMarkers(to.data);
+                  break;
+                }
+              }
+            }
+
             const lastMessage = chatHistory[chatHistory.length - 1];
             if (!lastMessage || lastMessage.role !== 'assistant' || lastMessage.content !== answer) {
               chatHistory.push({ role: 'assistant', content: answer });
+            }
+          }
+
+          // ── Sky command from agent ──
+          else if (event.type === 'sky_command') {
+            if (window.TaarYaAladin && window.TaarYaSkyPanel) {
+              TaarYaSkyPanel.open();
+              TaarYaSkyPanel.pulse();
+              TaarYaAladin.handleSkyCommand(event.data);
             }
           }
 

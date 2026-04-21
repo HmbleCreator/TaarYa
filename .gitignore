@@ -48,6 +48,27 @@ docker-compose.override.yml
 # Project documents and reports
 stitch_research_command_center/
 CorrectedReportContent.pdf
+
+# Distribution artifacts
+dist/
+build/
+*.egg-info/
+*.whl
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Generated eval output
+eval/ablation_results.json
+eval/ablation_table.tex
+eval/*_output/
+provenance_*.zip
+
+# Docker data volumes
+taarya-*/
 project ppt sample.ppt
 RAG_Astronomy_Review.pptx
 TaarYa_Major_Project_Report_ES452.docx

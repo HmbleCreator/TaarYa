@@ -6,64 +6,235 @@ import logging
 import re
 from typing import Any, Dict, List
 
-from qdrant_client import QdrantClient
-
 from src.config import settings
 from src.database import neo4j_conn, postgres_conn, qdrant_conn
 from src.retrieval.graph_search import GraphSearch
 from src.retrieval.spatial_search import SpatialSearch
 from src.retrieval.vector_search import VectorSearch
+from src.utils.ner_extractor import NERExtractor
+from src.utils.logger import setup_logging
 from src.models import Region
 from sqlalchemy import select, text
-from src.utils.logger import setup_logging
 
 setup_logging()
 logger = logging.getLogger(__name__)
 
+ALIASED_CLUSTERS = {
+    "hyades": ["hyades", "melotte 25", "collinder 50", "cr 50"],
+    "pleiades": ["pleiades", "melotte 45", "m45", "seven sisters", "ngc 1432"],
+    "orion ob1": ["orion ob1", "orion ob", "orion association", "orion moving group"],
+    "coma berenices": ["coma berenices", "coma ber", "melotte 111", "ngc 5024", "ngc 5053"],
+    "praesepe": ["praesepe", "m44", "ngc 2632", "beehive cluster", "melotte 121"],
+    "ngc 2516": ["ngc 2516", "ngc2516", "spotted cluster"],
+    "alpha per": ["alpha per", "alpha persei", "ngc 7092", "m34"],
+    "ic 2391": ["ic 2391", "ic2391", "omicron velorum cluster", "sharpless 308"],
+    "lmc": ["lmc", "large magellanic cloud", "nubecula major", "ngc 292"],
+    "smc": ["smc", "small magellanic cloud", "nubecula minor", "ngc 292"],
+    "omega centauri": ["omega centauri", "ngc 5139", "omega cen", "ω cen"],
+    "galactic center": ["galactic center", "sagittarius a*", "sgr a*", "galactic centre"],
+}
+
 BATCH_SIZE = 500
+
+# Canonical cluster definitions with J2000 coordinates and typical radii.
+# Coordinates from: Gaia Collaboration (2018), Kharchenko+ (2013), WEBDA, Simbad.
+# radii are conservative in degrees to capture field contamination without
+# including neighbouring clusters.
+KNOWN_CLUSTERS = [
+    # name, ra_deg, dec_deg, radius_deg, description
+    ("Hyades",           66.75,   15.87,  5.5,  "Nearest open cluster, ~45 pc, ~300 Myr"),
+    ("Pleiades",         56.75,   24.12,  2.0,  "M45, ~120 pc, ~125 Myr, classic YMG"),
+    ("Orion OB1",        83.82,   -5.39,  4.0,  "Orion OB1 association, ~400 pc, ~10 Myr"),
+    ("Coma Berenices",  185.00,   25.83,  4.0,  "Melotte 111, ~280 pc, ~400 Myr, nearest rich OC"),
+    ("Praesepe",        130.05,   19.52,  2.5,  "M44 / NGC 2632, ~180 pc, ~600 Myr, beehive"),
+    ("NGC 2516",        119.71,  -60.85,  0.5,  "Southern open cluster, ~400 pc, ~120 Myr"),
+    ("Alpha Persei",    51.08,    49.86,  2.0,  "NGC 7092 / M34, ~475 pc, ~200 Myr"),
+    ("IC 2391",         130.07,  -52.97,  0.3,  "Omicron Velorum cluster, ~180 pc, ~50 Myr"),
+]
 
 
 def extract_gaia_ids(text: str) -> List[str]:
-    """Extract Gaia Source IDs from text using regex.
-    
-    Gaia IDs are typically 19-digit integers.
+    """Extract Gaia Source IDs from text using multi-strategy matching.
+
+    Strategies (in priority order):
+      1. Explicit Gaia DR2/DR3 prefix: 'Gaia DR3 1234567890123456789'
+      2. 'Gaia source [id]' pattern
+      3. Bare 18-20 digit integers that appear near the word 'Gaia'
+
+    Strategy 3 uses a proximity heuristic (within 200 chars of 'Gaia')
+    to reduce false-positive matches on random long integers.
     """
     if not text:
         return []
-    # Match long integers that look like Gaia IDs (18-20 digits)
-    pattern = re.compile(r'\b\d{18,20}\b')
-    return list(set(pattern.findall(text)))
+
+    ids: List[str] = []
+    seen: set = set()
+
+    # Strategy 1 & 2: explicit Gaia prefix (handled by NER module)
+    explicit_pattern = re.compile(
+        r"\bGaia(?:\s+DR[23])?(?:\s+source(?:\s*id)?)?\s+(\d{18,20})\b",
+        re.IGNORECASE,
+    )
+    for match in explicit_pattern.finditer(text):
+        gid = match.group(1)
+        if gid not in seen:
+            ids.append(gid)
+            seen.add(gid)
+
+    # Strategy 3: bare long integers near the word 'Gaia'
+    bare_pattern = re.compile(r"\b(\d{18,20})\b")
+    gaia_mentions = [m.start() for m in re.finditer(r"\bGaia\b", text, re.IGNORECASE)]
+    for match in bare_pattern.finditer(text):
+        gid = match.group(1)
+        if gid in seen:
+            continue
+        # Only accept if within 200 chars of a 'Gaia' mention
+        pos = match.start()
+        if any(abs(pos - gm) < 200 for gm in gaia_mentions):
+            ids.append(gid)
+            seen.add(gid)
+
+    return ids
+
+
+def extract_catalog_identifiers(text: str) -> List[str]:
+    """Extract non-Gaia catalog identifiers (HD, HIP, TYC, 2MASS, etc.).
+
+    These can be resolved to Gaia source IDs via SIMBAD or local coordinate maps.
+    """
+    if not text:
+        return []
+
+    identifiers: List[str] = []
+    seen: set = set()
+
+    patterns = [
+        re.compile(r"\b(HD\s*\d{1,6})\b", re.IGNORECASE),
+        re.compile(r"\b(HIP\s*\d{1,6})\b", re.IGNORECASE),
+        re.compile(r"\b(TYC\s*\d{4}-\d{1,5}-\d)\b", re.IGNORECASE),
+        re.compile(r"\b(2MASS\s+J\d{6,8}[+-]\d{6,8})\b", re.IGNORECASE),
+        re.compile(r"\b(HR\s*\d{1,5})\b", re.IGNORECASE),
+        re.compile(r"\b(TIC\s*\d{1,10})\b", re.IGNORECASE),
+        re.compile(r"\b(GJ\s*\d{1,4}[A-Z]?)\b", re.IGNORECASE),
+        re.compile(r"\b(LHS\s*\d{1,5})\b", re.IGNORECASE),
+    ]
+
+    for pattern in patterns:
+        for match in pattern.finditer(text):
+            ident = match.group(1).strip()
+            key = ident.upper().replace(" ", "")
+            if key not in seen:
+                identifiers.append(ident)
+                seen.add(key)
+
+    return identifiers
 
 
 def link_stars_to_papers_semantic(graph: GraphSearch) -> int:
     """
-    Analyze paper abstracts for Gaia Source IDs and create MENTIONED_IN links.
-    
-    This is a higher-fidelity linking method than string matching.
+    Analyze paper abstracts for Gaia Source IDs and catalog identifiers,
+    then create MENTIONED_IN links in the graph.
+
+    Multi-strategy approach:
+      1. Direct Gaia ID extraction (high precision)
+      2. Catalog identifier extraction (HD/HIP/TYC/2MASS) with NER resolution
     """
     with neo4j_conn.session() as session:
-        # Get all papers and their abstracts
+        papers = session.run(
+            "MATCH (p:Paper) RETURN p.arxiv_id as id, p.abstract as abstract, p.title as title"
+        )
+        records = list(papers)
+
+    logger.info(f"Linking {len(records)} papers to stars (multi-strategy)...")
+
+    links_created = 0
+    gaia_direct = 0
+    catalog_resolved = 0
+
+    for record in records:
+        arxiv_id = record["id"]
+        content = f"{record['title']} {record['abstract']}"
+
+        # Strategy 1: Direct Gaia IDs
+        source_ids = extract_gaia_ids(content)
+        for sid in source_ids:
+            if graph.link_star_to_paper(sid, arxiv_id):
+                links_created += 1
+                gaia_direct += 1
+
+        # Strategy 2: Catalog identifiers → NER resolution
+        cat_ids = extract_catalog_identifiers(content)
+        if cat_ids:
+            try:
+                ner = NERExtractor()
+                resolved = ner.resolve_to_source_ids(cat_ids[:5])  # Limit per paper
+                for sid in resolved:
+                    if graph.link_star_to_paper(sid, arxiv_id):
+                        links_created += 1
+                        catalog_resolved += 1
+            except Exception as e:
+                logger.debug(f"NER resolution failed for {arxiv_id}: {e}")
+
+    logger.info(
+        f"Star-paper linking complete: {links_created} total links "
+        f"(Gaia direct: {gaia_direct}, catalog resolved: {catalog_resolved})"
+    )
+    return links_created
+
+
+def link_stars_to_papers_ner(graph: GraphSearch) -> int:
+    """
+    Use deterministic extraction plus optional SIMBAD resolution.
+
+    This makes the paper-linking pass reproducible and removes the missing
+    agent dependency from graph ingestion.
+    """
+    ner = NERExtractor()
+    links_created = 0
+    
+    with neo4j_conn.session() as session:
+        # Get all papers
         papers = session.run("MATCH (p:Paper) RETURN p.arxiv_id as id, p.abstract as abstract, p.title as title")
         
-        links_created = 0
-        for record in papers:
+        # Convert to list to avoid session issues during external name resolution
+        records = list(papers)
+        
+        logger.info(f"Starting NER linking for {len(records)} papers...")
+        
+        for record in records:
             arxiv_id = record["id"]
             content = f"{record['title']} {record['abstract']}"
             
-            source_ids = extract_gaia_ids(content)
+            source_ids = ner.process_text(content)
+            
             for sid in source_ids:
-                # Verify if this star exists in our database before linking in graph
-                # (Optional: we could create the star node even if not in Postgres)
-                graph.link_star_to_paper(sid, arxiv_id)
-                links_created += 1
-                logger.info(f"Semantically linked star {sid} to paper {arxiv_id}")
+                if graph.link_star_to_paper(sid, arxiv_id):
+                    links_created += 1
+                    logger.info(f"NER linked star {sid} to paper {arxiv_id}")
                 
-        return links_created
+    return links_created
 
 
 def seed_clusters(graph: GraphSearch) -> int:
-    """Read from regions table and create Cluster nodes."""
+    """Upsert all KNOWN_CLUSTERS into PostgreSQL regions table, then create Neo4j Cluster nodes."""
     postgres_conn.connect()
+
+    # Step 1: upsert canonical clusters into PostgreSQL
+    for name, ra, dec, radius, _desc in KNOWN_CLUSTERS:
+        stmt = text("""
+            INSERT INTO regions (name, ra, dec, radius_deg, star_count, ingested_at)
+            VALUES (:name, :ra, :dec, :radius, 0, NOW())
+            ON CONFLICT (name) DO UPDATE SET
+                ra = EXCLUDED.ra,
+                dec = EXCLUDED.dec,
+                radius_deg = EXCLUDED.radius_deg
+        """)
+        with postgres_conn.session() as session:
+            session.execute(stmt, {"name": name, "ra": ra, "dec": dec, "radius": radius})
+            session.commit()
+        logger.info(f"Upserted region: {name} (RA={ra}, Dec={dec}, r={radius}°)")
+
+    # Step 2: seed all regions (original table + KNOWN_CLUSTERS) into Neo4j
     with postgres_conn.session() as session:
         regions = session.execute(select(Region)).scalars().all()
 
@@ -193,21 +364,11 @@ def link_papers_to_clusters(graph: GraphSearch) -> int:
     cluster_names = [r.name.lower() for r in regions]
 
     # Also add common aliases
-    aliases = {
-        "hyades": ["hyades", "melotte 25", "collinder 50"],
-        "pleiades": ["pleiades", "melotte 45", "m45", "seven sisters"],
-        "orion ob1": ["orion ob1", "orion ob", "orion association"],
-        "lmc (large magellanic cloud)": ["lmc", "large magellanic cloud", "nubecula major"],
-        "smc (small magellanic cloud)": ["smc", "small magellanic cloud", "nubecula minor"],
-        "omega centauri": ["omega centauri", "ngc 5139", "ω cen"],
-        "galactic center": ["galactic center", "sagittarius a*", "sgr a*"],
-    }
-
     links = 0
 
     for region in regions:
         name_lower = region.name.lower()
-        search_terms = [name_lower] + aliases.get(name_lower, [])
+        search_terms = [name_lower] + ALIASED_CLUSTERS.get(name_lower, [])
 
         # Find papers that mention this cluster
         query = """
@@ -301,9 +462,13 @@ def ingest_graph():
     logger.info("=== Step 5b: Linking papers to clusters (Semantic Match) ===")
     link_papers_to_clusters_semantic(graph, vector)
 
-    # Step 6: Link stars to papers semantically (NEW)
-    logger.info("=== Step 6: Linking stars to papers semantically ===")
+    # Step 6: Link stars to papers semantically
+    logger.info("=== Step 6: Linking stars to papers semantically (Regex) ===")
     link_stars_to_papers_semantic(graph)
+
+    # Step 7: Link stars to papers via NER (NEW)
+    logger.info("=== Step 7: Linking stars to papers via NER ===")
+    link_stars_to_papers_ner(graph)
 
     logger.info("Graph ingestion complete!")
 

@@ -1,0 +1,48 @@
+# TaarYa GPU Dockerfile — for MESA stellar evolution workloads.
+# Build: docker build -f Dockerfile.gpu -t taarya-gpu .
+# Run with NVIDIA GPU: docker run --gpus all taarya-gpu
+FROM nvidia/cuda:12.2-runtime-ubuntu22.04
+
+LABEL maintainer="Amit Kumar <amit.kumar@inst.edu.in>"
+LABEL description="TaarYa with CUDA support for MESA stellar evolution workloads"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3.12 \
+        python3.12-dev \
+        python3-pip \
+        git \
+        wget \
+        curl \
+        libgomp1 \
+        libfreetype6 \
+        libopenblas-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.12 /usr/bin/python
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+WORKDIR /app
+
+# Pre-install astronomy stack with GPU support
+RUN uv pip install --system --no-cache \
+        "numpy>=1.26.3" \
+        "scipy>=1.11.0" \
+        "matplotlib>=3.8.0" \
+        "astropy>=6.0.0"
+
+# Install TaarYa
+COPY pyproject.toml ./
+RUN uv pip install --system --no-cache --editable ".[all]"
+
+# Copy MESA web interface
+COPY src/extensions/ /app/src/extensions/
+COPY static/ /app/static/
+
+EXPOSE 8000
+
+CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

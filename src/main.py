@@ -1,6 +1,5 @@
 """FastAPI application entry point."""
 
-import sys
 import os
 
 os.environ["PYTHONIOENCODING"] = "utf-8"
@@ -9,12 +8,11 @@ import asyncio
 import logging
 from pathlib import Path
 from contextlib import asynccontextmanager
-from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import text
 
 from src.config import settings
@@ -37,8 +35,65 @@ def _ensure_star_schema() -> None:
     try:
         with postgres_conn.engine.begin() as conn:
             conn.execute(text("ALTER TABLE stars ADD COLUMN IF NOT EXISTS object_class VARCHAR(40)"))
+            conn.execute(text("ALTER TABLE stars ADD COLUMN IF NOT EXISTS is_transient INTEGER DEFAULT 0"))
+            conn.execute(text("ALTER TABLE stars ADD COLUMN IF NOT EXISTS alert_name VARCHAR(100)"))
     except Exception as exc:
         logger.warning(f"Star schema migration skipped or already applied: {exc}")
+
+
+def _probe_postgres() -> dict:
+    """Return a lightweight PostgreSQL readiness probe result."""
+    try:
+        postgres_conn.connect()
+        with postgres_conn.session() as session:
+            session.execute(text("SELECT 1"))
+        return {"status": "connected"}
+    except Exception as exc:
+        return {"status": "error", "error": str(exc)}
+
+
+def _probe_qdrant() -> dict:
+    """Return a lightweight Qdrant readiness probe result."""
+    try:
+        client = qdrant_conn.get_client()
+        collections = client.get_collections()
+        return {
+            "status": "connected",
+            "collections": len(getattr(collections, "collections", [])),
+        }
+    except Exception as exc:
+        return {"status": "error", "error": str(exc)}
+
+
+def _probe_neo4j() -> dict:
+    """Return a lightweight Neo4j readiness probe result."""
+    try:
+        if neo4j_conn.driver is None:
+            return {
+                "status": "starting",
+                "error": "Neo4j driver not initialized yet",
+            }
+        neo4j_conn.driver.verify_connectivity()
+        with neo4j_conn.session() as session:
+            session.run("RETURN 1 AS ok").single()
+        return {"status": "connected"}
+    except Exception as exc:
+        return {"status": "error", "error": str(exc)}
+
+
+def _readiness_payload() -> dict:
+    """Collect launch-readiness state across required backends."""
+    backends = {
+        "postgresql": _probe_postgres(),
+        "qdrant": _probe_qdrant(),
+        "neo4j": _probe_neo4j(),
+    }
+    ready = all(info.get("status") == "connected" for info in backends.values())
+    return {
+        "status": "ready" if ready else "degraded",
+        "ready": ready,
+        "backends": backends,
+    }
 
 
 
@@ -118,6 +173,16 @@ async def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/ready")
+async def readiness_check():
+    """Launch-readiness endpoint that validates all core backends."""
+    payload = _readiness_payload()
+    return JSONResponse(
+        status_code=200 if payload["ready"] else 503,
+        content=payload,
+    )
+
+
 # Register API routers
 from src.api.stars import router as stars_router
 from src.api.papers import router as papers_router
@@ -138,8 +203,8 @@ app.include_router(ingestion_router, prefix="/api")
 app.include_router(scientific_router, prefix="/api")
 
 
-
-if __name__ == "__main__":
+def main() -> None:
+    """Run the FastAPI development server."""
     import uvicorn
 
     uvicorn.run(
@@ -148,3 +213,8 @@ if __name__ == "__main__":
         port=8000,
         reload=settings.environment == "development",
     )
+
+
+
+if __name__ == "__main__":
+    main()

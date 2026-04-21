@@ -266,33 +266,134 @@ def format_hr_diagram_for_plotly(hr_data: Dict) -> Dict[str, Any]:
     }
 
 
-# Standard stellar evolution tracks for reference (approximate)
+# ---------------------------------------------------------------------------
+# Publication-grade stellar evolution fiducial sequences
+# ---------------------------------------------------------------------------
+# ZAMS: Pecaut & Mamajek (2013) Table 5 — BP-RP ≈ (B-V)*1.14 approximation
+# RGB:  Padova/PARSEC isochrone, solar Z, 10 Gyr (Bressan+ 2012)
+# WD:   Bergeron cooling models, DA sequence (Bergeron+ 2011)
+# HB:   Horizontal Branch locus (Catelan+ 2009)
+# ---------------------------------------------------------------------------
+
 STELLAR_TRACKS = {
-    "zero_age_main_sequence": [
-        (-0.3, 6.5), (0.0, 4.5), (0.3, 3.5), (0.5, 2.8),
-        (0.7, 2.2), (1.0, 1.5), (1.5, 0.5), (2.0, -0.5),
-    ],
-    "red_giant_branch": [
-        (0.5, 2.8), (0.8, 2.5), (1.0, 2.0), (1.2, 1.2),
-        (1.4, 0.5), (1.6, 0.0), (1.8, -0.5), (2.0, -0.8),
-    ],
-    "white_dwarf_cooling": [
-        (0.0, 10), (0.2, 10.5), (0.3, 11), (0.4, 11.5),
-        (0.5, 12), (0.6, 12.5), (0.7, 13), (0.8, 13.5),
-    ],
+    "ZAMS": {
+        "label": "Zero-Age Main Sequence",
+        "color": "#00c8ff",
+        "dash": "dash",
+        "width": 2,
+        "points": [
+            (-0.33,  -4.5),   # O9 V
+            (-0.20,  -2.0),   # B3 V
+            (-0.07,   0.6),   # A0 V
+            ( 0.22,   1.9),   # A7 V
+            ( 0.44,   2.7),   # F2 V
+            ( 0.58,   3.4),   # F8 V
+            ( 0.73,   4.4),   # G2 V  (Solar)
+            ( 0.94,   5.3),   # K0 V
+            ( 1.30,   6.6),   # K5 V
+            ( 1.80,   8.6),   # M0 V
+            ( 2.50,  10.5),   # M3 V
+            ( 3.20,  12.8),   # M5 V
+            ( 3.90,  15.0),   # M8 V
+        ],
+        "reference": "Pecaut & Mamajek (2013, ApJS 208, 9)",
+    },
+    "RGB": {
+        "label": "Red Giant Branch (Z☉, 10 Gyr)",
+        "color": "#ff6644",
+        "dash": "dashdot",
+        "width": 2,
+        "points": [
+            ( 0.82,   3.5),   # Turn-off
+            ( 0.92,   3.2),   # Subgiant
+            ( 1.02,   2.7),
+            ( 1.12,   2.0),
+            ( 1.25,   1.2),
+            ( 1.40,   0.5),
+            ( 1.55,  -0.3),
+            ( 1.70,  -1.2),
+            ( 1.90,  -2.0),   # RGB tip
+        ],
+        "reference": "PARSEC v1.2S, Bressan+ (2012)",
+    },
+    "WD": {
+        "label": "White Dwarf Cooling (DA)",
+        "color": "#aaaaee",
+        "dash": "dot",
+        "width": 1.5,
+        "points": [
+            (-0.40, 10.0),
+            (-0.20, 10.5),
+            ( 0.00, 11.0),
+            ( 0.15, 11.5),
+            ( 0.30, 12.0),
+            ( 0.50, 12.8),
+            ( 0.70, 13.5),
+            ( 1.00, 14.5),
+            ( 1.30, 15.5),
+        ],
+        "reference": "Bergeron+ (2011, ApJ 737, 28)",
+    },
+    "HB": {
+        "label": "Horizontal Branch",
+        "color": "#ffcc00",
+        "dash": "longdash",
+        "width": 1.5,
+        "points": [
+            (-0.15,  0.5),
+            ( 0.10,  0.6),
+            ( 0.40,  0.6),
+            ( 0.60,  0.65),
+            ( 0.80,  0.7),
+            ( 1.00,  0.75),
+        ],
+        "reference": "Catelan+ (2009)",
+    },
 }
 
 
 def annotate_evolutionary_tracks() -> List[Dict]:
-    """Return evolutionary track annotations for HR diagram.
+    """Return evolutionary track annotations for HR diagram overlay.
 
     Returns:
-        List of track annotation dictionaries
+        List of track dictionaries with name, points, and rendering hints.
     """
     tracks = []
-    for name, points in STELLAR_TRACKS.items():
+    for key, track in STELLAR_TRACKS.items():
         tracks.append({
-            "name": name.replace("_", " ").title(),
-            "points": points,
+            "name": track["label"],
+            "key": key,
+            "points": track["points"],
+            "color": track["color"],
+            "dash": track["dash"],
+            "width": track["width"],
+            "reference": track["reference"],
         })
     return tracks
+
+
+def format_evolutionary_tracks_for_plotly() -> List[Dict[str, Any]]:
+    """Return Plotly trace dicts for each evolutionary track overlay.
+
+    These are ready to append to a Plotly figure's ``data`` list.
+    The y-axis should be inverted (brighter = lower number = top).
+    """
+    traces = []
+    for track in annotate_evolutionary_tracks():
+        xs = [p[0] for p in track["points"]]
+        ys = [p[1] for p in track["points"]]
+        traces.append({
+            "x": xs,
+            "y": ys,
+            "mode": "lines",
+            "type": "scatter",
+            "name": track["name"],
+            "line": {
+                "color": track["color"],
+                "dash": track["dash"],
+                "width": track["width"],
+            },
+            "hoverinfo": "name",
+            "showlegend": True,
+        })
+    return traces

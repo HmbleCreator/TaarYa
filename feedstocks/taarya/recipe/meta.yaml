@@ -1,0 +1,90 @@
+{% set name = "taarya" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  path: ../..
+  # git_url: https://github.com/HmbleCreator/TaarYa.git
+  # git_tag: {{ version }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  entry_points:
+    - taarya-server = src.main:main
+    - taarya-ingest = src.ingestion.catalog_ingestor:main
+    - taarya-readiness = src.launch_readiness:main
+    - taarya-ablation = eval.ablation_formal:main
+    - taarya-corpus = src.ingestion.arxiv_ingest:main
+  noarch: python
+
+requirements:
+  host:
+    - python >=3.10
+    - pip
+    - setuptools >=61.0
+  run:
+    - python >=3.10
+    - fastapi >=0.109.0
+    - uvicorn[standard] >=0.27.0
+    - pydantic >=2.10.0
+    - pydantic-settings >=2.1.0
+    - sentence-transformers >=2.3.1
+    - qdrant-client >=1.12.0
+    - neo4j >=5.16.0
+    - psycopg2 >=2.9.9
+    - sqlalchemy >=2.0.25
+    - astropy >=6.0.0
+    - astroquery >=0.4.7
+    - arxiv >=2.1.0
+    - pandas >=2.2.0
+    - numpy >=1.26.3
+    - pypdf >=4.0.1
+    - pymupdf >=1.23.21
+    - python-dotenv >=1.0.1
+    - httpx >=0.26.0
+    - tenacity >=8.2.3
+
+test:
+  imports:
+    - src
+    - src.retrieval
+  commands:
+    - taarya-readiness --help
+  requires:
+    - pytest
+
+about:
+  home: https://github.com/HmbleCreator/TaarYa
+  license: MIT
+  license_file: LICENSE
+  summary: >
+    Hybrid Retrieval Extension for Cross-Catalog Astronomical Discovery Support.
+    Combines spatial (Q3C/PostgreSQL), semantic (Qdrant), and graph (Neo4j)
+    retrieval for astronomical research.
+  description: |
+    TaarYa is a hybrid astronomy discovery platform that integrates Gaia DR3,
+    SIMBAD, and scientific literature (ArXiv) into a unified discovery interface.
+    It provides:
+
+    - Q3C cone search on Gaia DR3 stellar catalogs
+    - Vector search over 6,000+ astronomy papers
+    - Graph traversal for paper-star-cluster knowledge linking
+    - Discovery ranking with uncertainty-aware scoring
+    - VOTable/CSV/JSON scientific exports
+    - MESA stellar evolution export
+    - DS9 and Aladin integration
+
+  long_description: |
+    Unlike traditional search interfaces that require expert SQL or ADQL
+    knowledge, TaarYa acts as an autonomous research co-pilot. It understands
+    natural language inquiries, executes spatial queries, traverses knowledge
+    graphs, and synthesizes grounded, citable answers backed by the primary
+    literature.
+
+  dev_url: https://github.com/HmbleCreator/TaarYa
+  doc_url: https://github.com/HmbleCreator/TaarYa#readme
+  doc_source_url: https://github.com/HmbleCreator/TaarYa/blob/main/README.md

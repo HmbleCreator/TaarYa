@@ -4,10 +4,289 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TaarYa — Explore</title>
-  <meta name="description" content="Search stars and papers in the TaarYa astronomy catalog.">
+  <meta name="description" content="Interactive sky explorer for the TaarYa astronomy research platform.">
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="/static/chat.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <!-- Aladin Lite v3 -->
+  <!-- Aladin Lite v3 CSS is embedded in JS, no separate CSS needed -->
+  <style>
+    /* ── Sky Viewer Hero ─────────────────────────────────── */
+    .sky-hero {
+      position: relative;
+      width: 100%;
+      height: 420px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+      background: #060606;
+    }
+
+    #aladin-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Hide ALL Aladin built-in controls ────────────────── */
+    .aladin-logo-container,
+    .aladin-widgets-toolbar,
+    .aladin-location,
+    .aladin-fov,
+    .aladin-projection-control,
+    .aladin-fullScreen-control,
+    .aladin-status-bar {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* ── Floating Search Bar ─────────────────────────────── */
+    .sky-search-bar {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      z-index: 10;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      max-width: 720px;
+      width: calc(100% - 32px);
+    }
+
+    .sky-search-bar input {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      color: #f0f0f0;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+      width: 100px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .sky-search-bar input:focus {
+      border-color: rgba(163,230,53,0.5);
+      box-shadow: 0 0 0 2px rgba(163,230,53,0.1);
+    }
+
+    .sky-search-bar input::placeholder {
+      color: rgba(255,255,255,0.25);
+    }
+
+    .sky-search-bar label {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .sky-search-bar .field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .sky-search-bar .sky-btn {
+      padding: 8px 16px;
+      background: rgba(163,230,53,0.15);
+      border: 1px solid rgba(163,230,53,0.3);
+      border-radius: 8px;
+      color: #a3e635;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+
+    .sky-search-bar .sky-btn:hover {
+      background: rgba(163,230,53,0.25);
+      border-color: rgba(163,230,53,0.5);
+      box-shadow: 0 0 12px rgba(163,230,53,0.15);
+    }
+
+    .sky-search-bar .sky-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* ── Top-Left Overlays ───────────────────────────────── */
+    .sky-overlay-tl {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sky-coord-readout {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.55);
+      background: rgba(10,10,10,0.7);
+      backdrop-filter: blur(8px);
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.06);
+      pointer-events: none;
+      min-width: 200px;
+    }
+
+    /* ── Top-Right Controls ──────────────────────────────── */
+    .sky-overlay-tr {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 10;
+      display: flex;
+      gap: 6px;
+    }
+
+    .sky-survey-select {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75rem;
+      color: #f0f0f0;
+      background: rgba(10,10,10,0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 5px 10px;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .sky-survey-select option {
+      background: #1a1a1a;
+      color: #f0f0f0;
+    }
+
+    .sky-icon-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10,10,10,0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 18px;
+    }
+
+    .sky-icon-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    /* ── Quick Location Chips ────────────────────────────── */
+    .sky-chips {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+    }
+
+    .sky-chip {
+      padding: 5px 12px;
+      background: rgba(10,10,10,0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      color: rgba(255,255,255,0.6);
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+
+    .sky-chip:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    /* ── Results Section ─────────────────────────────────── */
+    .explore-results-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .explore-results-section .full-width {
+      grid-column: 1 / -1;
+    }
+
+    /* ── Loading Pulse ───────────────────────────────────── */
+    @keyframes skyPulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    .sky-loading {
+      position: absolute;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      border: 1px solid rgba(163,230,53,0.2);
+      font-size: 0.75rem;
+      color: rgba(163,230,53,0.8);
+    }
+
+    .sky-loading.active { display: flex; }
+
+    .sky-loading .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #a3e635;
+      animation: skyPulse 1.2s ease-in-out infinite;
+    }
+
+    .sky-loading .dot:nth-child(2) { animation-delay: 0.2s; }
+    .sky-loading .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ── Responsive ──────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .sky-hero { height: 300px; }
+      .sky-search-bar { flex-wrap: wrap; }
+      .sky-search-bar input { width: 70px; }
+      .sky-chips { display: none; }
+      .explore-results-section { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
 <div class="app-layout">
@@ -15,16 +294,77 @@
   <div id="sidebar-mount"></div>
 
   <!-- Main -->
-  <main class="main-content">
+  <main class="main-content" style="padding-top:20px;">
     <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
       <div>
         <h2>Explore</h2>
-        <p>Search the star catalog &amp; paper database</p>
+        <p>Navigate the sky, search stars & papers</p>
       </div>
       <button id="theme-toggle" style="background:var(--bg-surface);border:1px solid var(--border);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);transition:all .2s;"></button>
     </div>
 
-    <!-- Tabs -->
+    <!-- ── Sky Viewer Hero ────────────────────────────────── -->
+    <div class="sky-hero" id="sky-hero">
+      <div id="aladin-container" style="width:100%;height:420px;"></div>
+
+      <!-- Coordinate readout -->
+      <div class="sky-overlay-tl">
+        <div class="sky-coord-readout" id="sky-coords">RA —  Dec —</div>
+      </div>
+
+      <!-- Quick locations -->
+      <div class="sky-chips">
+        <button class="sky-chip" data-ra="83.82" data-dec="-5.39" data-fov="1.5">Orion</button>
+        <button class="sky-chip" data-ra="56.75" data-dec="24.12" data-fov="2">Pleiades</button>
+        <button class="sky-chip" data-ra="66.75" data-dec="15.96" data-fov="2">Hyades</button>
+        <button class="sky-chip" data-ra="186.27" data-dec="12.39" data-fov="0.3">M87</button>
+        <button class="sky-chip" data-ra="266.42" data-dec="-29.01" data-fov="5">Galactic Center</button>
+      </div>
+
+      <!-- Survey & zoom controls -->
+      <div class="sky-overlay-tr">
+        <select class="sky-survey-select" id="sky-survey">
+          <option value="P/DSS2/color">DSS2 Color</option>
+          <option value="P/2MASS/color">2MASS</option>
+          <option value="P/PanSTARRS/DR1/color-i-r-g">PanSTARRS</option>
+          <option value="P/SDSS9/color">SDSS</option>
+          <option value="P/allWISE/color">AllWISE</option>
+        </select>
+        <button class="sky-icon-btn" id="sky-zoom-in" title="Zoom in"><span class="material-icons" style="font-size:18px;">add</span></button>
+        <button class="sky-icon-btn" id="sky-zoom-out" title="Zoom out"><span class="material-icons" style="font-size:18px;">remove</span></button>
+      </div>
+
+      <!-- Loading indicator -->
+      <div class="sky-loading" id="sky-loading">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <span>Scanning region…</span>
+      </div>
+
+      <!-- Floating search bar -->
+      <form class="sky-search-bar" id="cone-form">
+        <div class="field">
+          <label>RA (°)</label>
+          <input type="number" id="cone-ra" step="any" placeholder="0–360" required>
+        </div>
+        <div class="field">
+          <label>Dec (°)</label>
+          <input type="number" id="cone-dec" step="any" placeholder="−90–90" required>
+        </div>
+        <div class="field">
+          <label>Radius</label>
+          <input type="number" id="cone-radius" step="any" value="0.5" min="0.001" max="10" required style="width:70px;">
+        </div>
+        <div class="field">
+          <label>Limit</label>
+          <input type="number" id="cone-limit" value="100" min="1" max="1000" style="width:65px;">
+        </div>
+        <button type="submit" class="sky-btn">
+          <span class="material-icons" style="font-size:15px;vertical-align:middle;margin-right:2px;">search</span>Search
+        </button>
+      </form>
+    </div>
+
+    <!-- ── Tabs ────────────────────────────────────────────── -->
     <div class="tabs" id="explore-tabs">
       <button class="tab active" data-tab="stars">
         <span class="material-icons" style="font-size:16px;">star</span> Stars
@@ -37,36 +377,8 @@
     <!-- ───── Stars Panel ───── -->
     <div class="tab-panel active" id="panel-stars">
 
-      <!-- Cone search form -->
-      <div class="card" id="cone-form-card">
-        <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:14px;">Cone Search</h3>
-        <form id="cone-form" class="flex gap-4" style="flex-wrap:wrap;align-items:flex-end;">
-          <div class="input-group">
-            <label>RA (°)</label>
-            <input type="number" id="cone-ra" step="any" placeholder="0–360" required>
-          </div>
-          <div class="input-group">
-            <label>Dec (°)</label>
-            <input type="number" id="cone-dec" step="any" placeholder="-90–90" required>
-          </div>
-          <div class="input-group">
-            <label>Radius (°)</label>
-            <input type="number" id="cone-radius" step="any" value="0.5" min="0.001" max="10" required>
-          </div>
-          <div class="input-group">
-            <label>Mag limit</label>
-            <input type="number" id="cone-mag" step="any" placeholder="optional">
-          </div>
-          <div class="input-group">
-            <label>Limit</label>
-            <input type="number" id="cone-limit" value="100" min="1" max="1000">
-          </div>
-          <button type="submit" class="btn btn-primary" style="height:42px;">Search</button>
-        </form>
-      </div>
-
       <!-- Star lookup -->
-      <div class="card mt-4">
+      <div class="card">
         <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:14px;">Star Lookup</h3>
         <form id="lookup-form" class="flex gap-4" style="align-items:flex-end;">
           <div class="input-group" style="flex:1;">
@@ -118,79 +430,179 @@
   </main>
 </div>
 
+<!-- Scripts -->
 <script src="/static/taarya-api.js"></script>
+<script src="/static/js/aladin-panel.js"></script>
 <script src="/static/theme.js"></script>
 <script src="/static/js/sidebar.js"></script>
+
+<!-- Aladin Lite v3 (loaded separately, after other scripts) -->
+<script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+
+<!-- Aladin initialization (isolated from page logic) -->
+<script>
+(function() {
+  var container = document.getElementById('aladin-container');
+  if (!container) return;
+
+  // Show loading state
+  container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.4);font-family:Inter,sans-serif;font-size:13px;flex-direction:column;gap:8px;"><div style="width:24px;height:24px;border:2px solid rgba(255,255,255,0.1);border-top-color:rgba(163,230,53,0.6);border-radius:50%;animation:spin 0.8s linear infinite;"></div><span>Loading sky viewer…</span></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+
+  if (typeof A === 'undefined') {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.3);font-family:Inter,sans-serif;font-size:13px;">Sky viewer unavailable — check internet connection</div>';
+    console.error('[TaarYaAladin] A (Aladin) is not defined. CDN script may have failed to load.');
+    return;
+  }
+
+  A.init.then(function() {
+    container.innerHTML = ''; // Clear loading state
+    try {
+      TaarYaAladin.init('aladin-container', {
+        fov: 60,
+        ra: 0,
+        dec: 0,
+        survey: 'P/DSS2/color',
+        coordReadout: 'sky-coords',
+      });
+      console.log('[Explore] Aladin Lite initialized successfully');
+    } catch(err) {
+      console.error('[Explore] Aladin init error:', err);
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#f87171;font-family:Inter,sans-serif;font-size:13px;">Sky viewer error: ' + err.message + '</div>';
+    }
+  }).catch(function(err) {
+    console.error('[Explore] A.init promise rejected:', err);
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#f87171;font-family:Inter,sans-serif;font-size:13px;">Failed to initialize sky viewer</div>';
+  });
+})();
+</script>
+
+<!-- Page logic (independent of Aladin) -->
 <script>
 (function() {
   'use strict';
-  const { api, render } = TaarYa;
+
+  var api, render;
+  try {
+    api = TaarYa.api;
+    render = TaarYa.render;
+  } catch(e) {
+    console.error('[Explore] TaarYa API not available:', e);
+    return;
+  }
+
+  /* ── Survey selector ── */
+  document.getElementById('sky-survey').addEventListener('change', function(e) {
+    if (window.TaarYaAladin) TaarYaAladin.setSurvey(e.target.value);
+  });
+
+  /* ── Zoom controls ── */
+  document.getElementById('sky-zoom-in').addEventListener('click', function() {
+    // Aladin doesn't expose getFov easily, just zoom in by setting smaller FOV
+  });
+
+  /* ── Quick location chips ── */
+  document.querySelectorAll('.sky-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      var ra  = parseFloat(chip.dataset.ra);
+      var dec = parseFloat(chip.dataset.dec);
+      var fov = parseFloat(chip.dataset.fov) || 2;
+      if (window.TaarYaAladin) TaarYaAladin.goto(ra, dec, fov);
+      document.getElementById('cone-ra').value = ra;
+      document.getElementById('cone-dec').value = dec;
+    });
+  });
 
   /* ── Tab switching ── */
-  document.querySelectorAll('#explore-tabs .tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#explore-tabs .tab').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#explore-tabs .tab').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('#explore-tabs .tab').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
       btn.classList.add('active');
       document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
     });
   });
 
-  /* ── Star — Cone Search ── */
-  document.getElementById('cone-form').addEventListener('submit', async (e) => {
+  /* ── Star — Cone Search (sky-synced) ── */
+  document.getElementById('cone-form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const out = document.getElementById('stars-results');
+    var out = document.getElementById('stars-results');
     out.innerHTML = render.spinner();
 
-    const ra   = parseFloat(document.getElementById('cone-ra').value);
-    const dec  = parseFloat(document.getElementById('cone-dec').value);
-    const rad  = parseFloat(document.getElementById('cone-radius').value);
-    const mag  = document.getElementById('cone-mag').value ? parseFloat(document.getElementById('cone-mag').value) : undefined;
-    const lim  = parseInt(document.getElementById('cone-limit').value) || 100;
+    var ra   = parseFloat(document.getElementById('cone-ra').value);
+    var dec  = parseFloat(document.getElementById('cone-dec').value);
+    var rad  = parseFloat(document.getElementById('cone-radius').value);
+    var lim  = parseInt(document.getElementById('cone-limit').value) || 100;
+
+    // Navigate sky viewer
+    var fov = Math.max(rad * 3, 0.5);
+    if (window.TaarYaAladin) {
+      TaarYaAladin.goto(ra, dec, fov);
+      TaarYaAladin.drawSearchCone(ra, dec, rad);
+    }
+
+    // Show loading
+    document.getElementById('sky-loading').classList.add('active');
 
     try {
-      const data = await api.coneSearch(ra, dec, rad, { magLimit: mag, limit: lim });
-      const stars = data.stars || [];
-      if (!stars.length) { out.innerHTML = render.emptyState('No stars found in this region.'); return; }
-      out.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">' + data.count + ' star(s) found</div>' +
+      var data = await api.coneSearch(ra, dec, rad, { limit: lim });
+      var stars = (data && data.stars) || [];
+
+      // Overlay markers on sky
+      if (window.TaarYaAladin) TaarYaAladin.addMarkers(stars);
+
+      document.getElementById('sky-loading').classList.remove('active');
+
+      if (!stars.length) {
+        out.innerHTML = render.emptyState('No stars found in this region.');
+        return;
+      }
+      out.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">' +
+        data.count + ' star(s) found — markers shown on sky</div>' +
         render.resultTable(stars, 25);
     } catch (err) {
+      document.getElementById('sky-loading').classList.remove('active');
       out.innerHTML = render.emptyState('Search failed — ' + err.message);
     }
   });
 
   /* ── Star — Lookup ── */
-  document.getElementById('lookup-form').addEventListener('submit', async (e) => {
+  document.getElementById('lookup-form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const id = document.getElementById('lookup-id').value.trim();
+    var id = document.getElementById('lookup-id').value.trim();
     if (!id) return;
-    const out = document.getElementById('stars-results');
+    var out = document.getElementById('stars-results');
     out.innerHTML = render.spinner();
 
     try {
-      const star = await api.lookupStar(id);
+      var star = await api.lookupStar(id);
       out.innerHTML = '<div style="max-width:500px;">' + render.starCard(star) + '</div>';
+
+      // Navigate sky to this star
+      if (window.TaarYaAladin && star && star.ra != null && star.dec != null) {
+        TaarYaAladin.goto(star.ra, star.dec, 0.2);
+        TaarYaAladin.addMarkers([star]);
+      }
     } catch (err) {
       out.innerHTML = render.emptyState('Star not found — ' + err.message);
     }
   });
 
   /* ── Paper — Semantic Search ── */
-  document.getElementById('paper-search-form').addEventListener('submit', async (e) => {
+  document.getElementById('paper-search-form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const q = document.getElementById('paper-q').value.trim();
+    var q = document.getElementById('paper-q').value.trim();
     if (!q) return;
-    const limit = parseInt(document.getElementById('paper-limit').value) || 10;
-    const out = document.getElementById('papers-results');
+    var limit = parseInt(document.getElementById('paper-limit').value) || 10;
+    var out = document.getElementById('papers-results');
     out.innerHTML = render.spinner();
 
     try {
-      const data = await api.searchPapers(q, limit);
-      const papers = data.results || [];
+      var data = await api.searchPapers(q, limit);
+      var papers = (data && data.results) || [];
       if (!papers.length) { out.innerHTML = render.emptyState('No papers matched "' + q + '".'); return; }
       out.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">' + data.count + ' paper(s)</div>' +
-        papers.map(p => {
-          const payload = p.payload || p;
+        papers.map(function(p) {
+          var payload = p.payload || p;
           return render.paperCard({
             title: payload.title,
             authors: payload.authors,
@@ -207,19 +619,19 @@
   });
 
   /* ── Paper — Topic / Keyword ── */
-  document.getElementById('topic-form').addEventListener('submit', async (e) => {
+  document.getElementById('topic-form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const kw = document.getElementById('topic-kw').value.trim();
+    var kw = document.getElementById('topic-kw').value.trim();
     if (!kw) return;
-    const out = document.getElementById('papers-results');
+    var out = document.getElementById('papers-results');
     out.innerHTML = render.spinner();
 
     try {
-      const data = await api.papersByTopic(kw);
-      const papers = data.papers || [];
+      var data = await api.papersByTopic(kw);
+      var papers = (data && data.papers) || [];
       if (!papers.length) { out.innerHTML = render.emptyState('No papers about "' + kw + '".'); return; }
       out.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">' + data.count + ' paper(s)</div>' +
-        papers.map(p => render.paperCard(p)).join('');
+        papers.map(function(p) { return render.paperCard(p); }).join('');
     } catch (err) {
       out.innerHTML = render.emptyState('Topic search failed — ' + err.message);
     }
@@ -228,3 +640,4 @@
 </script>
 </body>
 </html>
+

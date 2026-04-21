@@ -3,15 +3,6 @@
 import logging
 from typing import List, Optional, Dict, Any
 
-from qdrant_client.models import (
-    Distance,
-    VectorParams,
-    PointStruct,
-    Filter,
-    FieldCondition,
-    MatchValue,
-)
-
 from src.database import qdrant_conn
 from src.config import settings
 
@@ -19,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 # Lazy-load the embedding model to avoid slow import at module level
 _embedding_model = None
+_qdrant_models: Optional[Dict[str, Any]] = None
 
 
 def _get_embedding_model():
@@ -31,6 +23,30 @@ def _get_embedding_model():
         _embedding_model = SentenceTransformer(settings.embedding_model)
         logger.info("Embedding model loaded")
     return _embedding_model
+
+
+def _get_qdrant_models() -> Dict[str, Any]:
+    """Lazy-load Qdrant model classes to avoid import-time DLL failures."""
+    global _qdrant_models
+    if _qdrant_models is None:
+        from qdrant_client.models import (
+            Distance,
+            FieldCondition,
+            Filter,
+            MatchValue,
+            PointStruct,
+            VectorParams,
+        )
+
+        _qdrant_models = {
+            "Distance": Distance,
+            "FieldCondition": FieldCondition,
+            "Filter": Filter,
+            "MatchValue": MatchValue,
+            "PointStruct": PointStruct,
+            "VectorParams": VectorParams,
+        }
+    return _qdrant_models
 
 
 class VectorSearch:
@@ -51,6 +67,7 @@ class VectorSearch:
         """
         name = name or self.DEFAULT_COLLECTION
         client = qdrant_conn.get_client()
+        models = _get_qdrant_models()
 
         collections = client.get_collections().collections
         existing = [c.name for c in collections]
@@ -58,7 +75,10 @@ class VectorSearch:
         if name not in existing:
             client.create_collection(
                 collection_name=name,
-                vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+                vectors_config=models["VectorParams"](
+                    size=vector_size,
+                    distance=models["Distance"].COSINE,
+                ),
             )
             logger.info(f"Created Qdrant collection: {name}")
         else:
@@ -121,8 +141,9 @@ class VectorSearch:
 
         # Build points
         points = []
+        point_struct = _get_qdrant_models()["PointStruct"]
         for doc, embedding in zip(documents, embeddings):
-            point = PointStruct(
+            point = point_struct(
                 id=doc["id"], vector=embedding, payload=doc.get("metadata", {})
             )
             points.append(point)
@@ -178,11 +199,12 @@ class VectorSearch:
         # Build filter if specified
         qdrant_filter = None
         if filter_by:
+            models = _get_qdrant_models()
             conditions = [
-                FieldCondition(key=k, match=MatchValue(value=v))
+                models["FieldCondition"](key=k, match=models["MatchValue"](value=v))
                 for k, v in filter_by.items()
             ]
-            qdrant_filter = Filter(must=conditions)
+            qdrant_filter = models["Filter"](must=conditions)
 
         # Search using query_points (new Qdrant API)
         results = client.query_points(

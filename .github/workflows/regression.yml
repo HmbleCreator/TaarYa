@@ -1,0 +1,135 @@
+###############################################################################
+# TaarYa Regression Suite
+#
+# Runs on every push / PR to main.
+# Uses two job tiers:
+#   1. unit-tests      — Pure-Python logic (metrics, NER, streaming, exports)
+#   2. eval-offline    — Offline ablation + discovery validation (no backends)
+#
+# Live integration tests (Postgres/Qdrant/Neo4j) are skipped by default
+# and guarded by `pytest.mark.skipif` probes in the test files.
+###############################################################################
+
+name: TaarYa Regression
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # -------------------------------------------------------------------
+  # Job 1: Unit & integration tests (no external services)
+  # -------------------------------------------------------------------
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run unit tests
+        run: |
+          python -m pytest tests/ \
+            -v \
+            --tb=short \
+            --strict-markers \
+            -x \
+            --ignore=tests/test_backends.py \
+            2>&1
+        env:
+          PYTHONPATH: .
+          # Prevent GPU / CUDA initialization in CI
+          CUDA_VISIBLE_DEVICES: ""
+          TF_CPP_MIN_LOG_LEVEL: "3"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            .pytest_cache/
+            htmlcov/
+          retention-days: 7
+
+  # -------------------------------------------------------------------
+  # Job 2: Offline evaluation (ablation + discovery precision)
+  # -------------------------------------------------------------------
+  eval-offline:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run offline ablation study
+        run: |
+          python eval/ablation_formal.py --offline --publish \
+            --output eval/ablation_results.json
+        env:
+          PYTHONPATH: .
+
+      - name: Run offline discovery validation
+        run: |
+          python eval/validate_discovery.py --offline \
+            --output eval/discovery_validation.json
+        env:
+          PYTHONPATH: .
+
+      - name: Upload evaluation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-results
+          path: |
+            eval/ablation_results.json
+            eval/ablation_table.tex
+            eval/discovery_validation.json
+          retention-days: 30
+
+      - name: Verify ablation output
+        run: |
+          python -c "
+          import json, sys
+          with open('eval/ablation_results.json') as f:
+              data = json.load(f)
+          configs = data.get('configurations', [])
+          assert len(configs) == 4, f'Expected 4 configs, got {len(configs)}'
+          print(f'✅ Ablation: {len(configs)} configurations × {len(data.get(\"regions\", []))} regions')
+
+          with open('eval/discovery_validation.json') as f:
+              dv = json.load(f)
+          regions = dv.get('regions', [])
+          assert len(regions) >= 5, f'Expected >=5 regions, got {len(regions)}'
+          print(f'✅ Discovery: {len(regions)} regions validated')
+          "

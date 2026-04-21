@@ -525,6 +525,11 @@ class SpatialSearch:
                 score = 0.0
                 reasons = []
                 
+                # Transient bonus
+                if star.get("is_transient"):
+                    score += 15.0 # High priority for transients
+                    reasons.append(f"Active Transient Alert ({star.get('alert_name')})")
+
                 ruwe = _finite_float(star.get("ruwe"))
                 if ruwe and ruwe >= 1.4:
                     score += profile["ruwe_elevated"]
@@ -688,7 +693,7 @@ class SpatialSearch:
         results = self.cone_search(
             ra=star["ra"],
             dec=star["dec"],
-            radius_deg=radius_deg,
+            radius=radius_deg,
             limit=limit + 1  # +1 to exclude self
         )
         

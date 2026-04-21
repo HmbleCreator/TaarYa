@@ -30,10 +30,10 @@ SCIENTIFIC_THRESHOLDS = {
 
     # Proper motion (mas/yr) - high PM stars are nearby or hypervelocity
     # Typical disk stars: < 20 mas/yr
-    # High PM: > 50 mas/yr indicates nearby or unusual
-    # Very high: > 100 mas/yr is rare (hypervelocity candidates)
-    "pm_high": 50.0,
-    "pm_very_high": 100.0,
+    # High PM: > 40 mas/yr indicates nearby or unusual
+    # Very high: > 80 mas/yr is rare (hypervelocity candidates)
+    "pm_high": 40.0,
+    "pm_very_high": 80.0,
 
     # Parallax significance
     "parallax_min": 0.1,  # Must be positive and significant
@@ -53,6 +53,89 @@ def _finite_float(value: Any) -> Optional[float]:
     except (TypeError, ValueError):
         return None
     return number if math.isfinite(number) else None
+
+
+def _snr_penalty(value: Optional[float], error: Optional[float]) -> float:
+    """Compute a penalty factor [0, 1] based on signal-to-noise ratio.
+
+    Returns 1.0 (no penalty) if SNR >= 10, scales linearly to 0.3 at SNR=1.
+    If either value or error is missing, returns 0.7 (uncertain but usable).
+    """
+    if value is None or error is None:
+        return 0.7
+    if error <= 0:
+        return 1.0  # Perfect measurement
+    snr = abs(value) / abs(error)
+    if snr >= 10.0:
+        return 1.0
+    if snr <= 1.0:
+        return 0.3
+    # Linear interpolation between SNR 1..10
+    return 0.3 + 0.7 * (snr - 1.0) / 9.0
+
+
+def _compute_confidence(row: Dict[str, Any], score: float) -> Dict[str, Any]:
+    """Compute measurement confidence for a discovery candidate.
+
+    Returns a dict with per-parameter SNR penalties and an aggregate
+    confidence value in [0, 1] that scales the raw discovery score.
+
+    This addresses the key publication concern: are high-scoring
+    candidates real anomalies or just measurement noise?
+    """
+    parallax = _finite_float(row.get("parallax"))
+    parallax_err = _finite_float(row.get("parallax_error"))
+    pmra = _finite_float(row.get("pmra"))
+    pmra_err = _finite_float(row.get("pmra_error"))
+    pmdec = _finite_float(row.get("pmdec"))
+    pmdec_err = _finite_float(row.get("pmdec_error"))
+
+    plx_pen = _snr_penalty(parallax, parallax_err)
+    pmra_pen = _snr_penalty(pmra, pmra_err)
+    pmdec_pen = _snr_penalty(pmdec, pmdec_err)
+
+    # Photometry confidence (Gaia G-band flux_over_error is typically high)
+    phot_g = _finite_float(row.get("phot_g_mean_mag"))
+    phot_pen = 0.9 if phot_g is not None else 0.5
+
+    # RUWE itself is a quality indicator; low RUWE = high astrometric confidence
+    ruwe = _finite_float(row.get("ruwe"))
+    if ruwe is not None:
+        # RUWE < 1.2 is excellent; RUWE > 2.5 means poor fit
+        if ruwe < 1.2:
+            ruwe_quality = 1.0
+        elif ruwe < 1.4:
+            ruwe_quality = 0.9
+        elif ruwe < 2.0:
+            ruwe_quality = 0.7  # Elevated but could be real
+        else:
+            ruwe_quality = 0.5  # Poor fit — score boosted but confidence reduced
+    else:
+        ruwe_quality = 0.6  # Missing RUWE
+
+    # Aggregate: geometric-ish mean weighted toward the worst measurement
+    raw_confidence = (
+        plx_pen * 0.30
+        + pmra_pen * 0.15
+        + pmdec_pen * 0.15
+        + phot_pen * 0.15
+        + ruwe_quality * 0.25
+    )
+
+    # Score uncertainty: how much the score might vary given measurement errors
+    score_uncertainty = round(score * (1.0 - raw_confidence), 1)
+
+    return {
+        "confidence": round(raw_confidence, 3),
+        "score_uncertainty": score_uncertainty,
+        "snr_penalties": {
+            "parallax": round(plx_pen, 3),
+            "pmra": round(pmra_pen, 3),
+            "pmdec": round(pmdec_pen, 3),
+            "photometry": round(phot_pen, 3),
+            "astrometric_quality": round(ruwe_quality, 3),
+        },
+    }
 
 
 def _normalize_object_class(value: Any) -> Optional[str]:
@@ -92,8 +175,8 @@ def discovery_profile(mode: str) -> Dict[str, float]:
             "ruwe_tight": 1.5,
             "color_extreme": 10.0,
             "no_color_profile": 2.5,
-            "motion_high": 14.0,
-            "motion_mid": 7.0,
+            "motion_high": 16.0,
+            "motion_mid": 8.0,
             "brightness_anomaly": 5.0,
             "density_scale": 0.15,
             "density_cap": 1.2,
@@ -111,8 +194,8 @@ def discovery_profile(mode: str) -> Dict[str, float]:
             "ruwe_tight": 2.0,
             "color_extreme": 10.5,
             "no_color_profile": 3.5,
-            "motion_high": 12.0,
-            "motion_mid": 6.0,
+            "motion_high": 14.0,
+            "motion_mid": 7.0,
             "brightness_anomaly": 5.5,
             "density_scale": 0.20,
             "density_cap": 1.8,
@@ -165,9 +248,10 @@ def rank_discovery_candidates(
     radius_deg: float = 0.08,
     mode: str = "balanced",
     catalog_summary: Optional[List[Dict[str, Any]]] = None,
+    override_profile: Optional[Dict[str, float]] = None,
 ) -> Dict[str, Any]:
     """Rank potentially interesting objects using catalog, quality, and locality signals."""
-    profile = discovery_profile(mode)
+    profile = override_profile if override_profile is not None else discovery_profile(mode)
 
     gaia_rows = [
         row
@@ -208,10 +292,10 @@ def rank_discovery_candidates(
             reasons.append(f"{catalog_source} catalog object")
 
         if ruwe is not None:
-            if ruwe >= 2.0:
+            if ruwe >= SCIENTIFIC_THRESHOLDS["ruwe_binary"]:
                 score += profile["ruwe_high"]
                 reasons.append(f"RUWE {ruwe:.2f} is very high")
-            elif ruwe >= 1.4:
+            elif ruwe >= SCIENTIFIC_THRESHOLDS["ruwe_poor"]:
                 score += profile["ruwe_elevated"]
                 reasons.append(f"RUWE {ruwe:.2f} is elevated")
             elif ruwe < 0.9:
@@ -222,10 +306,10 @@ def rank_discovery_candidates(
             reasons.append("RUWE missing")
 
         if bp_rp is not None:
-            if bp_rp <= -0.1:
+            if bp_rp <= SCIENTIFIC_THRESHOLDS["bp_rp_blue"]:
                 score += profile["color_extreme"]
                 reasons.append(f"very blue BP-RP {bp_rp:.2f}")
-            elif bp_rp >= 2.8:
+            elif bp_rp >= SCIENTIFIC_THRESHOLDS["bp_rp_red"]:
                 score += profile["color_extreme"]
                 reasons.append(f"very red BP-RP {bp_rp:.2f}")
         elif catalog_source != "GAIA":
@@ -239,10 +323,10 @@ def rank_discovery_candidates(
             motion += pmdec * pmdec
         motion = math.sqrt(motion) if motion > 0 else None
         if motion is not None:
-            if motion >= 80:
+            if motion >= SCIENTIFIC_THRESHOLDS["pm_very_high"]:
                 score += profile["motion_high"]
                 reasons.append(f"fast proper motion {motion:.1f} mas/yr")
-            elif motion >= 40:
+            elif motion >= SCIENTIFIC_THRESHOLDS["pm_high"]:
                 score += profile["motion_mid"]
                 reasons.append(f"notable proper motion {motion:.1f} mas/yr")
 
@@ -269,6 +353,7 @@ def rank_discovery_candidates(
                 "pm_total": motion,
                 "score": score,
                 "reasons": reasons,
+                "_raw_row": row,  # Carry the original row for confidence computation
             }
         )
 
@@ -351,8 +436,10 @@ def rank_discovery_candidates(
         reverse=True,
     )
 
-    top_candidates = [
-        {
+    top_candidates = []
+    for item in enriched[:limit]:
+        confidence_info = _compute_confidence(item.get("_raw_row", {}), item["score"])
+        top_candidates.append({
             "source_id": item["source_id"],
             "catalog_source": item["catalog_source"],
             "ra": item["ra"],
@@ -366,10 +453,10 @@ def rank_discovery_candidates(
             "local_density": item["local_density"],
             "matched_catalogs": item["matched_catalogs"],
             "score": item["score"],
+            "confidence": confidence_info["confidence"],
+            "score_uncertainty": confidence_info["score_uncertainty"],
             "reasons": item["reasons"][:4],
-        }
-        for item in enriched[:limit]
-    ]
+        })
 
     return {
         "count": len(top_candidates),

@@ -172,7 +172,11 @@ class HybridSearch:
         if not star:
             return {"error": f"Star {source_id} not found."}
 
-        papers = self.graph.find_star_papers(source_id)
+        papers = self.graph.find_star_papers(
+            source_id,
+            include_cluster_context=True,
+            limit=limit_papers,
+        )
         if not papers:
             return {
                 "source_id": source_id,
@@ -229,7 +233,7 @@ class HybridSearch:
         logger.info(f"Hybrid cone search: RA={ra}, Dec={dec}, r={radius_deg}°")
 
         # Step 1: Spatial search
-        stars = self.spatial.cone_search(ra, dec, radius_deg, limit)
+        stars = self.spatial.cone_search(ra=ra, dec=dec, radius=radius_deg, limit=limit)
 
         # Log action for reproducibility
         self.provenance.log_action("cone_search", {"ra": ra, "dec": dec, "radius": radius_deg}, f"Found {len(stars)} stars.")
@@ -251,34 +255,24 @@ class HybridSearch:
             seen_papers = set()
             
             for star in stars[:10]:  # Limit graph lookups for performance
-                # 2a. Direct links: papers mentioning this specific star
-                star_papers = self.graph.find_star_papers(star["source_id"])
+                star_papers = self.graph.find_star_papers(
+                    star["source_id"],
+                    include_cluster_context=True,
+                )
                 for p in star_papers:
                     if p["arxiv_id"] not in seen_papers:
-                        papers_found.append({"source_id": star["source_id"], "paper": p, "link_type": "direct"})
-                        seen_papers.add(p["arxiv_id"])
-
-                # 2b. Indirect links: papers covering the cluster this star belongs to
-                cluster_papers = self._find_cluster_papers_for_star(star["source_id"])
-                for p in cluster_papers:
-                    if p["arxiv_id"] not in seen_papers:
-                        papers_found.append({"source_id": star["source_id"], "paper": p, "link_type": "cluster_context"})
+                        papers_found.append(
+                            {
+                                "source_id": star["source_id"],
+                                "paper": p,
+                                "link_type": p.get("link_type", "direct"),
+                            }
+                        )
                         seen_papers.add(p["arxiv_id"])
 
             result["related_papers"] = papers_found
 
         return result
-
-    def _find_cluster_papers_for_star(self, source_id: str) -> List[Dict[str, Any]]:
-        """Find papers covering the cluster(s) a star belongs to."""
-        query = """
-        MATCH (s:Star {source_id: $source_id})-[:MEMBER_OF]->(c:Cluster)<-[:COVERS]-(p:Paper)
-        RETURN p.arxiv_id AS arxiv_id, p.title AS title, c.name AS cluster_name
-        """
-        from src.database import neo4j_conn
-        with neo4j_conn.session() as session:
-            result = session.run(query, {"source_id": source_id})
-            return [dict(record) for record in result]
 
     def semantic_search_with_sources(
         self, query_text: str, collection: Optional[str] = None, limit: int = 10
@@ -366,7 +360,7 @@ class HybridSearch:
 
         # Spatial search
         if ra is not None and dec is not None and radius_deg is not None:
-            stars = self.spatial.cone_search(ra, dec, radius_deg, limit)
+            stars = self.spatial.cone_search(ra=ra, dec=dec, radius=radius_deg, limit=limit)
             results["spatial"] = {"count": len(stars), "stars": stars}
             results["backends_used"].append("spatial")
 
@@ -379,7 +373,10 @@ class HybridSearch:
         # Star lookup
         if source_id:
             star = self.spatial.coordinate_lookup(source_id)
-            papers = self.graph.find_star_papers(source_id)
+            papers = self.graph.find_star_papers(
+                source_id,
+                include_cluster_context=True,
+            )
             related = self.graph.find_related_stars(source_id)
 
             results["star_detail"] = {

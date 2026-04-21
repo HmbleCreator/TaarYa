@@ -137,7 +137,7 @@ def cone_search(ra: float, dec: float, radius_deg: float = 0.5, limit: int = 20,
                 }
             )
 
-        stars = _spatial.cone_search(ra=ra, dec=dec, radius_deg=radius_deg, limit=limit, include_discovery=include_discovery)
+        stars = _spatial.cone_search(ra=ra, dec=dec, radius=radius_deg, limit=limit, include_discovery=include_discovery)
         if not stars:
             return f"No stars found within {radius_deg}° of RA={ra}, Dec={dec}."
 
@@ -373,7 +373,7 @@ def request_region_ingestion(
                     dec=dec,
                     radius_deg=radius_deg,
                     star_count=inserted,
-                    ingested_at=datetime.utcnow(),
+                    ingested_at=datetime.datetime.now(datetime.timezone.utc),
                 )
             )
             session.commit()
@@ -798,6 +798,34 @@ def validate_scoring_precision(ra: float, dec: float, radius: float = 1.0) -> st
         return f"Validation failed: {str(e)}"
 
 
+@tool
+def navigate_sky(ra: float, dec: float, fov: float = 1.0, survey: str = "P/DSS2/color") -> str:
+    """Navigate the user's interactive sky viewer to specific coordinates.
+
+    Use this to visually show the user a region of the sky. The viewer is
+    embedded in the TaarYa web interface and will smoothly pan to the target.
+    Call this AFTER finding interesting objects so the user can see them.
+
+    Available surveys: 'P/DSS2/color', 'P/2MASS/color',
+    'P/PanSTARRS/DR1/color-i-r-g', 'P/SDSS9/color', 'P/allWISE/color'
+
+    Args:
+        ra: Right Ascension in degrees (0-360)
+        dec: Declination in degrees (-90 to 90)
+        fov: Field of view in degrees (default 1.0, smaller = more zoomed in)
+        survey: Background sky survey to display (default 'P/DSS2/color')
+    """
+    return json.dumps({
+        "_sky_command": True,
+        "action": "goto",
+        "ra": round(ra, 6),
+        "dec": round(dec, 6),
+        "fov": round(fov, 4),
+        "survey": survey,
+        "message": f"Navigating sky viewer to RA={ra:.4f}°, Dec={dec:.4f}° (FoV={fov}°, survey={survey})",
+    })
+
+
 # All tools for the agent
 ALL_TOOLS = [
     get_catalog_coverage,
@@ -822,4 +850,5 @@ ALL_TOOLS = [
     broadcast_discovery_table,
     fits_preview_link,
     validate_scoring_precision,
+    navigate_sky,
 ]

@@ -47,6 +47,10 @@ class Star(Base):
     # Catalog metadata
     catalog_source = Column(String(20), default="GAIA", doc="Source catalog")
     object_class = Column(String(40), nullable=True, doc="Optional astrophysical object class")
+    
+    # Transient fields
+    is_transient = Column(Integer, default=0, doc="Flag for transient alerts (0=archival, 1=active)")
+    alert_name = Column(String(100), nullable=True, doc="Name of the alert (e.g. Gaia24abc)")
 
     # Indexes for Q3C spatial queries
     __table_args__ = (
@@ -98,4 +102,4 @@ class Region(Base):
     dec = Column(Float, nullable=False)
     radius_deg = Column(Float, nullable=False)
     star_count = Column(Integer, default=0)
-    ingested_at = Column(DateTime, default=datetime.utcnow)
+    ingested_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
