@@ -1,0 +1,28 @@
+# Custom PostgreSQL image with Q3C spatial extension pre-installed.
+# Usage: docker build -f Dockerfile.postgres -t taarya-postgres-custom .
+# Then: docker-compose up --build
+FROM postgres:16
+
+USER postgres
+
+# Install build deps for Q3C
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        postgresql-server-dev-16 \
+        git \
+        cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build and install Q3C from source
+RUN git clone --depth 1 https://github.com/segasai/q3c.git /tmp/q3c \
+    && cd /tmp/q3c \
+    && make && make install \
+    && cd / && rm -rf /tmp/q3c
+
+# Register Q3C in PostgreSQL shared_preload_libraries
+RUN echo "shared_preload_libraries = 'q3c'" >> /usr/local/share/postgresql/postgresql.conf.sample
+
+# Enable q3c index access method for all databases
+RUN echo "CREATE EXTENSION IF NOT EXISTS q3c;" | psql --quiet
+
+USER root

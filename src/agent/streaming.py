@@ -101,6 +101,14 @@ class StreamingCallbackHandler(BaseCallbackHandler):
             "output_length": len(output_str),
         })
 
+        # Emit sky_command event when navigate_sky tool returns
+        try:
+            parsed = json.loads(output_str)
+            if isinstance(parsed, dict) and parsed.get("_sky_command"):
+                self._push("sky_command", parsed)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
     def on_agent_action(self, action, **kwargs):
         if getattr(action, "tool", None) == "Final Answer":
             answer = self._extract_final_answer_candidate(action)
