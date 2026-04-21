@@ -1,0 +1,62 @@
+{
+  "spatial_retrieval": [
+    {
+      "query": "Pleiades",
+      "stars_found": 100,
+      "anomalous_stars": 0,
+      "top_discovery_score": 0.0,
+      "latency_s": 0.233,
+      "precision": 1.0
+    },
+    {
+      "query": "Hyades",
+      "stars_found": 100,
+      "anomalous_stars": 0,
+      "top_discovery_score": 0.0,
+      "latency_s": 0.0218,
+      "precision": 1.0
+    },
+    {
+      "query": "Orion OB1",
+      "stars_found": 100,
+      "anomalous_stars": 0,
+      "top_discovery_score": 0.0,
+      "latency_s": 0.0269,
+      "precision": 1.0
+    }
+  ],
+  "discovery_analysis": {
+    "total_stars": 200,
+    "anomalous_count": 1,
+    "max_score": 9.0,
+    "mean_score": 0.045,
+    "anomaly_rate": 0.005
+  },
+  "graph_metrics": {
+    "nodes": {
+      "stars": 9716,
+      "papers": 1475,
+      "clusters": 3,
+      "relationships": 8674
+    },
+    "hyades_sample_members": 10,
+    "query_latency_s": 0.2555
+  },
+  "cross_catalog_links": [
+    {
+      "cluster": "Hyades",
+      "member_count": 100,
+      "covering_papers": 2
+    },
+    {
+      "cluster": "Pleiades",
+      "member_count": 100,
+      "covering_papers": 10
+    },
+    {
+      "cluster": "Orion OB1",
+      "member_count": 100,
+      "covering_papers": 0
+    }
+  ]
+}

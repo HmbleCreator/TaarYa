@@ -213,27 +213,32 @@ class GraphSearch:
         limit: int = 20
     ) -> List[Dict[str, Any]]:
         """
-        Find papers whose title or abstract contains a keyword.
-        
+        Find papers semantically similar to a keyword/topic using Qdrant.
+
         Args:
             keyword: Search term
             limit: Maximum results
-            
+
         Returns:
-            List of paper records
+            List of paper records with scores
         """
-        query = """
-        MATCH (p:Paper)
-        WHERE toLower(p.title) CONTAINS toLower($keyword)
-           OR toLower(p.abstract) CONTAINS toLower($keyword)
-        RETURN p.arxiv_id AS arxiv_id, p.title AS title,
-               p.categories AS categories
-        LIMIT $limit
-        """
-        
-        with neo4j_conn.session() as session:
-            result = session.run(query, {"keyword": keyword, "limit": limit})
-            return [dict(record) for record in result]
+        from src.retrieval.vector_search import VectorSearch
+
+        vector = VectorSearch()
+        results = vector.search_similar(keyword, limit=limit)
+
+        papers = []
+        for r in results:
+            payload = r.get("payload", {})
+            papers.append({
+                "arxiv_id": payload.get("arxiv_id", ""),
+                "title": payload.get("title", ""),
+                "categories": payload.get("categories", ""),
+                "score": r.get("score", 0.0)
+            })
+
+        logger.info(f"Qdrant semantic search for '{keyword}': {len(papers)} results")
+        return papers
     
     def get_graph_stats(self) -> Dict[str, int]:
         """Get counts of nodes and relationships in the graph.

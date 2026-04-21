@@ -184,20 +184,24 @@ class VectorSearch:
             ]
             qdrant_filter = Filter(must=conditions)
 
-        # Search
-        results = client.search(
+        # Search using query_points (new Qdrant API)
+        results = client.query_points(
             collection_name=collection,
-            query_vector=query_vector,
-            query_filter=qdrant_filter,
+            query=query_vector,
             limit=limit,
             score_threshold=score_threshold,
+            query_filter=qdrant_filter,
         )
 
-        # Format results
+        # Format results - query_points returns a PointsResponse object
         hits = []
-        for result in results:
+        result_points = results.results if hasattr(results, 'results') else getattr(results, 'points', [])
+        for result in result_points:
+            result_id = result.id if hasattr(result, 'id') else result[0] if isinstance(result, tuple) else result
+            result_score = result.score if hasattr(result, 'score') else result[1] if isinstance(result, tuple) and len(result) > 1 else 0.0
+            result_payload = result.payload if hasattr(result, 'payload') else {}
             hits.append(
-                {"id": result.id, "score": result.score, "payload": result.payload}
+                {"id": result_id, "score": result_score, "payload": result_payload}
             )
 
         logger.info(f"Vector search: {len(hits)} results for '{query_text[:50]}...'")
@@ -220,11 +224,13 @@ class VectorSearch:
         collection = collection or self.DEFAULT_COLLECTION
         client = qdrant_conn.get_client()
 
-        results = client.search(
-            collection_name=collection, query_vector=vector, limit=limit
+        results = client.query_points(
+            collection_name=collection,
+            query=vector,
+            limit=limit
         )
 
-        return [{"id": r.id, "score": r.score, "payload": r.payload} for r in results]
+        return [{"id": r.id, "score": r.score, "payload": r.payload} for r in results.results]
 
     def get_collection_info(self, collection: Optional[str] = None) -> Dict[str, Any]:
         """Get collection statistics."""

@@ -1,0 +1,357 @@
+{
+  "version": "1.0",
+  "name": "TaarYa Evaluation Benchmark",
+  "description": "Comprehensive benchmark suite for TaarYa astronomical retrieval system",
+  "queries": [
+    {
+      "id": "Q01",
+      "category": "spatial_cluster",
+      "query": "Find all stars in the Pleiades open cluster",
+      "type": "spatial",
+      "params": {"ra": 56.75, "dec": 24.12, "radius_deg": 2.0},
+      "expected_min_results": 100,
+      "difficulty": "easy",
+      "ground_truth_notes": "Pleiades (M45) is a well-studied open cluster with ~1000 members"
+    },
+    {
+      "id": "Q02",
+      "category": "spatial_cluster",
+      "query": "Find all stars in the Hyades moving group",
+      "type": "spatial",
+      "params": {"ra": 66.75, "dec": 15.87, "radius_deg": 5.0},
+      "expected_min_results": 200,
+      "difficulty": "easy",
+      "ground_truth_notes": "Hyades is the nearest open cluster at ~45pc"
+    },
+    {
+      "id": "Q03",
+      "category": "spatial_cluster",
+      "query": "Find stars in the Orion OB1 association",
+      "type": "spatial",
+      "params": {"ra": 83.82, "dec": -5.39, "radius_deg": 1.0},
+      "expected_min_results": 50,
+      "difficulty": "medium",
+      "ground_truth_notes": "Orion OB1 is a large association, query captures central part"
+    },
+    {
+      "id": "Q04",
+      "category": "spatial_specific",
+      "query": "Find stars near Sirius (RA=101.29, Dec=-16.72)",
+      "type": "spatial",
+      "params": {"ra": 101.29, "dec": -16.72, "radius_deg": 0.5},
+      "expected_min_results": 5,
+      "difficulty": "easy",
+      "ground_truth_notes": "Sirius is a bright star, nearby stars should be few"
+    },
+    {
+      "id": "Q05",
+      "category": "spatial_specific",
+      "query": "Find stars near Betelgeuse (RA=88.79, Dec=7.41)",
+      "type": "spatial",
+      "params": {"ra": 88.79, "dec": 7.41, "radius_deg": 0.3},
+      "expected_min_results": 3,
+      "difficulty": "easy",
+      "ground_truth_notes": "Betelgeuse is a red supergiant in Orion"
+    },
+    {
+      "id": "Q06",
+      "category": "spatial_density",
+      "query": "Find the densest region near the galactic center",
+      "type": "spatial",
+      "params": {"ra": 266.4, "dec": -29.0, "radius_deg": 2.0},
+      "expected_min_results": 500,
+      "difficulty": "hard",
+      "ground_truth_notes": "Toward galactic center, high density of stars expected"
+    },
+    {
+      "id": "Q07",
+      "category": "spatial_density",
+      "query": "Find stars in a quiet sky region away from the plane",
+      "type": "spatial",
+      "params": {"ra": 180.0, "dec": 60.0, "radius_deg": 1.0},
+      "expected_min_results": 10,
+      "difficulty": "medium",
+      "ground_truth_notes": "High galactic latitude should have fewer stars"
+    },
+    {
+      "id": "Q08",
+      "category": "discovery_anomaly",
+      "query": "Find stars with very high proper motion indicating possible nearby objects",
+      "type": "discovery",
+      "params": {"min_proper_motion": 80.0},
+      "expected_min_results": 1,
+      "difficulty": "hard",
+      "ground_truth_notes": "High proper motion stars are rare and scientifically interesting"
+    },
+    {
+      "id": "Q09",
+      "category": "discovery_anomaly",
+      "query": "Find stars with unusually high RUWE values indicating possible binarity",
+      "type": "discovery",
+      "params": {"min_ruwe": 2.0},
+      "expected_min_results": 1,
+      "difficulty": "hard",
+      "ground_truth_notes": "RUWE > 2.0 suggests astrometric binary"
+    },
+    {
+      "id": "Q10",
+      "category": "discovery_anomaly",
+      "query": "Find extremely blue stars (BP-RP < -0.1)",
+      "type": "discovery",
+      "params": {"max_bp_rp": -0.1},
+      "expected_min_results": 1,
+      "difficulty": "hard",
+      "ground_truth_notes": "Blue objects may be blue stragglers or hot subdwarfs"
+    },
+    {
+      "id": "Q11",
+      "category": "discovery_anomaly",
+      "query": "Find extremely red stars (BP-RP > 2.8)",
+      "type": "discovery",
+      "params": {"min_bp_rp": 2.8},
+      "expected_min_results": 1,
+      "difficulty": "hard",
+      "ground_truth_notes": "Red objects may be M-dwarfs or dusty envelopes"
+    },
+    {
+      "id": "Q12",
+      "category": "discovery_anomaly",
+      "query": "Find bright but distant stars suggesting overluminous objects",
+      "type": "discovery",
+      "params": {"max_g_mag": 10.0, "min_distance_pc": 500},
+      "expected_min_results": 1,
+      "difficulty": "hard",
+      "ground_truth_notes": "Bright+distant = unusual luminosity or errors"
+    },
+    {
+      "id": "Q13",
+      "category": "catalog_comparison",
+      "query": "Find stars that appear in multiple catalogs",
+      "type": "crossmatch",
+      "params": {"min_catalogs": 2},
+      "expected_min_results": 10,
+      "difficulty": "medium",
+      "ground_truth_notes": "Cross-matched stars are likely well-studied"
+    },
+    {
+      "id": "Q14",
+      "category": "catalog_comparison",
+      "query": "Compare stellar density in Pleiades vs Hyades",
+      "type": "comparison",
+      "params": {"region1": {"ra": 56.75, "dec": 24.12, "r": 2.0}, "region2": {"ra": 66.75, "dec": 15.87, "r": 5.0}},
+      "expected_min_results": 2,
+      "difficulty": "medium",
+      "ground_truth_notes": "Compare number of stars per unit area"
+    },
+    {
+      "id": "Q15",
+      "category": "graph_exploration",
+      "query": "Find all papers discussing the Hyades cluster",
+      "type": "semantic",
+      "params": {"topic": "Hyades cluster", "limit": 10},
+      "expected_min_results": 5,
+      "difficulty": "easy",
+      "ground_truth_notes": "Hyades is one of the most studied clusters"
+    },
+    {
+      "id": "Q16",
+      "category": "graph_exploration",
+      "query": "Find all papers about the Pleiades",
+      "type": "semantic",
+      "params": {"topic": "Pleiades seven sisters", "limit": 10},
+      "expected_min_results": 5,
+      "difficulty": "easy",
+      "ground_truth_notes": "Pleiades has extensive literature"
+    },
+    {
+      "id": "Q17",
+      "category": "graph_exploration",
+      "query": "Find papers about stellar kinematics and proper motions",
+      "type": "semantic",
+      "params": {"topic": "stellar proper motion kinematics", "limit": 10},
+      "expected_min_results": 5,
+      "difficulty": "medium",
+      "ground_truth_notes": "Gaia enables precise proper motion studies"
+    },
+    {
+      "id": "Q18",
+      "category": "hybrid",
+      "query": "Find Hyades members and related literature",
+      "type": "hybrid",
+      "params": {"ra": 66.75, "dec": 15.87, "radius_deg": 5.0, "topic": "Hyades moving group"},
+      "expected_min_results": 50,
+      "difficulty": "medium",
+      "ground_truth_notes": "Combined spatial + semantic query"
+    },
+    {
+      "id": "Q19",
+      "category": "hybrid",
+      "query": "Find Pleiades members with literature context",
+      "type": "hybrid",
+      "params": {"ra": 56.75, "dec": 24.12, "radius_deg": 2.0, "topic": "Pleiades star formation"},
+      "expected_min_results": 30,
+      "difficulty": "medium",
+      "ground_truth_notes": "Hybrid spatial-literature query"
+    },
+    {
+      "id": "Q20",
+      "category": "edge_cases",
+      "query": "Find stars near the north celestial pole",
+      "type": "spatial",
+      "params": {"ra": 0.0, "dec": 90.0, "radius_deg": 0.5},
+      "expected_min_results": 1,
+      "difficulty": "medium",
+      "ground_truth_notes": "Special coordinate case"
+    },
+    {
+      "id": "Q21",
+      "category": "edge_cases",
+      "query": "Find stars near the ecliptic plane at RA=180",
+      "type": "spatial",
+      "params": {"ra": 180.0, "dec": 0.0, "radius_deg": 1.0},
+      "expected_min_results": 20,
+      "difficulty": "easy",
+      "ground_truth_notes": "Ecliptic plane has moderate star density"
+    },
+    {
+      "id": "Q22",
+      "category": "time_domain",
+      "query": "Find literature about variable stars in open clusters",
+      "type": "semantic",
+      "params": {"topic": "variable stars RR Lyrae Cepheid open clusters", "limit": 10},
+      "expected_min_results": 3,
+      "difficulty": "medium",
+      "ground_truth_notes": "Time-domain astronomy is active field"
+    },
+    {
+      "id": "Q23",
+      "category": "time_domain",
+      "query": "Find papers about transient events and stellar explosions",
+      "type": "semantic",
+      "params": {"topic": "supernova nova transient event", "limit": 10},
+      "expected_min_results": 5,
+      "difficulty": "medium",
+      "ground_truth_notes": "Transient research is major topic"
+    },
+    {
+      "id": "Q24",
+      "category": "galactic_structure",
+      "query": "Find literature about Milky Way disk kinematics",
+      "type": "semantic",
+      "params": {"topic": "Milky Way disk stellar kinematics rotation", "limit": 10},
+      "expected_min_results": 5,
+      "difficulty": "medium",
+      "ground_truth_notes": "Gaia revolutionized galactic structure studies"
+    },
+    {
+      "id": "Q25",
+      "category": "exoplanets",
+      "query": "Find papers about exoplanet atmosphere spectroscopy",
+      "type": "semantic",
+      "params": {"topic": "exoplanet transmission spectroscopy atmosphere JWST", "limit": 10},
+      "expected_min_results": 5,
+      "difficulty": "medium",
+      "ground_truth_notes": "JWST is revolutionizing exoplanet studies"
+    },
+    {
+      "id": "Q26",
+      "category": "stellar_evolution",
+      "query": "Find papers about brown dwarf spectral classification",
+      "type": "semantic",
+      "params": {"topic": "brown dwarf spectral classification L dwarf M dwarf", "limit": 10},
+      "expected_min_results": 3,
+      "difficulty": "medium",
+      "ground_truth_notes": "Brown dwarfs bridge planets and stars"
+    },
+    {
+      "id": "Q27",
+      "category": "discovery",
+      "query": "Find candidate binary stars in the solar neighborhood",
+      "type": "discovery",
+      "params": {"max_distance_pc": 50, "min_ruwe": 1.4},
+      "expected_min_results": 5,
+      "difficulty": "hard",
+      "ground_truth_notes": "Nearby binaries are key for mass measurements"
+    },
+    {
+      "id": "Q28",
+      "category": "discovery",
+      "query": "Find candidate young stellar objects near known star-forming regions",
+      "type": "discovery",
+      "params": {"ra": 83.82, "dec": -5.39, "radius_deg": 2.0, "max_bp_rp": 0.5},
+      "expected_min_results": 10,
+      "difficulty": "hard",
+      "ground_truth_notes": "YSOs have blue colors from accretion"
+    },
+    {
+      "id": "Q29",
+      "category": "multi_wavelength",
+      "query": "Find papers connecting Gaia astrometry to radio astronomy",
+      "type": "semantic",
+      "params": {"topic": "Gaia astrometry radio interferometry VLBI", "limit": 10},
+      "expected_min_results": 3,
+      "difficulty": "hard",
+      "ground_truth_notes": "Multi-wavelength astrometry is emerging field"
+    },
+    {
+      "id": "Q30",
+      "category": "calibration",
+      "query": "Find standard candles (Cepheids, RR Lyrae) mentioned in literature",
+      "type": "semantic",
+      "params": {"topic": "Cepheid RR Lyrae period luminosity distance ladder", "limit": 10},
+      "expected_min_results": 5,
+      "difficulty": "medium",
+      "ground_truth_notes": "Standard candles enable cosmic distance scale"
+    },
+    {
+      "id": "Q31",
+      "category": "special",
+      "query": "Find hypervelocity stars or unusual kinematic populations",
+      "type": "discovery",
+      "params": {"min_proper_motion": 100.0},
+      "expected_min_results": 1,
+      "difficulty": "very_hard",
+      "ground_truth_notes": "Hypervelocity stars are extremely rare"
+    },
+    {
+      "id": "Q32",
+      "category": "special",
+      "query": "Find white dwarfs in the solar neighborhood",
+      "type": "discovery",
+      "params": {"max_distance_pc": 50, "min_bp_rp": 1.5, "max_g_mag": 15},
+      "expected_min_results": 5,
+      "difficulty": "hard",
+      "ground_truth_notes": "White dwarfs are cool and faint"
+    },
+    {
+      "id": "Q33",
+      "category": "special",
+      "query": "Find star clusters in the Magellanic Clouds",
+      "type": "spatial",
+      "params": {"ra": 80.9, "dec": -69.0, "radius_deg": 3.0},
+      "expected_min_results": 1,
+      "difficulty": "hard",
+      "ground_truth_notes": "LMC/SMC are satellite galaxies"
+    },
+    {
+      "id": "Q34",
+      "category": "comparison",
+      "query": "Compare literature coverage of globular vs open clusters",
+      "type": "semantic",
+      "params": {"topic1": "globular cluster", "topic2": "open cluster", "limit": 10},
+      "expected_min_results": 10,
+      "difficulty": "medium",
+      "ground_truth_notes": "Both have extensive literature but different focus"
+    },
+    {
+      "id": "Q35",
+      "category": "multi_look",
+      "query": "Find literature about binary star formation",
+      "type": "semantic",
+      "params": {"topic": "binary star formation multiple star systems", "limit": 10},
+      "expected_min_results": 5,
+      "difficulty": "medium",
+      "ground_truth_notes": "Binary fraction is key stellar property"
+    }
+  ]
+}

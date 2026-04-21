@@ -4,7 +4,21 @@ import logging
 import socket
 from typing import List, Dict, Any, Optional
 
+import math
+
 logger = logging.getLogger(__name__)
+
+def _clean_val(val):
+    """Clean value to be JSON/SQL friendly (handle NaN/Inf)."""
+    if val is None:
+        return None
+    try:
+        fval = float(val)
+        if math.isnan(fval) or math.isinf(fval):
+            return None
+        return fval
+    except (ValueError, TypeError):
+        return None
 
 _gaia = None  # Lazily initialised to avoid slow Gaia archive contact at import time
 
@@ -42,8 +56,12 @@ def query_gaia_region(
     """
     gaia_query = f"""
         SELECT TOP {max_stars + offset}
-            source_id, ra, dec, parallax, pmra, pmdec,
-            phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe
+            source_id, ra, dec, 
+            parallax, parallax_error,
+            pmra, pmra_error, pmdec, pmdec_error,
+            radial_velocity, radial_velocity_error,
+            phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag,
+            phot_g_mean_flux_over_error, astrometric_sigma5d_max, ruwe
         FROM gaiadr3.gaia_source
         WHERE CONTAINS(
             POINT('ICRS', ra, dec),
@@ -78,27 +96,22 @@ def query_gaia_region(
             rows.append(
                 {
                     "source_id": str(source_id),
-                    "ra": float(record["ra"]),
-                    "dec": float(record["dec"]),
-                    "parallax": float(record["parallax"])
-                    if record["parallax"] is not None
-                    else None,
-                    "pmra": float(record["pmra"])
-                    if record["pmra"] is not None
-                    else None,
-                    "pmdec": float(record["pmdec"])
-                    if record["pmdec"] is not None
-                    else None,
-                    "phot_g_mean_mag": float(record["phot_g_mean_mag"])
-                    if record["phot_g_mean_mag"] is not None
-                    else None,
-                    "phot_bp_mean_mag": float(record["phot_bp_mean_mag"])
-                    if record["phot_bp_mean_mag"] is not None
-                    else None,
-                    "phot_rp_mean_mag": float(record["phot_rp_mean_mag"])
-                    if record["phot_rp_mean_mag"] is not None
-                    else None,
-                    "ruwe": float(record["ruwe"]) if record["ruwe"] is not None else None,
+                    "ra": _clean_val(record["ra"]),
+                    "dec": _clean_val(record["dec"]),
+                    "parallax": _clean_val(record["parallax"]),
+                    "parallax_error": _clean_val(record["parallax_error"]),
+                    "pmra": _clean_val(record["pmra"]),
+                    "pmra_error": _clean_val(record["pmra_error"]),
+                    "pmdec": _clean_val(record["pmdec"]),
+                    "pmdec_error": _clean_val(record["pmdec_error"]),
+                    "radial_velocity": _clean_val(record["radial_velocity"]),
+                    "radial_velocity_error": _clean_val(record["radial_velocity_error"]),
+                    "phot_g_mean_mag": _clean_val(record["phot_g_mean_mag"]),
+                    "phot_bp_mean_mag": _clean_val(record["phot_bp_mean_mag"]),
+                    "phot_rp_mean_mag": _clean_val(record["phot_rp_mean_mag"]),
+                    "phot_g_mean_flux_over_error": _clean_val(record["phot_g_mean_flux_over_error"]),
+                    "astrometric_sigma5d_max": _clean_val(record["astrometric_sigma5d_max"]),
+                    "ruwe": _clean_val(record["ruwe"]),
                 }
             )
         except (KeyError, ValueError, TypeError) as e:

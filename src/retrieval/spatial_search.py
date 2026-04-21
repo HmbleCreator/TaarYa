@@ -9,6 +9,7 @@ from sqlalchemy import text
 
 from src.database import postgres_conn
 from src.models import Star, Region
+from src.utils.scientific_orchestrator import ScientificOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -452,28 +453,38 @@ class SpatialSearch:
         self,
         ra: float,
         dec: float,
-        radius_deg: float,
-        limit: int = 100
+        radius: float,
+        unit: str = "deg",
+        frame: str = "icrs",
+        limit: int = 100,
+        include_discovery: bool = False,
     ) -> List[Dict[str, Any]]:
         """
-        Find all stars within a cone around given coordinates.
+        Find all stars within a cone around given coordinates (multi-frame support).
         
         Args:
-            ra: Right Ascension in degrees (0-360)
-            dec: Declination in degrees (-90 to 90)
-            radius_deg: Search radius in degrees
+            ra: Right Ascension or Longitude
+            dec: Declination or Latitude
+            radius: Search radius
+            unit: Radius unit ('deg', 'arcmin', 'arcsec')
+            frame: Coordinate frame ('icrs', 'galactic', 'fk5')
             limit: Maximum number of results
+            include_discovery: Whether to include discovery scoring
             
         Returns:
             List of star records as dictionaries
         """
-        logger.info(f"Cone search: RA={ra}, Dec={dec}, radius={radius_deg}°")
+        # Scientific preprocessing
+        ra_icrs, dec_icrs = ScientificOrchestrator.parse_coordinates(ra, dec, frame)
+        radius_deg = ScientificOrchestrator.parse_radius(radius, unit)
+
+        logger.info(f"Cone search: {ra} {dec} ({frame}), radius={radius} {unit}")
         
         postgres_conn.connect()
         
         fetch_limit = max(limit, min(limit * 5, 2000))
 
-        query = text("""
+        query_str = """
             SELECT source_id, ra, dec, parallax, pmra, pmdec,
                    phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe,
                    catalog_source, object_class,
@@ -482,18 +493,56 @@ class SpatialSearch:
             WHERE q3c_radial_query(ra, dec, :center_ra, :center_dec, :radius)
             ORDER BY angular_distance
             LIMIT :fetch_limit
-        """)
+        """
+        query = text(query_str)
         
         with postgres_conn.session() as session:
             result = session.execute(query, {
-                "center_ra": ra,
-                "center_dec": dec,
+                "center_ra": ra_icrs,
+                "center_dec": dec_icrs,
                 "radius": radius_deg,
                 "fetch_limit": fetch_limit
             })
             
             rows = result.mappings().all()
             stars = self._dedupe_stars([dict(row) for row in rows], limit=limit)
+
+        # Attach provenance
+        provenance = ScientificOrchestrator.create_provenance(
+            "cone_search", 
+            {"ra": ra, "dec": dec, "radius": radius, "unit": unit, "frame": frame},
+            query_str
+        )
+        
+        for s in stars:
+            s["_provenance"] = provenance
+            ScientificOrchestrator.format_star_with_units(s)
+
+        if include_discovery:
+            # Simple local scoring for cone search results
+            profile = _discovery_profile("balanced")
+            for star in stars:
+                score = 0.0
+                reasons = []
+                
+                ruwe = _finite_float(star.get("ruwe"))
+                if ruwe and ruwe >= 1.4:
+                    score += profile["ruwe_elevated"]
+                    reasons.append(f"Elevated RUWE ({ruwe:.2f})")
+                
+                bp = _finite_float(star.get("phot_bp_mean_mag"))
+                rp = _finite_float(star.get("phot_rp_mean_mag"))
+                if bp and rp:
+                    bp_rp = bp - rp
+                    if bp_rp <= -0.1 or bp_rp >= 2.8:
+                        score += profile["color_extreme"]
+                        reasons.append(f"Extreme color (BP-RP={bp_rp:.2f})")
+                
+                star["discovery_score"] = round(score, 1)
+                star["discovery_reasons"] = reasons
+            
+            # Sort by discovery score if requested
+            stars.sort(key=lambda x: x.get("discovery_score", 0), reverse=True)
             
         logger.info(f"Found {len(stars)} stars in cone")
         return [self._sanitize_star(star) for star in stars]
@@ -502,18 +551,22 @@ class SpatialSearch:
         self,
         ra: float,
         dec: float,
-        radius_deg: float,
+        radius: float,
+        unit: str = "deg",
+        frame: str = "icrs",
         mag_limit: Optional[float] = None,
         min_parallax: Optional[float] = None,
         limit: int = 100
     ) -> List[Dict[str, Any]]:
         """
-        Cone search with optional magnitude and parallax filters.
+        Cone search with optional magnitude and parallax filters (multi-frame).
         
         Args:
-            ra: Right Ascension in degrees
-            dec: Declination in degrees
-            radius_deg: Search radius in degrees
+            ra: Right Ascension or Longitude
+            dec: Declination or Latitude
+            radius: Search radius
+            unit: Radius unit ('deg', 'arcmin', 'arcsec')
+            frame: Coordinate frame ('icrs', 'galactic', 'fk5')
             mag_limit: Maximum G-band magnitude (fainter limit)
             min_parallax: Minimum parallax in mas (distance filter)
             limit: Maximum results
@@ -521,10 +574,14 @@ class SpatialSearch:
         Returns:
             Filtered list of star records
         """
+        # Scientific preprocessing
+        ra_icrs, dec_icrs = ScientificOrchestrator.parse_coordinates(ra, dec, frame)
+        radius_deg = ScientificOrchestrator.parse_radius(radius, unit)
+
         conditions = ["q3c_radial_query(ra, dec, :center_ra, :center_dec, :radius)"]
         params = {
-            "center_ra": ra,
-            "center_dec": dec,
+            "center_ra": ra_icrs,
+            "center_dec": dec_icrs,
             "radius": radius_deg,
             "fetch_limit": max(limit, min(limit * 5, 2000))
         }
@@ -557,6 +614,17 @@ class SpatialSearch:
             rows = result.mappings().all()
             stars = self._dedupe_stars([dict(row) for row in rows], limit=limit)
         
+        # Attach provenance
+        provenance = ScientificOrchestrator.create_provenance(
+            "radial_search", 
+            {"ra": ra, "dec": dec, "radius": radius, "unit": unit, "frame": frame, "mag_limit": mag_limit, "min_parallax": min_parallax},
+            str(query)
+        )
+        
+        for s in stars:
+            s["_provenance"] = provenance
+            ScientificOrchestrator.format_star_with_units(s)
+            
         logger.info(f"Radial search: {len(stars)} stars (mag<={mag_limit}, plx>={min_parallax})")
         return [self._sanitize_star(star) for star in stars]
     
@@ -1066,7 +1134,38 @@ class SpatialSearch:
             },
         }
 
+    def compute_local_density(self, ra: float, dec: float, radius: float = 0.5) -> float:
+        """
+        Estimate local stellar surface density in stars/deg^2.
+        """
+        stars = self.cone_search(ra, dec, radius, limit=1000)
+        area = math.pi * (radius ** 2)
+        return len(stars) / area if area > 0 else 0.0
+
+    def is_density_anomaly(self, star: Dict[str, Any], neighborhood_radius: float = 1.0) -> Dict[str, Any]:
+        """
+        Check if a star resides in a significant density peak relative to its neighborhood.
+        """
+        ra, dec = star.get('ra'), star.get('dec')
+        local_d = self.compute_local_density(ra, dec, 0.1) # Small aperture
+        neighborhood_d = self.compute_local_density(ra, dec, neighborhood_radius) # Large aperture
+        
+        ratio = local_d / neighborhood_d if neighborhood_d > 0 else 1.0
+        
+        return {
+            "local_density": round(local_d, 1),
+            "neighborhood_density": round(neighborhood_d, 1),
+            "density_ratio": round(ratio, 2),
+            "is_peak": ratio > 3.0 # >3x denser than surroundings
+        }
+
     def _sanitize_star(self, star: Dict[str, Any]) -> Dict[str, Any]:
+        """Return a copy of a star row with NaN values converted to null-friendly None."""
+        cleaned = dict(star)
+        for key, val in cleaned.items():
+            if isinstance(val, float) and (math.isnan(val) or math.isinf(val)):
+                cleaned[key] = None
+        return cleaned
         """Return a copy of a star row with NaN values converted to null-friendly None."""
         cleaned = dict(star)
         for key in (

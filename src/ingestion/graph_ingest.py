@@ -3,6 +3,7 @@ Ingest graph data from PostgreSQL and Qdrant into Neo4j.
 """
 
 import logging
+import re
 from typing import Any, Dict, List
 
 from qdrant_client import QdrantClient
@@ -20,6 +21,44 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 500
+
+
+def extract_gaia_ids(text: str) -> List[str]:
+    """Extract Gaia Source IDs from text using regex.
+    
+    Gaia IDs are typically 19-digit integers.
+    """
+    if not text:
+        return []
+    # Match long integers that look like Gaia IDs (18-20 digits)
+    pattern = re.compile(r'\b\d{18,20}\b')
+    return list(set(pattern.findall(text)))
+
+
+def link_stars_to_papers_semantic(graph: GraphSearch) -> int:
+    """
+    Analyze paper abstracts for Gaia Source IDs and create MENTIONED_IN links.
+    
+    This is a higher-fidelity linking method than string matching.
+    """
+    with neo4j_conn.session() as session:
+        # Get all papers and their abstracts
+        papers = session.run("MATCH (p:Paper) RETURN p.arxiv_id as id, p.abstract as abstract, p.title as title")
+        
+        links_created = 0
+        for record in papers:
+            arxiv_id = record["id"]
+            content = f"{record['title']} {record['abstract']}"
+            
+            source_ids = extract_gaia_ids(content)
+            for sid in source_ids:
+                # Verify if this star exists in our database before linking in graph
+                # (Optional: we could create the star node even if not in Postgres)
+                graph.link_star_to_paper(sid, arxiv_id)
+                links_created += 1
+                logger.info(f"Semantically linked star {sid} to paper {arxiv_id}")
+                
+        return links_created
 
 
 def seed_clusters(graph: GraphSearch) -> int:
@@ -158,6 +197,10 @@ def link_papers_to_clusters(graph: GraphSearch) -> int:
         "hyades": ["hyades", "melotte 25", "collinder 50"],
         "pleiades": ["pleiades", "melotte 45", "m45", "seven sisters"],
         "orion ob1": ["orion ob1", "orion ob", "orion association"],
+        "lmc (large magellanic cloud)": ["lmc", "large magellanic cloud", "nubecula major"],
+        "smc (small magellanic cloud)": ["smc", "small magellanic cloud", "nubecula minor"],
+        "omega centauri": ["omega centauri", "ngc 5139", "ω cen"],
+        "galactic center": ["galactic center", "sagittarius a*", "sgr a*"],
     }
 
     links = 0
@@ -196,12 +239,43 @@ def link_papers_to_clusters(graph: GraphSearch) -> int:
     return links
 
 
+def link_papers_to_clusters_semantic(graph: GraphSearch, vector: VectorSearch) -> int:
+    """Link papers to clusters based on semantic similarity."""
+    postgres_conn.connect()
+    with postgres_conn.session() as session:
+        regions = session.execute(select(Region)).scalars().all()
+
+    links = 0
+    for region in regions:
+        # Search for papers semantically related to cluster name
+        results = vector.search_similar(query_text=region.name, limit=10)
+        
+        for r in results:
+            arxiv_id = r["payload"].get("arxiv_id")
+            if arxiv_id:
+                # Create COVERS relationship
+                query = """
+                MATCH (p:Paper {arxiv_id: $arxiv_id})
+                MATCH (c:Cluster {name: $cluster_name})
+                MERGE (p)-[:COVERS]->(c)
+                RETURN count(*) as cnt
+                """
+                with neo4j_conn.session() as session:
+                    result = session.run(query, {"arxiv_id": arxiv_id, "cluster_name": region.name})
+                    links += 1
+        
+        logger.info(f"Semantically linked papers to cluster {region.name}")
+        
+    return links
+
+
 def ingest_graph():
     """Main ingestion pipeline."""
     logger.info("Starting graph ingestion...")
 
     graph = GraphSearch()
     spatial = SpatialSearch()
+    vector = VectorSearch()
 
     # Step 1: Seed clusters
     logger.info("=== Step 1: Seeding clusters ===")
@@ -219,9 +293,17 @@ def ingest_graph():
     logger.info("=== Step 4: Seeding papers ===")
     seed_papers(graph)
 
-    # Step 5: Link papers to clusters
-    logger.info("=== Step 5: Linking papers to clusters ===")
+    # Step 5: Link papers to clusters (Text Match)
+    logger.info("=== Step 5: Linking papers to clusters (Text Match) ===")
     link_papers_to_clusters(graph)
+    
+    # Step 5b: Link papers to clusters (Semantic Match)
+    logger.info("=== Step 5b: Linking papers to clusters (Semantic Match) ===")
+    link_papers_to_clusters_semantic(graph, vector)
+
+    # Step 6: Link stars to papers semantically (NEW)
+    logger.info("=== Step 6: Linking stars to papers semantically ===")
+    link_stars_to_papers_semantic(graph)
 
     logger.info("Graph ingestion complete!")
 
