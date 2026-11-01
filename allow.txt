@@ -1,0 +1,96 @@
+# Allowlist of justified constants, architectural layout dimensions, and domain thresholds
+# Format: <number>  # <reason>
+
+# PGFPlots, TikZ, and LaTeX layout dimensions
+1.18     # pgfplots compat level (compat=1.18)
+201306   # author postcode
+0.88     # figure columnwidth scale
+6.5      # layout dimension (cm)
+0.9      # layout dimension (cm)
+0.8      # layout dimension (cm)
+0.7      # layout dimension (cm)
+1.4      # layout dimension (cm)
+2.8      # layout dimension (cm)
+3.5      # layout dimension (cm)
+2.2      # layout dimension (cm)
+1.0      # layout dimension (cm)
+3.2      # layout dimension (cm)
+7.9      # layout dimension (cm)
+8.5      # layout dimension (cm)
+0.22     # legend coordinate offset
+12000    # scaling plot ymax
+
+# Model architectures and indexing constants
+384      # all-MiniLM-L6-v2 sentence transformer embedding dimension
+
+# Physical, astrometric, and survey constants
+1.4      # Gaia RUWE astrometric excess noise threshold
+2.0      # RUWE high-noise bin limit
+0.1      # BP-RP blue outlier threshold (-0.1 mag)
+2.8      # BP-RP red outlier threshold (+2.8 mag)
+4.2      # catalog BP-RP maximum colour range
+120      # catalog parallax upper range (mas)
+40       # proper motion outlier threshold (40 mas/yr)
+80       # strict proper motion threshold (80 mas/yr)
+21       # TESS camera PSF 1-sigma width in arcsec
+0.8      # maximum transit depth dilution coefficient (D_MAX)
+42       # TESS 2-pixel vetting cone radius in arcsec
+10       # distance modulus definition scale (10 pc)
+1000     # parallax distance conversion scale (1000 mas/arcsec)
+0.2      # fractional parallax error threshold for Gaussian approximation
+0.85     # personalized PageRank restart probability (1 - alpha)
+1.3      # Gaia DR3 full sky catalog scale (1.3 billion sources)
+300000   # estimated total arXiv astro-ph corpus scale
+
+# Table 1 multi-signal discovery weights (Section 3.2)
+10.0     # Table 1 balanced color weight
+10.5     # Table 1 astrometry-heavy color weight
+11.5     # Table 1 fast-motion color weight
+14.0     # Table 1 balanced/fast-motion proper motion weight
+12.0     # Table 1 astrometry-heavy proper motion weight
+5.0      # Table 1 balanced brightness weight
+5.5      # Table 1 astrometry-heavy brightness weight / cross-match cap
+6.5      # Table 1 fast-motion brightness weight
+0.15     # Table 1 balanced density scale alpha
+0.20     # Table 1 astrometry-heavy density scale alpha
+0.28     # Table 1 fast-motion density scale alpha
+3.0      # Table 1 balanced cross-match cap
+4.0      # Table 1 astrometry-heavy cross-match cap
+
+# Cluster catalog designators (plain integers in text)
+22       # Melotte 22 (Pleiades) open cluster
+2516     # NGC 2516 open cluster
+2391     # IC 2391 open cluster
+2632     # NGC 2632 (Praesepe / M44) open cluster
+
+# Cone sample totals (derived from cluster_cones/manifest.json)
+37552    # total stars across 3 untruncated cones (18150 + 8812 + 10590)
+1336     # total published gold members across 3 cones (469 + 495 + 372)
+
+# HR diagram illustrative coordinates and labels (Figure 4)
+1.75     # HR diagram plot coordinate
+1.2      # HR diagram plot coordinate
+2.5      # HR diagram plot coordinate
+2.75     # HR diagram plot coordinate
+5.25     # HR diagram plot coordinate
+6.75     # HR diagram plot coordinate
+8.25     # HR diagram plot coordinate
+9.75     # HR diagram plot coordinate
+11.75    # HR diagram plot coordinate
+14.5     # HR diagram plot coordinate
+2.7      # HR diagram plot coordinate
+0.15     # HR diagram plot coordinate
+1.05     # HR diagram plot coordinate
+5.2      # HR diagram plot coordinate
+2.15     # HR diagram plot coordinate
+3.4      # HR diagram plot coordinate
+
+# Scaling projections (Section 5)
+8053     # current Neo4j memory usage (MB)
+8060     # projected 10^6 Neo4j memory usage (MB)
+8070     # projected 10^8 Neo4j memory usage (MB)
+8080     # projected 10^9 Neo4j memory usage (MB)
+203      # current ingestion time (s)
+230      # projected 10^6 ingestion time (s)
+260      # projected 10^8 ingestion time (s)
+290      # projected 10^9 ingestion time (s)
