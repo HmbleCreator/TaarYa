@@ -1,0 +1,153 @@
+{
+  "covariates_only_cv": {
+    "auc": 0.619,
+    "ci95": [
+      0.559,
+      0.678
+    ]
+  },
+  "neighbour_only_cv": {
+    "auc": 0.525,
+    "ci95": [
+      0.463,
+      0.589
+    ]
+  },
+  "covariates+neighbour_cv": {
+    "auc": 0.676,
+    "ci95": [
+      0.617,
+      0.73
+    ]
+  },
+  "baseline_covariates": [
+    "depth_ppm",
+    "tmag",
+    "period",
+    "dur_h"
+  ],
+  "raw_depth_auc_fixed_sign": 0.417,
+  "warnings": [],
+  "delta_auc_with_vs_without_neighbour": {
+    "mean": 0.056,
+    "ci95": [
+      0.027,
+      0.087
+    ],
+    "separated": true
+  },
+  "depth_only_cv": {
+    "auc": 0.619,
+    "ci95": [
+      0.559,
+      0.678
+    ]
+  },
+  "depth+neighbour_cv": {
+    "auc": 0.676,
+    "ci95": [
+      0.617,
+      0.73
+    ]
+  },
+  "delta_auc_combined_minus_depth": {
+    "mean": 0.056,
+    "ci95": [
+      0.027,
+      0.087
+    ],
+    "separated": true
+  },
+  "operating_points": {
+    "score>=-1.0": {
+      "fp_rejected": {
+        "k": 176,
+        "n": 189,
+        "rate": 0.9312,
+        "ci95": [
+          0.8859,
+          0.9594
+        ]
+      },
+      "planets_lost": {
+        "k": 136,
+        "n": 166,
+        "rate": 0.8193,
+        "ci95": [
+          0.7537,
+          0.8704
+        ]
+      },
+      "enrichment_vs_random": 0.112
+    },
+    "score>=0.0": {
+      "fp_rejected": {
+        "k": 149,
+        "n": 189,
+        "rate": 0.7884,
+        "ci95": [
+          0.7247,
+          0.8406
+        ]
+      },
+      "planets_lost": {
+        "k": 93,
+        "n": 166,
+        "rate": 0.5602,
+        "ci95": [
+          0.4842,
+          0.6335
+        ]
+      },
+      "enrichment_vs_random": 0.228
+    },
+    "score>=0.5": {
+      "fp_rejected": {
+        "k": 116,
+        "n": 189,
+        "rate": 0.6138,
+        "ci95": [
+          0.5427,
+          0.6802
+        ]
+      },
+      "planets_lost": {
+        "k": 71,
+        "n": 166,
+        "rate": 0.4277,
+        "ci95": [
+          0.3549,
+          0.5038
+        ]
+      },
+      "enrichment_vs_random": 0.186
+    },
+    "score>=1.0": {
+      "fp_rejected": {
+        "k": 67,
+        "n": 189,
+        "rate": 0.3545,
+        "ci95": [
+          0.2898,
+          0.425
+        ]
+      },
+      "planets_lost": {
+        "k": 40,
+        "n": 166,
+        "rate": 0.241,
+        "ci95": [
+          0.1822,
+          0.3114
+        ]
+      },
+      "enrichment_vs_random": 0.114
+    }
+  },
+  "n": {
+    "planets": 166,
+    "false_positives": 189,
+    "stars": 342
+  },
+  "verdict": "neighbour feature adds information beyond the TOI-table covariates (labels overlap with human vetting; report as agreement)"
+}

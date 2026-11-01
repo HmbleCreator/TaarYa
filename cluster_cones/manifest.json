@@ -1,0 +1,59 @@
+{
+  "tap_url": "https://gaia.aip.de/tap",
+  "retrieved_utc": "2026-11-01T04:14:04Z",
+  "cuts": {
+    "parallax_over_error_min": 5.0,
+    "G_max": 18.0,
+    "member_prob_min": 0.7
+  },
+  "clusters": {
+    "Melotte_22          ": {
+      "ra0": 56.57695618071155,
+      "dec0": 24.146404049241678,
+      "radius_deg": 1.8252658212324884,
+      "radius_capped": false,
+      "adql": "SELECT TOP 60000 source_id, ra, dec, pmra, pmdec, parallax, parallax_over_error, phot_g_mean_mag AS G, bp_rp, ruwe FROM gaiadr3.gaia_source WHERE 1=CONTAINS(POINT('ICRS',ra,dec),CIRCLE('ICRS',56.576956,24.146404,1.825266)) AND parallax_over_error >= 5.0 AND phot_g_mean_mag <= 18.0 AND pmra IS NOT NULL",
+      "n_cone": 18150,
+      "truncated": false,
+      "status": "ok",
+      "n_published_total": 529,
+      "n_published_in_cone": 469,
+      "member_coverage": 0.887,
+      "cone_purity": 0.0258
+    },
+    "NGC_2516            ": {
+      "ra0": 119.49458885591503,
+      "dec0": -60.7753976064541,
+      "radius_deg": 0.6809242320447219,
+      "radius_capped": false,
+      "adql": "SELECT TOP 60000 source_id, ra, dec, pmra, pmdec, parallax, parallax_over_error, phot_g_mean_mag AS G, bp_rp, ruwe FROM gaiadr3.gaia_source WHERE 1=CONTAINS(POINT('ICRS',ra,dec),CIRCLE('ICRS',119.494589,-60.775398,0.680924)) AND parallax_over_error >= 5.0 AND phot_g_mean_mag <= 18.0 AND pmra IS NOT NULL",
+      "n_cone": 8812,
+      "truncated": false,
+      "status": "ok",
+      "n_published_total": 663,
+      "n_published_in_cone": 495,
+      "member_coverage": 0.747,
+      "cone_purity": 0.0562
+    },
+    "NGC_2632            ": {
+      "ra0": 129.99247772463002,
+      "dec0": 19.703791221826553,
+      "radius_deg": 1.5867779367960708,
+      "radius_capped": false,
+      "adql": "SELECT TOP 60000 source_id, ra, dec, pmra, pmdec, parallax, parallax_over_error, phot_g_mean_mag AS G, bp_rp, ruwe FROM gaiadr3.gaia_source WHERE 1=CONTAINS(POINT('ICRS',ra,dec),CIRCLE('ICRS',129.992478,19.703791,1.586778)) AND parallax_over_error >= 5.0 AND phot_g_mean_mag <= 18.0 AND pmra IS NOT NULL",
+      "n_cone": 10590,
+      "truncated": false,
+      "status": "ok",
+      "n_published_total": 434,
+      "n_published_in_cone": 372,
+      "member_coverage": 0.857,
+      "cone_purity": 0.0351
+    }
+  },
+  "sha256": {
+    "stars.csv": "392d51987a649083846927092d14bc2433f332e06694f40ca5b465e1872cfceb",
+    "gold.csv": "cc631784203d3ac10688d493496a7cf15336d0fe3bcec0d15e9fdff58a6e0e09",
+    "edges_cone.csv": "5b7da2bf4ac4c6ad84230c3ce2454ae01032eb0b14fb88fb29d2a8abc985b715",
+    "edges_published.csv": "cc631784203d3ac10688d493496a7cf15336d0fe3bcec0d15e9fdff58a6e0e09"
+  }
+}
