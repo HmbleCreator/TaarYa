@@ -63,10 +63,6 @@
 2391     # IC 2391 open cluster
 2632     # NGC 2632 (Praesepe / M44) open cluster
 
-# Cone sample totals (derived from cluster_cones/manifest.json)
-37552    # total stars across 3 untruncated cones (18150 + 8812 + 10590)
-1336     # total published gold members across 3 cones (469 + 495 + 372)
-
 # HR diagram illustrative coordinates and labels (Figure 4)
 1.75     # HR diagram plot coordinate
 1.2      # HR diagram plot coordinate
@@ -85,12 +81,12 @@
 2.15     # HR diagram plot coordinate
 3.4      # HR diagram plot coordinate
 
-# Scaling projections (Section 5)
-8053     # current Neo4j memory usage (MB)
-8060     # projected 10^6 Neo4j memory usage (MB)
-8070     # projected 10^8 Neo4j memory usage (MB)
-8080     # projected 10^9 Neo4j memory usage (MB)
-203      # current ingestion time (s)
-230      # projected 10^6 ingestion time (s)
-260      # projected 10^8 ingestion time (s)
-290      # projected 10^9 ingestion time (s)
+# Scaling projections (Table 11: asymptotic projection model)
+8053     # measured baseline semantic latency (ms) from Table 6
+8060     # projected 10^6 semantic query latency (ms)
+8070     # projected 10^8 semantic query latency (ms)
+8080     # projected 10^9 semantic query latency (ms)
+203      # measured baseline hybrid latency (ms) from Table 6
+230      # projected 10^6 hybrid query latency (ms)
+260      # projected 10^8 hybrid query latency (ms)
+290      # projected 10^9 hybrid query latency (ms)

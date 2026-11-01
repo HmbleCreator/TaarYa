@@ -5,25 +5,19 @@
       "total": 14,
       "passed": 9,
       "partial": 1,
-      "failed": 4,
-      "pass_rate": 0.643,
-      "avg_latency_ms": 28.5
+      "failed": 4
     },
     "semantic": {
       "total": 16,
       "passed": 16,
       "partial": 0,
-      "failed": 0,
-      "pass_rate": 1.0,
-      "avg_latency_ms": 68.5
+      "failed": 0
     },
     "discovery": {
       "total": 13,
       "passed": 1,
       "partial": 5,
-      "failed": 7,
-      "pass_rate": 0.077,
-      "avg_latency_ms": 15.2
+      "failed": 7
     },
     "graph": {
       "total": 0,
@@ -35,9 +29,7 @@
       "total": 7,
       "passed": 7,
       "partial": 0,
-      "failed": 0,
-      "pass_rate": 1.0,
-      "avg_latency_ms": 165.0
+      "failed": 0
     }
   },
   "results": [
