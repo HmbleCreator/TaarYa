@@ -1,0 +1,55 @@
+{
+  "table": {
+    "spatial": {
+      "total": 14,
+      "passed": 9,
+      "partial": 1,
+      "failed": 4,
+      "pass_rate": 64.3,
+      "mean_latency": 27.0
+    },
+    "discovery": {
+      "total": 13,
+      "passed": 1,
+      "partial": 5,
+      "failed": 7,
+      "pass_rate": 7.7,
+      "mean_latency": 25.1
+    },
+    "semantic": {
+      "total": 16,
+      "passed": 16,
+      "partial": 0,
+      "failed": 0,
+      "pass_rate": 100.0,
+      "mean_latency": 79.4
+    },
+    "hybrid": {
+      "total": 7,
+      "passed": 7,
+      "partial": 0,
+      "failed": 0,
+      "pass_rate": 100.0,
+      "mean_latency": 178.5
+    },
+    "__overall__": {
+      "total": 50,
+      "passed": 33,
+      "partial": 6,
+      "failed": 11,
+      "pass_rate": 66.0
+    }
+  },
+  "n_records": 50,
+  "inputs": {
+    "results_sha256": "ed9125fcdf031b9c",
+    "queries_sha256": "5d0664f27a31c4f5"
+  },
+  "family_sums_match_overall": true,
+  "unmapped_families": [],
+  "baseline": {
+    "spec": "7c89f1a:eval/benchmark_results.json",
+    "n_changed": 0,
+    "changed": []
+  }
+}
