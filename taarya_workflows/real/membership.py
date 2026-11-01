@@ -39,7 +39,12 @@ def norm(s) -> str:
 
 
 _ALIAS = {norm(a): k for k, v in ALIASES.items() for a in v}
-canon = lambda s: _ALIAS.get(norm(s), norm(s))
+def canon(s) -> str:
+    """Catalogue names vary: 'Melotte_22 (Pleiades)', 'Melotte_22', 'Pleiades'. Try the whole string, each bracketed part and the unbracketed part."""
+    s = str(s); bare = re.sub(r"\([^)]*\)", "", s)
+    for part in [s, bare] + re.findall(r"\(([^)]*)\)", s):
+        if norm(part) in _ALIAS: return _ALIAS[norm(part)]
+    return norm(bare)
 
 
 def _pick(df, names, required=True):
@@ -199,7 +204,7 @@ def export_neo4j_members(uri="bolt://localhost:7687", user="neo4j", password_env
 
 def run(stars_csv, edges_csv, gold_csv, id_system="dr3", min_prob=0.7, dr2_map_csv=None):
     gold, rep = load_gold(gold_csv, id_system, min_prob, pd.read_csv(dr2_map_csv) if dr2_map_csv else None)
-    out = evaluate_membership(pd.read_csv(stars_csv, dtype={"source_id": str}), pd.read_csv(edges_csv, dtype={"source_id": str}), gold)
+    out = evaluate_membership(pd.read_csv(stars_csv), pd.read_csv(edges_csv), gold)
     out["gold_report"] = rep
     return out
 

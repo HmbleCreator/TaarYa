@@ -455,7 +455,7 @@ Table~\ref{tab:benchmark} reports results for the full 50-query suite.
 
 \begin{table}[htbp]
 \centering
-\caption{Benchmark results (2026-04-29) for all 50 queries. Spatial improved from 35.7\% to 64.3\% after seeding 5 missing benchmark clusters with synthetic stars (560 total). Discovery improved from 7.7\% to 11.4\% after injecting 40 anomalous stars. Semantic retrieval achieves 100\% across all 16 queries.}
+\caption{Benchmark results (2026-04-29) for all 50 queries. Spatial improved from 35.7\% to 64.3\% after seeding 5 missing benchmark clusters with synthetic stars (560 total). Discovery pass rate is 7.7\% (1/13 passed, 3 partial). Semantic retrieval achieves 100\% across all 16 queries.}
 \label{tab:benchmark}
 \begin{tabular}{lrrrrr}
 \toprule
@@ -714,7 +714,7 @@ The MESA inlist exporter (\texttt{TaarYaMESA}) generates MESA stellar evolution 
 \midrule
 Spatial cone search & PostgreSQL/Q3C retrieval code & Implemented \\
 Semantic literature retrieval & Qdrant-backed vector search & Implemented \\
-Graph storage and cluster membership & Neo4j schema and utilities; 29,798 stars / 6,464 papers / 13 clusters verified & Implemented \\
+Graph storage and cluster membership & Neo4j schema and utilities; 34,820 stars / 6,464 papers / 13 clusters verified & Implemented \\
 Graph auto-sync on ingestion & \texttt{GRAPH\allowbreak\_AUTO\allowbreak\_SYNC} flag; \texttt{POST /api/\allowbreak ingest/\allowbreak graph} for manual reconciliation & Implemented \\
 Source-level star-to-paper linking & \texttt{MENTIONED\allowbreak\_IN} = 2{,}820 after full reconciliation (cluster-mediated heuristic) & Incomplete \\
 Discovery ranking heuristic & Retrieval code with profiles & Implemented \\

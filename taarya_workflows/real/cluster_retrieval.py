@@ -128,4 +128,3 @@ if __name__ == "__main__":
     ap.add_argument("--n-seeds", type=int, default=10); a = ap.parse_args()
     st = pd.read_csv(a.stars, dtype={"source_id": str}); gd = pd.read_csv(a.gold, dtype={"source_id": str})
     print(json.dumps(evaluate_retrieval(st, gd, n_seeds=a.n_seeds), indent=2))
-

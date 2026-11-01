@@ -38,4 +38,3 @@ def test_too_few_hidden_members_is_skipped_not_scored():
 def test_float_ids_refused():
     rng = np.random.default_rng(3); s, g = world(rng, n_clusters=1); s["source_id"] = s.source_id.astype(float)
     with pytest.raises(TypeError): CR.evaluate_retrieval(s, g)
-

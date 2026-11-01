@@ -15,7 +15,7 @@ UNVERIFIED HERE (no network in the build sandbox): endpoint URLs and column name
 tolerant (candidate lists below) and fails loudly with the columns it did see.
 """
 from __future__ import annotations
-import io, json, os, time, urllib.parse, urllib.request
+import io, json, os, time, urllib.request
 import numpy as np, pandas as pd
 from ..core import rate, bootstrap_ci
 
@@ -67,27 +67,19 @@ def load_tois(source: str = "archive") -> pd.DataFrame:
             raw = pd.read_csv("data/tess_cache/nasa_tois.csv")
         else:
             raw = download(ARCHIVE_TAP)
-    elif source == "exofop":
-        raw = download(EXOFOP_CSV)
-    else:
-        raw = pd.read_csv(source)
+    elif source == "exofop": raw = download(EXOFOP_CSV)
+    else: raw = pd.read_csv(source)
     return normalise(raw)
 
 
 # ----------------------------------------------------------------- neighbours
 def fetch_neighbours_gaia(ra, dec, radius_arcsec=42.0) -> pd.DataFrame:
-    """Gaia DR3 cone via AIP Potsdam TAP with fallback to astroquery. Returns columns sep_arcsec, G."""
+    """Gaia DR3 cone via astroquery (UNVERIFIED live). Returns columns sep_arcsec, G."""
+    from astroquery.gaia import Gaia
     q = (f"SELECT source_id, phot_g_mean_mag AS G, DISTANCE(POINT('ICRS',ra,dec),POINT('ICRS',{ra},{dec}))*3600 AS sep_arcsec "
          f"FROM gaiadr3.gaia_source WHERE 1=CONTAINS(POINT('ICRS',ra,dec),CIRCLE('ICRS',{ra},{dec},{radius_arcsec/3600})) "
          f"AND phot_g_mean_mag IS NOT NULL")
-    try:
-        url = "https://gaia.aip.de/tap/sync?REQUEST=doQuery&LANG=ADQL&QUERY=" + urllib.parse.quote(q)
-        req = urllib.request.Request(url, headers={"User-Agent": "taarya-toi-vetter"})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            return pd.read_csv(io.BytesIO(r.read()))
-    except Exception:
-        from astroquery.gaia import Gaia
-        return Gaia.launch_job(q).get_results().to_pandas()
+    return Gaia.launch_job(q).get_results().to_pandas()
 
 
 def fetch_neighbours_postgres(dsn=None, table="stars", ra_col="ra", dec_col="dec", g_col="phot_g_mean_mag",
@@ -170,6 +162,14 @@ def _auc(y, s):
     return float(roc_auc_score(y, s)) if 0 < y.sum() < len(y) else float("nan")
 
 
+PRACTICAL_DELTA_AUC = 0.02          # smallest AUC gain worth caring about; fixed in advance
+
+
+def _loss_at_fp_rejection(y, sc, fp_rate):
+    thr = np.quantile(sc[y == 1], 1.0 - fp_rate)
+    return float(np.mean(sc[y == 0] >= thr))
+
+
 def _pipe():
     from sklearn.pipeline import make_pipeline
     from sklearn.impute import SimpleImputer
@@ -207,24 +207,31 @@ def evaluate(d: pd.DataFrame, B: int = 1000, seed: int = 0) -> dict:
         return out
     arms = {"covariates_only_cv": cvp(Xc), "neighbour_only_cv": cvp(nf), "covariates+neighbour_cv": cvp(np.hstack([Xc, nf]))}
     rng = np.random.default_rng(seed); tics = np.unique(g); idx_by = {t: np.where(g == t)[0] for t in tics}
-    boot = {k: [] for k in arms}; diff = []
+    boot = {k: [] for k in arms}; diff = []; ldiff = []
     for _ in range(B):
         ii = np.concatenate([idx_by[t] for t in rng.choice(tics, len(tics))])
         if y[ii].sum() == 0 or y[ii].sum() == len(ii): continue
         a_ = {k: _auc(y[ii], v[ii]) for k, v in arms.items()}
         for k in arms: boot[k].append(a_[k])
         diff.append(a_["covariates+neighbour_cv"] - a_["covariates_only_cv"])
+        ldiff.append(_loss_at_fp_rejection(y[ii], arms["covariates+neighbour_cv"][ii], 0.8) - _loss_at_fp_rejection(y[ii], arms["covariates_only_cv"][ii], 0.8))
     ci = lambda v: [round(float(np.quantile(v, .025)), 3), round(float(np.quantile(v, .975)), 3)]
     res = {k: dict(auc=round(_auc(y, v), 3), ci95=ci(boot[k])) for k, v in arms.items()}
     res["baseline_covariates"] = [c for c in ("depth_ppm", "tmag", "period", "dur_h") if c in d and d[c].notna().mean() > 0.8] + (["abs_galactic_lat"] if "ra" in d and "dec" in d and d.ra.notna().all() else [])
     res["analysis_spec_frozen"] = dict(model="SimpleImputer+StandardScaler+SplineTransformer(4 knots, deg 3)+LogisticRegression(C=0.3)",
                                        cv="5-fold StratifiedGroupKFold by TIC, 5 repeats averaged", bootstrap=f"{B} resamples by TIC",
-                                       note="do not tune after seeing results; report any change as a new analysis")
+                                       practical_threshold_delta_auc=PRACTICAL_DELTA_AUC, note="do not tune after seeing results; report any change as a new analysis")
     dep = np.log10(np.clip(d.depth_ppm.to_numpy(float), 1e-9, None)); res["raw_depth_auc_fixed_sign"] = round(_auc(y, dep), 3)
     res["warnings"] = ([f"depth is ANTI-correlated with FP in this sample (raw AUC {res['raw_depth_auc_fixed_sign']:.2f}); check selection"]
                        if res["raw_depth_auc_fixed_sign"] < 0.4 else [])
     dd = dict(mean=round(float(np.mean(diff)), 3), ci95=ci(diff)); dd["separated"] = bool(dd["ci95"][0] > 0 or dd["ci95"][1] < 0)
     res["delta_auc_with_vs_without_neighbour"] = dd
+    res["matched_operating_point"] = dict(
+        fp_rejection=0.8,
+        planet_loss_covariates_only=round(_loss_at_fp_rejection(y, arms["covariates_only_cv"], 0.8), 3),
+        planet_loss_with_neighbour=round(_loss_at_fp_rejection(y, arms["covariates+neighbour_cv"], 0.8), 3),
+        diff_with_minus_without=dict(mean=round(float(np.mean(ldiff)), 3), ci95=ci(ldiff)),
+        note="planets lost at the SAME 80% false-positive rejection; negative diff = neighbour feature helps")
     # backward-compatible aliases
     res["depth_only_cv"], res["depth+neighbour_cv"], res["delta_auc_combined_minus_depth"] = res["covariates_only_cv"], res["covariates+neighbour_cv"], dd
     sc = d.score.to_numpy(float); ops = {}
@@ -235,17 +242,18 @@ def evaluate(d: pd.DataFrame, B: int = 1000, seed: int = 0) -> dict:
                                     enrichment_vs_random=round(float((fl & (y == 1)).sum() / nfp - (fl & (y == 0)).sum() / npl), 3))
     res["operating_points"] = ops
     res["n"] = dict(planets=int((y == 0).sum()), false_positives=int((y == 1).sum()), stars=int(len(tics)))
-    res["verdict"] = ("neighbour feature adds information beyond the TOI-table covariates (labels overlap with human vetting; report as agreement)"
-                      if dd["separated"] and dd["mean"] > 0 else "no demonstrated gain over TOI-table covariates" if not dd["separated"]
-                      else "adding the neighbour feature hurts")
+    if not dd["separated"]: v = "no demonstrated gain over TOI-table covariates"
+    elif dd["mean"] < 0: v = "adding the neighbour feature hurts"
+    elif dd["mean"] < PRACTICAL_DELTA_AUC: v = (f"statistically detectable but NEGLIGIBLE (delta AUC {dd['mean']:.3f} < practical threshold {PRACTICAL_DELTA_AUC}); "
+                                                "do not present as useful vetting information")
+    else: v = "neighbour feature adds practically meaningful information beyond the TOI-table covariates (labels overlap with human vetting; report as agreement)"
+    res["verdict"] = v
+    res["operating_points_note"] = "operating_points use the legacy ratio score (contains depth and target brightness); cite matched_operating_point, not these, as evidence about neighbour vetting"
     return res
 
 
-def run(source="archive", cache_path="toi_neighbours_cache.json", fetch=None, max_n=None, cache_only=False):
+def run(source="archive", cache_path="toi_neighbours_cache.json", fetch=None, max_n=None):
     df = load_tois(source)
-    if cache_only:
-        cache = json.load(open(cache_path)) if os.path.exists(cache_path) else {}
-        return evaluate(build_table(df, cache))
     sub = df[(df.label >= 0)].drop_duplicates("tic")
     if max_n:                                                   # random, seeded: the head of a TOI-sorted list is NOT representative
         sub = sub.sample(min(max_n, len(sub)), random_state=0)
@@ -256,6 +264,5 @@ def run(source="archive", cache_path="toi_neighbours_cache.json", fetch=None, ma
 if __name__ == "__main__":
     import argparse; ap = argparse.ArgumentParser()
     ap.add_argument("--source", default="archive"); ap.add_argument("--cache", default="toi_neighbours_cache.json")
-    ap.add_argument("--max", type=int, default=None); ap.add_argument("--cache-only", action="store_true")
-    a = ap.parse_args()
-    print(json.dumps(run(a.source, a.cache, max_n=a.max, cache_only=a.cache_only), indent=2))
+    ap.add_argument("--max", type=int, default=None); a = ap.parse_args()
+    print(json.dumps(run(a.source, a.cache, max_n=a.max), indent=2))
