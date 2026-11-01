@@ -1,0 +1,15 @@
+\begin{table}[htbp]\centering\small
+\caption{Membership recovery, mean over 3 clusters (95\% bootstrap CI).}\label{tab:membership_methods}
+\begin{tabular}{lrrr}
+\toprule
+Method & Precision & Recall & F1 \\
+\midrule
+taarya\_member\_of\_edges & 0.039 (n=3, no CI) & 1.000 (n=3, no CI) & 0.075 (n=3, no CI) \\
+cone\_only & 0.039 (n=3, no CI) & 1.000 (n=3, no CI) & 0.075 (n=3, no CI) \\
+sigma\_clip\_pm\_plx & 0.400 (n=3, no CI) & 0.667 (n=3, no CI) & 0.498 (n=3, no CI) \\
+gmm\_2comp & 0.000 (n=3, no CI) & 0.000 (n=3, no CI) & 0.000 (n=3, no CI) \\
+hdbscan & 0.528 (n=3, no CI) & 1.000 (n=3, no CI) & 0.690 (n=3, no CI) \\
+random\_same\_size\_as\_edges & 0.039 (n=3, no CI) & 1.000 (n=3, no CI) & 0.075 (n=3, no CI) \\
+\bottomrule
+\end{tabular}
+\end{table}

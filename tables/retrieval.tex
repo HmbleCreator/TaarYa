@@ -1,0 +1,15 @@
+\begin{table}[htbp]\centering\small
+\caption{Cluster-member retrieval from 10 seeds, mean over 3 clusters (95\% CI).}\label{tab:retrieval}
+\begin{tabular}{lrrrr}
+\toprule
+Method & AP & P@50 & nDCG@100 & $\Delta$AP vs seed box \\
+\midrule
+current\_graph\_traversal & 0.040 (n=3, no CI) & 0.041 (n=3, no CI) & 0.046 (n=3, no CI) & -0.835 (n=3, no CI) \\
+seed\_box & 0.875 (n=3, no CI) & 0.955 (n=3, no CI) & 0.950 (n=3, no CI) & baseline \\
+seed\_mahalanobis & 0.899 (n=3, no CI) & 0.955 (n=3, no CI) & 0.955 (n=3, no CI) & 0.024 (n=3, no CI) \\
+seed\_knn & 0.892 (n=3, no CI) & 0.944 (n=3, no CI) & 0.944 (n=3, no CI) & 0.018 (n=3, no CI) \\
+graph\_ppr & 0.868 (n=3, no CI) & 0.933 (n=3, no CI) & 0.931 (n=3, no CI) & -0.007 (n=3, no CI) \\
+hdbscan\_with\_seeds & 0.526 (n=3, no CI) & 0.507 (n=3, no CI) & 0.521 (n=3, no CI) & -0.348 (n=3, no CI) \\
+\bottomrule
+\end{tabular}
+\end{table}

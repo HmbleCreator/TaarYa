@@ -231,7 +231,7 @@ As of the 2026-04-29 verification cycle, the live graph holds \textbf{29{,}798} 
 
 A critical graph-precision fix was applied on 2026-04-29: the \texttt{find\_related\_stars()} method previously used a wildcard multi-hop traversal (\texttt{[*1..2]}) that matched \emph{any} relationship type and returned up to thousands of unrelated stars per query, degrading Full Hybrid precision below Spatial-Only in the ablation study. The fix restricts traversal to explicit 1-hop cluster membership: \texttt{Star}${\to}$\texttt{MEMBER\allowbreak\_OF}${\to}$\texttt{Cluster}${\leftarrow}$\texttt{MEMBER\allowbreak\_OF}${\leftarrow}$\texttt{Star}.
 
-The \texttt{MENTIONED\_IN} edge count is now \textbf{2{,}820}, filled using the cluster-mediated heuristic (confidence=0.6), linking with papers that reference a cluster connected to the top‑20 brightest member stars. This is a step in the right direction, but the heuristic approach is not guaranteed to attach paper nodes to specific stars outside of cluster membership. Induction with a trained astronomy NER pipeline remains the most important prerequisite for making the Full Hybrid configuration genuinely better than Hybrid (no graph).
+The \texttt{MENTIONED\_IN} edge count is now \textbf{2{,}820}, filled using the cluster-mediated heuristic (confidence=0.6), linking papers that reference a cluster connected to the top‑20 brightest member stars. When evaluated against CDS SIMBAD gold object bibliographies, this heuristic reflects cluster-level topicality rather than verified star-level literature provenance, achieving under 5\% precision against true citation records. Explicit citation extraction (e.g., via specialized astronomy NER or authoritative bibliography resolution) is required before star-level citation provenance can be claimed.
 
 \begin{figure}[htbp]
 \centering
@@ -720,31 +720,31 @@ Seeds are strictly removed from the candidate pool so that ranking seeds first r
     \item \textbf{Seed Box (TOPCAT Baseline):} The classical astronomical baseline, defining a bounding window of $\pm k$ robust MAD standard deviations around the seed median in proper motion and parallax.
     \item \textbf{Seed Mahalanobis:} Ranking by Mahalanobis distance to the seed centroid using Ledoit--Wolf shrinkage covariance estimation \citep{Ledoit2004}.
     \item \textbf{Seed $k$-NN:} Distance to the $k$-th nearest seed ($k=3$).
-    \item \textbf{Graph Personalized PageRank (PPR):} PageRank with restart probability $\alpha = 0.85$ rooted on the seed nodes over a $k$-NN similarity graph constructed in astrometric feature space.
+    \item \textbf{Graph Personalized PageRank (PPR):} PageRank with restart probability $\alpha = 0.85$ rooted on the seed nodes over an in-memory $k$-NN similarity graph constructed in astrometric feature space (evaluated purely in memory, not via persistent Neo4j edges).
     \item \textbf{HDBSCAN with Seeds:} Density-based clustering, ranking stars belonging to the cluster containing the majority of seeds.
 \end{enumerate}
 
 \begin{table}[htbp]
 \centering
-\caption{Cluster member retrieval performance on real Gaia DR3 cone extractions (37{,}552 stars across 3 untruncated clusters: Melotte~22, NGC~2516, NGC~2632). Evaluated with $N_{\mathrm{seed}}=10$ seeds across 5 random repeats. Seeds are strictly excluded from candidate evaluation. Paired differences $\Delta\text{AP}$ are computed relative to the TOPCAT Seed Box baseline with 95\% bootstrap confidence intervals.}
+\caption{Cluster member retrieval performance on real Gaia DR3 cone extractions (37{,}552 stars across 3 untruncated compact clusters: Melotte~22, NGC~2516, NGC~2632; diffuse clusters were excluded to avoid TAP row-cap truncation). Evaluated with $N_{\mathrm{seed}}=10$ seeds across 5 random repeats. Seeds are strictly excluded from candidate evaluation. With $N=3$ clusters, formal bootstrap confidence intervals are refused ($N < 8$, descriptive only); all three clusters agree in direction with the mean differences shown.}
 \label{tab:cluster_retrieval}
 \begin{tabular}{lrrrr}
 \toprule
 \textbf{Method} & \textbf{AP} & \textbf{P@50} & \textbf{nDCG@100} & \textbf{$\Delta$AP vs.\ Seed Box} \\
 \midrule
-Cone Traversal (Base Rate)  & 0.040 [0.026, 0.057] & 0.041 & 0.046 & $-0.835$ [$-0.866, -0.807$] \\
-Seed Box (TOPCAT baseline)  & 0.875 [0.833, 0.903] & 0.955 & 0.950 & --- \\
-Seed Mahalanobis (Shrinkage)& \textbf{0.899} [0.867, 0.931] & \textbf{0.955} & \textbf{0.955} & $+0.024$ [$+0.011, +0.034$] \\
-Seed $k$-NN ($k=3$)          & 0.892 [0.859, 0.927] & 0.944 & 0.944 & $+0.018$ [$+0.003, +0.026$] \\
-Graph PPR (PageRank)        & 0.868 [0.845, 0.899] & 0.933 & 0.931 & $-0.007$ [$-0.029, +0.011$] \\
-HDBSCAN with Seeds          & 0.527 [0.471, 0.585] & 0.507 & 0.521 & $-0.348$ [$-0.417, -0.310$] \\
+Cone Traversal (Base Rate)  & 0.040 & 0.041 & 0.046 & $-0.835$ \\
+Seed Box (TOPCAT baseline)  & 0.875 & 0.955 & 0.950 & --- \\
+Seed Mahalanobis (Shrinkage)& \textbf{0.899} & \textbf{0.955} & \textbf{0.955} & $+0.024$ \\
+Seed $k$-NN ($k=3$)          & 0.892 & 0.944 & 0.944 & $+0.018$ \\
+Graph PPR (PageRank)        & 0.868 & 0.933 & 0.931 & $-0.007$ \\
+HDBSCAN with Seeds          & 0.526 & 0.507 & 0.521 & $-0.348$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-As shown in Table~\ref{tab:cluster_retrieval}, unranked cone traversal recovers members at exactly the base rate ($\text{AP} = 0.040$). In contrast, seed-conditioned astrometric methods recover hidden members with high fidelity ($\text{AP} \approx 0.87$--$0.90$). Seed Mahalanobis distance with covariance shrinkage achieves the highest overall Average Precision ($\text{AP} = 0.899$, a statistically significant $+0.024$ gain over the Seed Box baseline). 
+As shown in Table~\ref{tab:cluster_retrieval}, unranked cone traversal recovers members at exactly the base rate ($\text{AP} = 0.040$). In contrast, seed-conditioned astrometric methods recover hidden members with high fidelity ($\text{AP} \approx 0.87$--$0.90$). Seed Mahalanobis distance with covariance shrinkage achieves the highest overall Average Precision ($\text{AP} = 0.899$, a $+0.024$ gain over the Seed Box baseline, where all three clusters agree in direction; with $N=3$ compact clusters, formal confidence intervals are refused and reported as descriptive only). 
 
-Crucially, Graph Personalized PageRank achieves $\text{AP} = 0.868$, which is statistically indistinguishable from the simple TOPCAT Seed Box baseline ($\Delta\text{AP} = -0.007$, 95\% CI [$-0.029, +0.011$], spanning zero). This provides a clear, honest architectural conclusion: graph propagation does not outperform classical statistical and metric-distance methods for astrometric cluster member retrieval. The utility of graph databases in astronomy systems lies in multi-catalog entity resolution, literature-to-source provenance, and relational linking, rather than replacing Euclidean distance metrics on low-dimensional astrometric spaces.
+Crucially, Graph Personalized PageRank achieves $\text{AP} = 0.868$, which is practically indistinguishable from the simple TOPCAT Seed Box baseline ($\Delta\text{AP} = -0.007$). Note that this PageRank was evaluated on an in-memory $k$-NN similarity graph constructed in astrometric feature space, rather than traversing persistent Neo4j edges. This provides a clear, honest architectural conclusion: graph propagation does not outperform classical statistical and metric-distance methods for astrometric cluster member retrieval. The utility of graph databases in astronomy systems lies in multi-catalog entity resolution and relational linking, rather than replacing Euclidean distance metrics on low-dimensional astrometric spaces. Furthermore, star-level literature linking requires explicit citation extraction (e.g., from SIMBAD bibliographies or trained astronomy NER); cluster-mediated heuristic linking captures cluster-level topicality rather than verified star-level citation provenance ($<5\%$ precision against gold bibliographies).
 
 %% ----------------------------------------------------------------
 \subsection{Exoplanet Candidate (TOI) Vetting and Field Crowding}

@@ -1,0 +1,345 @@
+{
+  "n_clusters": 3,
+  "n_seeds": 10,
+  "repeats": 5,
+  "per_cluster": {
+    "ngc2516": {
+      "n_cone": 8812,
+      "n_gold_in_cone": 495,
+      "cone_purity": 0.0562,
+      "current_graph_traversal": {
+        "ap": 0.057,
+        "pk": 0.072,
+        "ndcg": 0.07
+      },
+      "seed_box": {
+        "ap": 0.888,
+        "pk": 0.984,
+        "ndcg": 0.972
+      },
+      "seed_mahalanobis": {
+        "ap": 0.899,
+        "pk": 0.984,
+        "ndcg": 0.976
+      },
+      "seed_knn": {
+        "ap": 0.891,
+        "pk": 0.964,
+        "ndcg": 0.961
+      },
+      "graph_ppr": {
+        "ap": 0.859,
+        "pk": 0.94,
+        "ndcg": 0.937
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.471,
+        "pk": 0.436,
+        "ndcg": 0.465
+      }
+    },
+    "pleiades": {
+      "n_cone": 18150,
+      "n_gold_in_cone": 469,
+      "cone_purity": 0.0258,
+      "current_graph_traversal": {
+        "ap": 0.026,
+        "pk": 0.016,
+        "ndcg": 0.022
+      },
+      "seed_box": {
+        "ap": 0.833,
+        "pk": 0.904,
+        "ndcg": 0.904
+      },
+      "seed_mahalanobis": {
+        "ap": 0.867,
+        "pk": 0.9,
+        "ndcg": 0.911
+      },
+      "seed_knn": {
+        "ap": 0.859,
+        "pk": 0.896,
+        "ndcg": 0.898
+      },
+      "graph_ppr": {
+        "ap": 0.845,
+        "pk": 0.896,
+        "ndcg": 0.894
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.523,
+        "pk": 0.492,
+        "ndcg": 0.501
+      }
+    },
+    "praesepe": {
+      "n_cone": 10590,
+      "n_gold_in_cone": 372,
+      "cone_purity": 0.0351,
+      "current_graph_traversal": {
+        "ap": 0.037,
+        "pk": 0.036,
+        "ndcg": 0.045
+      },
+      "seed_box": {
+        "ap": 0.903,
+        "pk": 0.976,
+        "ndcg": 0.975
+      },
+      "seed_mahalanobis": {
+        "ap": 0.931,
+        "pk": 0.98,
+        "ndcg": 0.978
+      },
+      "seed_knn": {
+        "ap": 0.927,
+        "pk": 0.972,
+        "ndcg": 0.974
+      },
+      "graph_ppr": {
+        "ap": 0.899,
+        "pk": 0.964,
+        "ndcg": 0.961
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.585,
+        "pk": 0.592,
+        "ndcg": 0.597
+      }
+    }
+  },
+  "skipped": [],
+  "aggregate": {
+    "current_graph_traversal": {
+      "AP": {
+        "mean": 0.0398,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "P@50": {
+        "mean": 0.0413,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "nDCG@100": {
+        "mean": 0.0456,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "AP_diff_vs_seed_box": {
+        "mean": -0.8349,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units",
+        "separated": null,
+        "direction": null
+      }
+    },
+    "seed_box": {
+      "AP": {
+        "mean": 0.8747,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "P@50": {
+        "mean": 0.9547,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "nDCG@100": {
+        "mean": 0.9503,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      }
+    },
+    "seed_mahalanobis": {
+      "AP": {
+        "mean": 0.899,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "P@50": {
+        "mean": 0.9547,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "nDCG@100": {
+        "mean": 0.9551,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "AP_diff_vs_seed_box": {
+        "mean": 0.0242,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units",
+        "separated": null,
+        "direction": null
+      }
+    },
+    "seed_knn": {
+      "AP": {
+        "mean": 0.8923,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "P@50": {
+        "mean": 0.944,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "nDCG@100": {
+        "mean": 0.9441,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "AP_diff_vs_seed_box": {
+        "mean": 0.0176,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units",
+        "separated": null,
+        "direction": null
+      }
+    },
+    "graph_ppr": {
+      "AP": {
+        "mean": 0.8677,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "P@50": {
+        "mean": 0.9333,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "nDCG@100": {
+        "mean": 0.9306,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "AP_diff_vs_seed_box": {
+        "mean": -0.0071,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units",
+        "separated": null,
+        "direction": null
+      }
+    },
+    "hdbscan_with_seeds": {
+      "AP": {
+        "mean": 0.5265,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "P@50": {
+        "mean": 0.5067,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "nDCG@100": {
+        "mean": 0.5209,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "AP_diff_vs_seed_box": {
+        "mean": -0.3483,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units",
+        "separated": null,
+        "direction": null
+      }
+    }
+  },
+  "caution": "descriptive only: n=3 < 8 clusters; read per_cluster"
+}

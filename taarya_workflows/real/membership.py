@@ -20,7 +20,7 @@ UNVERIFIED HERE (no network): VizieR table/column names. Column lookup is tolera
 from __future__ import annotations
 import os, re, json
 import numpy as np, pandas as pd
-from ..core import bootstrap_ci
+from ..core import bootstrap_ci, MIN_UNITS
 
 ALIASES = {
     "hyades": ["Hyades", "Melotte_25", "Mel_25"], "pleiades": ["Pleiades", "Melotte_22", "Mel_22", "M45"],
@@ -178,15 +178,16 @@ def evaluate_membership(stars: pd.DataFrame, edges: pd.DataFrame, gold: pd.DataF
         per[cl] = dict(n_cone=len(U), n_gold_in_cone=len(Gu), gold_coverage=round(len(Gu) / max(len(G), 1), 3),
                        cone_purity=round(len(Gu) / len(U), 3), jaccard_edges_vs_cone=round(len(E & U) / max(len(E | U), 1), 3),
                        **{m: dict(zip(("precision", "recall", "f1"), map(lambda v: None if v != v else round(v, 3), _prf(pred[m], Gu)))) for m in methods})
-    agg = {m: {k: bootstrap_ci([v[m][k] for v in per.values() if v[m][k] is not None]) for k in ("precision", "recall", "f1")} for m in methods} if per else {}
+    agg = {m: {k: bootstrap_ci([v[m][k] for v in per.values() if v[m][k] is not None], min_n=MIN_UNITS) for k in ("precision", "recall", "f1")} for m in methods} if per else {}
     jac = [v["jaccard_edges_vs_cone"] for v in per.values()]
     seeding = bool(jac) and float(np.median(jac)) >= 0.9
+    caution = f"descriptive only: n={len(per)} < {MIN_UNITS} clusters; read per_cluster" if len(per) < MIN_UNITS else "treat aggregate CIs with care"
     return dict(n_clusters=len(per), per_cluster=per, skipped=skipped, aggregate=agg,
                 synthetic_rows_dropped=dict(stars=n_syn_stars, edges=n_syn_edges),
                 member_of_is_cone_seeding=seeding, median_jaccard_edges_vs_cone=round(float(np.median(jac)), 3) if jac else None,
                 verdict=("MEMBER_OF edges are indistinguishable from the seeding cone: they encode proximity, not membership"
                          if seeding else "MEMBER_OF differs from the cone; compare precision/recall below"),
-                caution=f"{len(per)} clusters is a tiny sample: read per_cluster, treat aggregate CIs as rough")
+                caution=caution)
 
 
 def rebuild_member_edges(gold: pd.DataFrame, stars: pd.DataFrame) -> pd.DataFrame:

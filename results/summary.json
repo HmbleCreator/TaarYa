@@ -1,0 +1,28 @@
+{
+  "utc": "2026-11-01T09:10:15Z",
+  "code_hash": "6e2c111f922dbe70",
+  "git_commit": "4fa24a7073fb21531aa51a3285e49236896405d7",
+  "versions": {
+    "python": "3.12.11",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "numpy": "1.26.4",
+    "pandas": "3.0.5",
+    "scipy": "1.13.1",
+    "sklearn": "1.7.2",
+    "astropy": "6.0.0"
+  },
+  "cone_manifest_hash": "4310bb54a951d2e0",
+  "toi_sample": {
+    "requested": 350,
+    "usable": 350,
+    "fetch_failed": 0,
+    "seed": 0,
+    "design": "seeded random sample of all labelled (CP/KP/FP) TOI stars"
+  },
+  "seed": 0,
+  "outputs": [
+    "membership",
+    "retrieval",
+    "toi"
+  ]
+}

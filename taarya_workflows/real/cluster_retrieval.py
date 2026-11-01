@@ -22,7 +22,7 @@ all methods are measuring agreement with that algorithm; confirm on an independe
 from __future__ import annotations
 import json
 import numpy as np, pandas as pd
-from ..core import Workflow, Claim, rank_by_score, average_precision, precision_at_k, ndcg_at_k, bootstrap_ci, paired_diff
+from ..core import Workflow, Claim, rank_by_score, average_precision, precision_at_k, ndcg_at_k, bootstrap_ci, paired_diff, MIN_UNITS
 from .membership import canon, drop_synthetic
 
 FEATS = ["pmra", "pmdec", "parallax"]
@@ -101,11 +101,11 @@ def evaluate_retrieval(stars: pd.DataFrame, gold: pd.DataFrame, n_seeds=10, repe
         for m in methods:
             for k in ("ap", "pk", "ndcg"): acc[m][k].append(float(np.mean(m_res[m][k])))
     if not per: return dict(n_clusters=0, skipped=skipped, error="no cluster has enough gold members in its cone")
-    agg = {m: dict(AP=bootstrap_ci(acc[m]["ap"]), **{f"P@{k_eval}": bootstrap_ci(acc[m]["pk"]), "nDCG@100": bootstrap_ci(acc[m]["ndcg"])}) for m in methods}
+    agg = {m: dict(AP=bootstrap_ci(acc[m]["ap"], min_n=MIN_UNITS), **{f"P@{k_eval}": bootstrap_ci(acc[m]["pk"], min_n=MIN_UNITS), "nDCG@100": bootstrap_ci(acc[m]["ndcg"], min_n=MIN_UNITS)}) for m in methods}
     for m in methods:
-        if m != BASELINE and BASELINE in methods: agg[m]["AP_diff_vs_seed_box"] = paired_diff(acc[m]["ap"], acc[BASELINE]["ap"])
-    return dict(n_clusters=len(per), n_seeds=n_seeds, repeats=repeats, per_cluster=per, skipped=skipped, aggregate=agg,
-                caution="agreement with Hunt & Reffert (itself a clustering in this space); few clusters -> read per_cluster")
+        if m != BASELINE and BASELINE in methods: agg[m]["AP_diff_vs_seed_box"] = paired_diff(acc[m]["ap"], acc[BASELINE]["ap"], min_n=MIN_UNITS)
+    caution = f"descriptive only: n={len(per)} < {MIN_UNITS} clusters; read per_cluster" if len(per) < MIN_UNITS else "agreement with Hunt & Reffert (itself a clustering in this space)"
+    return dict(n_clusters=len(per), n_seeds=n_seeds, repeats=repeats, per_cluster=per, skipped=skipped, aggregate=agg, caution=caution)
 
 
 class ClusterMemberRetrieval(Workflow):

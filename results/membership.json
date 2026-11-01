@@ -1,0 +1,301 @@
+{
+  "n_clusters": 3,
+  "per_cluster": {
+    "ngc2516": {
+      "n_cone": 8812,
+      "n_gold_in_cone": 495,
+      "gold_coverage": 1.0,
+      "cone_purity": 0.056,
+      "jaccard_edges_vs_cone": 1.0,
+      "taarya_member_of_edges": {
+        "precision": 0.056,
+        "recall": 1.0,
+        "f1": 0.106
+      },
+      "cone_only": {
+        "precision": 0.056,
+        "recall": 1.0,
+        "f1": 0.106
+      },
+      "sigma_clip_pm_plx": {
+        "precision": 0.535,
+        "recall": 1.0,
+        "f1": 0.697
+      },
+      "gmm_2comp": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "hdbscan": {
+        "precision": 0.478,
+        "recall": 1.0,
+        "f1": 0.647
+      },
+      "random_same_size_as_edges": {
+        "precision": 0.056,
+        "recall": 1.0,
+        "f1": 0.106
+      }
+    },
+    "pleiades": {
+      "n_cone": 18150,
+      "n_gold_in_cone": 469,
+      "gold_coverage": 1.0,
+      "cone_purity": 0.026,
+      "jaccard_edges_vs_cone": 1.0,
+      "taarya_member_of_edges": {
+        "precision": 0.026,
+        "recall": 1.0,
+        "f1": 0.05
+      },
+      "cone_only": {
+        "precision": 0.026,
+        "recall": 1.0,
+        "f1": 0.05
+      },
+      "sigma_clip_pm_plx": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "gmm_2comp": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "hdbscan": {
+        "precision": 0.528,
+        "recall": 1.0,
+        "f1": 0.691
+      },
+      "random_same_size_as_edges": {
+        "precision": 0.026,
+        "recall": 1.0,
+        "f1": 0.05
+      }
+    },
+    "praesepe": {
+      "n_cone": 10590,
+      "n_gold_in_cone": 372,
+      "gold_coverage": 1.0,
+      "cone_purity": 0.035,
+      "jaccard_edges_vs_cone": 1.0,
+      "taarya_member_of_edges": {
+        "precision": 0.035,
+        "recall": 1.0,
+        "f1": 0.068
+      },
+      "cone_only": {
+        "precision": 0.035,
+        "recall": 1.0,
+        "f1": 0.068
+      },
+      "sigma_clip_pm_plx": {
+        "precision": 0.664,
+        "recall": 1.0,
+        "f1": 0.798
+      },
+      "gmm_2comp": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "hdbscan": {
+        "precision": 0.578,
+        "recall": 1.0,
+        "f1": 0.732
+      },
+      "random_same_size_as_edges": {
+        "precision": 0.035,
+        "recall": 1.0,
+        "f1": 0.068
+      }
+    }
+  },
+  "skipped": [],
+  "aggregate": {
+    "taarya_member_of_edges": {
+      "precision": {
+        "mean": 0.039,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "recall": {
+        "mean": 1.0,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "f1": {
+        "mean": 0.0747,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      }
+    },
+    "cone_only": {
+      "precision": {
+        "mean": 0.039,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "recall": {
+        "mean": 1.0,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "f1": {
+        "mean": 0.0747,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      }
+    },
+    "sigma_clip_pm_plx": {
+      "precision": {
+        "mean": 0.3997,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "recall": {
+        "mean": 0.6667,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "f1": {
+        "mean": 0.4983,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      }
+    },
+    "gmm_2comp": {
+      "precision": {
+        "mean": 0.0,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "recall": {
+        "mean": 0.0,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "f1": {
+        "mean": 0.0,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      }
+    },
+    "hdbscan": {
+      "precision": {
+        "mean": 0.528,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "recall": {
+        "mean": 1.0,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "f1": {
+        "mean": 0.69,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      }
+    },
+    "random_same_size_as_edges": {
+      "precision": {
+        "mean": 0.039,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "recall": {
+        "mean": 1.0,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      },
+      "f1": {
+        "mean": 0.0747,
+        "ci95": [
+          null,
+          null
+        ],
+        "n": 3,
+        "note": "descriptive only: n=3 < 8 units"
+      }
+    }
+  },
+  "synthetic_rows_dropped": {
+    "stars": 0,
+    "edges": 0
+  },
+  "member_of_is_cone_seeding": true,
+  "median_jaccard_edges_vs_cone": 1.0,
+  "verdict": "MEMBER_OF edges are indistinguishable from the seeding cone: they encode proximity, not membership",
+  "caution": "descriptive only: n=3 < 8 clusters; read per_cluster"
+}

@@ -42,6 +42,23 @@ def load_members(path, min_prob=0.7, min_members=100, max_clusters=None) -> pd.D
     return out[out.cluster.isin(keep)].reset_index(drop=True)
 
 
+CLUSTER_COLS = dict(name=["Name", "Cluster", "cluster"], dist=["Dist", "dist", "d", "Distance", "dpc"], plx=["Plx", "plx", "parallax"],
+                    n=["nbstars07", "N", "Nstars", "n_members", "nbstars"], r50=["r50", "R50", "rc", "r50deg"])
+
+
+def select_clusters(clusters_csv, max_dist_pc=1000.0, min_members=100, max_r50_deg=2.0, n=30, seed=0):
+    """Pre-specified, seeded selection from a published cluster table (Hunt & Reffert `clusters`). Criteria + seed go in the manifest,
+    so the sample cannot be cherry-picked toward clusters on which a method looks good. Unverified here: column names (tolerant lookup)."""
+    raw = pd.read_csv(clusters_csv); nm = raw[_pick(raw, CLUSTER_COLS["name"])]
+    try: dist = pd.to_numeric(raw[_pick(raw, CLUSTER_COLS["dist"])], errors="coerce")
+    except KeyError: dist = 1000.0 / pd.to_numeric(raw[_pick(raw, CLUSTER_COLS["plx"])], errors="coerce")
+    cnt = pd.to_numeric(raw[_pick(raw, CLUSTER_COLS["n"])], errors="coerce"); r50 = pd.to_numeric(raw[_pick(raw, CLUSTER_COLS["r50"])], errors="coerce")
+    ok = (dist <= max_dist_pc) & (cnt >= min_members) & (r50 <= max_r50_deg)
+    pool = sorted(nm[ok].astype(str).tolist()); rng = np.random.default_rng(seed)
+    pick = sorted(rng.choice(pool, size=min(n, len(pool)), replace=False).tolist()) if pool else []
+    return dict(selected=pick, eligible=len(pool), criteria=dict(max_dist_pc=max_dist_pc, min_members=min_members, max_r50_deg=max_r50_deg, n=n, seed=seed))
+
+
 def cone_params(g: pd.DataFrame, min_deg=0.5, cap_deg=5.0):
     """Centre = mean unit vector (safe across RA wrap); radius = 95th percentile member separation, clipped."""
     ra, dec = np.radians(g.ra.to_numpy()), np.radians(g.dec.to_numpy())
@@ -68,10 +85,6 @@ def tap_sync_csv(tap_url, query, timeout=300):
         df = parse_single_table(io.BytesIO(r.content)).to_table().to_pandas()
         if "datalinkID" in df.columns and "source_id" not in df.columns:
             df = df.rename(columns={"datalinkID": "source_id"})
-        for col in df.columns:
-            if col.lower() == "g":
-                df = df.rename(columns={col: "G"})
-        df["source_id"] = df["source_id"].astype("int64")
         return df
     return pd.read_csv(io.BytesIO(r.content), dtype={"source_id": "int64"})
 
