@@ -63,3 +63,8 @@ def test_float_ids_refused_and_synthetic_ids_dropped_and_random_baseline_exact()
 def test_informed_box_baseline_is_strong_on_separated_cluster():
     rng = np.random.default_rng(0); d, g = cone(rng, "Hyades", 10**9)
     p, r, f = M._prf(M.sel_informed_box(d, (20., -30.), 8.0, 3.0, 1.0), g); assert p > 0.8 and r > 0.95
+
+
+def test_bracketed_catalogue_names_resolve_to_the_same_cluster():
+    assert M.canon("Melotte_22 (Pleiades)") == M.canon("Pleiades") == M.canon("Melotte_22") == "pleiades"
+    assert M.canon("NGC_2632 (Praesepe)") == "praesepe" and M.canon("NGC_2516") == "ngc2516" and M.canon("Melotte_25 (Hyades)") == "hyades"

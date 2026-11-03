@@ -5,11 +5,13 @@ from eval.metrics import (
     precision_at_k,
     recall_at_k,
     f1_at_k,
+    hit_rate_at_k,
     mean_reciprocal_rank,
     ndcg_at_k,
     evaluate_query,
     aggregate_metrics,
     format_latex_table,
+    bootstrap_confidence_interval,
 )
 
 
@@ -56,6 +58,14 @@ class TestRecallAtK(unittest.TestCase):
         self.assertEqual(recall_at_k(["a"], set(), 5), 0.0)
 
 
+class TestHitRateAtK(unittest.TestCase):
+    def test_hit_present(self):
+        self.assertEqual(hit_rate_at_k(["x", "a"], {"a"}, 2), 1.0)
+
+    def test_hit_absent(self):
+        self.assertEqual(hit_rate_at_k(["x", "y"], {"a"}, 2), 0.0)
+
+
 class TestMRR(unittest.TestCase):
     def test_first_relevant(self):
         self.assertEqual(mean_reciprocal_rank(["a", "b"], {"a"}), 1.0)
@@ -95,6 +105,7 @@ class TestEvaluateQuery(unittest.TestCase):
         self.assertIn("mrr", result)
         self.assertIn("ndcg@5", result)
         self.assertIn("f1@5", result)
+        self.assertIn("hit@5", result)
 
 
 class TestAggregateMetrics(unittest.TestCase):
@@ -120,6 +131,14 @@ class TestLatexTable(unittest.TestCase):
         self.assertIn("Config A", latex)
         self.assertIn("0.800", latex)
         self.assertIn("\\end{table}", latex)
+
+
+class TestBootstrapCI(unittest.TestCase):
+    def test_bootstrap_is_deterministic_with_seed(self):
+        values = [0.0, 0.5, 1.0]
+        first = bootstrap_confidence_interval(values, n_boot=100, seed=7)
+        second = bootstrap_confidence_interval(values, n_boot=100, seed=7)
+        self.assertEqual(first, second)
 
 
 if __name__ == "__main__":

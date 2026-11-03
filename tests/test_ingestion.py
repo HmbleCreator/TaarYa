@@ -1,6 +1,5 @@
 """Test script to verify ingestion pipeline."""
 import logging
-from pathlib import Path
 import sys
 
 from src.utils.logger import setup_logging
@@ -24,10 +23,11 @@ def test_database_connection():
             version = result.scalar()
             logger.info(f"PostgreSQL version: {version}")
         
-        return True
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
-        return False
+        assert False, f"Database connection failed: {e}"
+
+    assert True
 
 
 def test_q3c_extension():
@@ -45,25 +45,34 @@ def test_q3c_extension():
             version = result.scalar()
             logger.info(f"Q3C version: {version}")
             
-            # Test cone search function
+            # Match the application's five-argument predicate shape and cast
+            # literals explicitly so PostgreSQL resolves the extension function.
             result = session.execute(text("""
-                SELECT q3c_radial_query(83.8221, -5.3911, 1.0);
+                SELECT q3c_radial_query(
+                    83.8221::double precision,
+                    -5.3911::double precision,
+                    83.8221::double precision,
+                    -5.3911::double precision,
+                    1.0::double precision
+                );
             """))
+            assert result.scalar() is True
             logger.info("Q3C cone search function works!")
         
-        return True
     except Exception as e:
         logger.error(f"Q3C test failed: {e}")
         logger.info("Q3C extension may not be installed. Run: python -m src.init_db")
-        return False
+        assert False, f"Q3C test failed: {e}"
+
+    assert True
 
 
-def test_gaia_parser():
+def test_gaia_parser(tmp_path):
     """Test Gaia parser with sample data."""
     logger.info("Testing Gaia parser...")
     
     # Create sample CSV data
-    sample_csv = Path("test_sample.csv")
+    sample_csv = tmp_path / "test_sample.csv"
     sample_data = """source_id,ra,dec,parallax,pmra,pmdec,phot_g_mean_mag
 1234567890,83.8221,-5.3911,1.23,5.1,-2.3,12.5
 9876543210,84.0512,-5.2145,0.98,3.2,-1.8,13.2
@@ -82,13 +91,11 @@ def test_gaia_parser():
         
         logger.info(f"Total parsed: {count} records")
         
-        # Cleanup
-        sample_csv.unlink()
-        
-        return count == 2
     except Exception as e:
         logger.error(f"Parser test failed: {e}")
-        return False
+        assert False, f"Parser test failed: {e}"
+
+    assert count == 2
 
 
 def main():

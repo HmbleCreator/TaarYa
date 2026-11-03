@@ -62,11 +62,7 @@ def normalise(raw: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_tois(source: str = "archive") -> pd.DataFrame:
-    if source == "archive":
-        if os.path.exists("data/tess_cache/nasa_tois.csv"):
-            raw = pd.read_csv("data/tess_cache/nasa_tois.csv")
-        else:
-            raw = download(ARCHIVE_TAP)
+    if source == "archive": raw = download(ARCHIVE_TAP)
     elif source == "exofop": raw = download(EXOFOP_CSV)
     else: raw = pd.read_csv(source)
     return normalise(raw)

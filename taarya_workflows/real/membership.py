@@ -181,13 +181,12 @@ def evaluate_membership(stars: pd.DataFrame, edges: pd.DataFrame, gold: pd.DataF
     agg = {m: {k: bootstrap_ci([v[m][k] for v in per.values() if v[m][k] is not None], min_n=MIN_UNITS) for k in ("precision", "recall", "f1")} for m in methods} if per else {}
     jac = [v["jaccard_edges_vs_cone"] for v in per.values()]
     seeding = bool(jac) and float(np.median(jac)) >= 0.9
-    caution = f"descriptive only: n={len(per)} < {MIN_UNITS} clusters; read per_cluster" if len(per) < MIN_UNITS else "treat aggregate CIs with care"
     return dict(n_clusters=len(per), per_cluster=per, skipped=skipped, aggregate=agg,
                 synthetic_rows_dropped=dict(stars=n_syn_stars, edges=n_syn_edges),
                 member_of_is_cone_seeding=seeding, median_jaccard_edges_vs_cone=round(float(np.median(jac)), 3) if jac else None,
                 verdict=("MEMBER_OF edges are indistinguishable from the seeding cone: they encode proximity, not membership"
                          if seeding else "MEMBER_OF differs from the cone; compare precision/recall below"),
-                caution=caution)
+                caution=(f"{len(per)} clusters < {MIN_UNITS}: descriptive only, no intervals reported; read per_cluster" if len(per) < MIN_UNITS else f"{len(per)} clusters; intervals are bootstrap over clusters"))
 
 
 def rebuild_member_edges(gold: pd.DataFrame, stars: pd.DataFrame) -> pd.DataFrame:

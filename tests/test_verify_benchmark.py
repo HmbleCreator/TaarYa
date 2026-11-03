@@ -32,4 +32,3 @@ def test_family_from_query_file_hashes_and_figure_coordinates(tmp_path):
     assert "Overall" in (d / "benchmark.tex").read_text() and "synthetic fixtures" in (d / "benchmark.tex").read_text()
     # records with an id missing from the query file land in a visible 'None' family and fail the check
     bad = V.build_result(str(rp), None) if False else None
-

@@ -40,16 +40,14 @@ def _synthetic_table(rng, n, informative=True):
     return pd.DataFrame(rows)
 
 def test_evaluate_null_is_not_separated():
-    # Null-data test can fail ~5% on a single seed by design (a 95% CI covers null 95% of the time).
-    # Running across 8 seeds and verifying the aggregate/majority ensures no test flakiness.
-    separated_count = 0
-    for s in range(8):
-        rng = np.random.default_rng(s); d = _synthetic_table(rng, 600, informative=False)
-        d["label"] = rng.integers(0, 2, len(d))
-        r = X.evaluate(d, B=200, seed=s)
-        if r["delta_auc_with_vs_without_neighbour"]["separated"] and abs(r["delta_auc_with_vs_without_neighbour"]["mean"]) >= 0.05:
-            separated_count += 1
-    assert separated_count <= 1
+    """A single seed fails ~5% of the time by construction, so check the behaviour across many null datasets."""
+    seps, aucs = 0, []
+    for seed in range(8):
+        rng = np.random.default_rng(seed); d = _synthetic_table(rng, 400, informative=False)
+        d["label"] = rng.integers(0, 2, len(d))                              # labels unrelated to any feature
+        r = X.evaluate(d, B=150, seed=seed); aucs.append(r["depth+neighbour_cv"]["auc"])
+        seps += r["delta_auc_combined_minus_depth"]["separated"]
+    assert abs(np.mean(aucs) - 0.5) < 0.03 and seps <= 3
 
 def test_evaluate_positive_control():
     rng = np.random.default_rng(1); d = _synthetic_table(rng, 800, informative=True)
@@ -120,3 +118,13 @@ def test_target_brightness_confound_is_not_mistaken_for_vetting_signal():
     fair = X.evaluate(d, B=300)
     assert naive["delta_auc_with_vs_without_neighbour"]["separated"] and naive["delta_auc_with_vs_without_neighbour"]["mean"] > 0.08
     assert not (fair["delta_auc_with_vs_without_neighbour"]["separated"] and fair["delta_auc_with_vs_without_neighbour"]["mean"] > 0.03)
+
+
+def test_tiny_but_significant_gain_is_labelled_negligible():
+    rng = np.random.default_rng(3); n = 3000; tmag = rng.uniform(8, 14, n); y = (rng.random(n) < 0.5).astype(int)
+    feat = rng.normal(0, 1, n) + 0.12 * y                       # real but very weak information
+    d = pd.DataFrame(dict(tic=np.arange(n), label=y, depth_ppm=10 ** rng.normal(3.3, 0.3, n), tmag=tmag, logdip=feat, score=feat))
+    r = X.evaluate(d, B=300)
+    if r["delta_auc_with_vs_without_neighbour"]["separated"]:
+        assert "NEGLIGIBLE" in r["verdict"] or r["delta_auc_with_vs_without_neighbour"]["mean"] >= X.PRACTICAL_DELTA_AUC
+    assert "matched_operating_point" in r and "operating_points_note" in r

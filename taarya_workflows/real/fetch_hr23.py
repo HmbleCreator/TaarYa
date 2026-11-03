@@ -15,10 +15,10 @@ import pandas as pd
 from . import cluster_cones as CC
 
 CLUSTERS_CAT, MEMBERS_CAT = "J/A+A/673/A114/clusters", "J/A+A/673/A114/members"
-MIRRORS = ["http://vizier.china-vo.org/viz-bin/asu-tsv", "https://vizier.cfa.harvard.edu/viz-bin/asu-tsv", "https://vizier.cds.unistra.fr/viz-bin/asu-tsv"]
+MIRRORS = ["https://vizier.cds.unistra.fr/viz-bin/asu-tsv", "http://vizier.china-vo.org/viz-bin/asu-tsv", "https://vizier.cfa.harvard.edu/viz-bin/asu-tsv"]
 
 
-def default_http_get(url, timeout=45):
+def default_http_get(url, timeout=180):
     req = urllib.request.Request(url, headers={"User-Agent": "taarya-hr23-fetch"})
     with urllib.request.urlopen(req, timeout=timeout) as r: return r.read().decode("utf-8", "replace")
 

@@ -28,3 +28,18 @@ def test_percentages_match_fractions_in_results(tmp_path):
     t = tmp_path / "p.tex"; t.write_text("Cone purity was 2.6\\% in the Pleiades."); r = tmp_path / "r.json"; r.write_text(json.dumps({"cone_purity": 0.0258}))
     assert A.audit(t, [r]) == []
 
+
+def test_plain_integer_counts_tikz_and_dimensions(tmp_path):
+    tex = tmp_path / "p.tex"
+    tex.write_text(r"""
+Our corpus spans 42 seeded sky regions and 13 clusters; 33 of 50 queries passed.
+\hspace{12pt} \includegraphics[width=0.9\linewidth]{fig}
+\begin{tikzpicture}
+\draw (10,20) -- (30,40); \node at (34820,26) {x};
+\end{tikzpicture}
+""")
+    r = tmp_path / "r.json"; r.write_text(json.dumps({"n_queries": 50}))
+    toks = {b["token"] for b in A.audit(tex, [r])}
+    assert {"42", "13", "33"} <= toks                       # stale-prone counts are now caught
+    assert not ({"50", "12", "0.9", "10", "20", "30", "40", "34820"} & toks)   # sourced, units, option bracket, tikz
+    assert not ({"42", "13", "33"} & {b["token"] for b in A.audit(tex, [r], ints=False)})

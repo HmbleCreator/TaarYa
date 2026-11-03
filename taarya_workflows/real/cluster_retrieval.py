@@ -105,7 +105,7 @@ def evaluate_retrieval(stars: pd.DataFrame, gold: pd.DataFrame, n_seeds=10, repe
     for m in methods:
         if m != BASELINE and BASELINE in methods: agg[m]["AP_diff_vs_seed_box"] = paired_diff(acc[m]["ap"], acc[BASELINE]["ap"], min_n=MIN_UNITS)
     comp = [m for m in methods if m != BASELINE and "AP_diff_vs_seed_box" in agg[m]]
-    for m, ph in zip(comp, holm([agg[m]["AP_diff_vs_seed_box"].get("p_boot") for m in comp])):
+    for m, ph in zip(comp, holm([agg[m]["AP_diff_vs_seed_box"].get("p_perm") for m in comp])):
         d = agg[m]["AP_diff_vs_seed_box"]; d["p_holm"] = ph; d["holm_separated"] = None if ph is None else bool(ph < 0.05)
     return dict(n_clusters=len(per), n_seeds=n_seeds, repeats=repeats, per_cluster=per, skipped=skipped, aggregate=agg,
                 caution=("agreement with Hunt & Reffert (itself a clustering in this space); " + (f"{len(per)} clusters < {MIN_UNITS}: descriptive only, no intervals or significance claims" if len(per) < MIN_UNITS else f"{len(per)} clusters")))

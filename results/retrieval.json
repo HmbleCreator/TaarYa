@@ -825,10 +825,14 @@
           -0.7987
         ],
         "n": 19,
+        "wins": 0,
+        "losses": 19,
+        "ties": 0,
         "p_boot": 0.0005,
+        "p_perm": 0.0,
         "separated": true,
         "direction": "a<b",
-        "p_holm": 0.0025,
+        "p_holm": 0.0,
         "holm_separated": true
       }
     },
@@ -906,11 +910,15 @@
           0.0196
         ],
         "n": 19,
+        "wins": 15,
+        "losses": 4,
+        "ties": 0,
         "p_boot": 0.003,
+        "p_perm": 0.03479,
         "separated": true,
         "direction": "a>b",
-        "p_holm": 0.009,
-        "holm_separated": true
+        "p_holm": 0.1044,
+        "holm_separated": false
       }
     },
     "seed_knn": {
@@ -953,10 +961,14 @@
           0.0187
         ],
         "n": 19,
+        "wins": 12,
+        "losses": 7,
+        "ties": 0,
         "p_boot": 0.103,
+        "p_perm": 0.15197,
         "separated": false,
         "direction": null,
-        "p_holm": 0.206,
+        "p_holm": 0.3039,
         "holm_separated": false
       }
     },
@@ -1000,10 +1012,14 @@
           0.0181
         ],
         "n": 19,
+        "wins": 11,
+        "losses": 8,
+        "ties": 0,
         "p_boot": 0.529,
+        "p_perm": 0.54577,
         "separated": false,
         "direction": null,
-        "p_holm": 0.529,
+        "p_holm": 0.5458,
         "holm_separated": false
       }
     },
@@ -1047,10 +1063,14 @@
           -0.2473
         ],
         "n": 19,
+        "wins": 0,
+        "losses": 19,
+        "ties": 0,
         "p_boot": 0.0005,
+        "p_perm": 0.0,
         "separated": true,
         "direction": "a<b",
-        "p_holm": 0.0025,
+        "p_holm": 0.0,
         "holm_separated": true
       }
     }

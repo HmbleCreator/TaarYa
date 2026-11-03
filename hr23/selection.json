@@ -39,7 +39,8 @@
     "n": 30,
     "seed": 0,
     "open_only": true,
-    "kind_column": "Type"
+    "kind_column": "Type",
+    "count_column": "N"
   },
   "catalogue": {
     "clusters": "J/A+A/673/A114/clusters",

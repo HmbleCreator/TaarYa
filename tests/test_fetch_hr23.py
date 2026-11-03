@@ -39,4 +39,3 @@ def test_mirror_fallback_and_total_failure_message(tmp_path):
     net = FakeNet(fail_first=True); df, used = F.fetch_table(F.CLUSTERS_CAT, None, ["bad", "good"], net, retries=0, sleep=0); assert used == "good" and len(df) == 300
     try: F.fetch_table(F.CLUSTERS_CAT, None, ["a", "b"], lambda u: (_ for _ in ()).throw(OSError("x")), retries=0, sleep=0); assert False
     except RuntimeError as e: assert "all mirrors failed" in str(e)
-

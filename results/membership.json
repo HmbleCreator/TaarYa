@@ -871,5 +871,5 @@
   "member_of_is_cone_seeding": true,
   "median_jaccard_edges_vs_cone": 1.0,
   "verdict": "MEMBER_OF edges are indistinguishable from the seeding cone: they encode proximity, not membership",
-  "caution": "treat aggregate CIs with care"
+  "caution": "19 clusters; intervals are bootstrap over clusters"
 }

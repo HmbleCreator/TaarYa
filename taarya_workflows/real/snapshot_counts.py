@@ -43,23 +43,15 @@ def _default_runners(pg_dsn=None):
     import psycopg2
     from neo4j import GraphDatabase
     from qdrant_client import QdrantClient
-    try:
-        from dotenv import load_dotenv; load_dotenv()
-    except Exception: pass
-    u = os.environ.get("POSTGRES_USER", "postgres"); p = os.environ.get("POSTGRES_PASSWORD", "postgres")
-    h = os.environ.get("POSTGRES_HOST", "localhost"); port = os.environ.get("POSTGRES_PORT", "5432")
-    db = os.environ.get("POSTGRES_DB", "astronomy")
-    default_dsn = f"postgresql://{u}:{p}@{h}:{port}/{db}"
-    dsn = pg_dsn or os.environ.get("TAARYA_PG_DSN", default_dsn)
+    dsn = pg_dsn or os.environ["TAARYA_PG_DSN"]
 
     def run_pg(sql):
         with psycopg2.connect(dsn) as c, c.cursor() as cur: cur.execute(sql); return cur.fetchall()
-    drv = GraphDatabase.driver(os.environ.get("NEO4J_URI", "bolt://localhost:7687"), auth=(os.environ.get("NEO4J_USER", "neo4j"), os.environ.get("NEO4J_PASSWORD", "taarya123")))
+    drv = GraphDatabase.driver(os.environ.get("NEO4J_URI", "bolt://localhost:7687"), auth=(os.environ.get("NEO4J_USER", "neo4j"), os.environ["NEO4J_PASSWORD"]))
 
     def run_neo(q):
         with drv.session() as s: return [list(r.values()) for r in s.run(q)]
-    qdrant_url = os.environ.get("QDRANT_URL", f"http://{os.environ.get('QDRANT_HOST', 'localhost')}:{os.environ.get('QDRANT_PORT', '6333')}")
-    qc = QdrantClient(url=qdrant_url)
+    qc = QdrantClient(url=os.environ.get("QDRANT_URL", "http://localhost:6333"))
     return run_pg, run_neo, (lambda: qc.count(collection_name=os.environ.get("QDRANT_COLLECTION", "papers"), exact=True).count)
 
 

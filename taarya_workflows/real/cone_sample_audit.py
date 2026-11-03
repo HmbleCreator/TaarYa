@@ -1,154 +1,67 @@
 """
-Audit the Hunt & Reffert (2023) 30-cluster cone sample and extraction integrity.
+Is the cluster sample what it claims to be? Run BEFORE reading any retrieval result.
 
-Checks:
-  1. Member download completeness (catalog N in clusters.csv vs fetched rows in selected_members.csv).
-  2. Member threshold breakdown (why 5 clusters dropped below 100 members with Prob >= 0.7).
-  3. Uniformity of Gaia DR3 cone cuts across all clusters (ADQL, snr, G_max).
-  4. Truncation bias inspection for crowded fields (6 clusters hitting 60,000 row cap).
-  5. Scope and validity of the final un-truncated sample (19 clusters).
-
-Usage:
   python -m taarya_workflows.real.cone_sample_audit --cones hr23/cones --selection hr23/selection.json --clusters hr23/clusters.csv --members hr23/selected_members.csv
+
+Checks: (1) every cone used the same cuts (ADQL identical after removing the cone), (2) no truncated cone was kept, (3) published-member coverage,
+(4) members actually fetched vs the catalogue's own count (a shortfall means a truncated download), (5) who was excluded and whether exclusion
+is selective, e.g. crowded low-|b| fields dropped (selection bias), (6) stars shared between cones. Exit 1 on any hard failure.
 """
 from __future__ import annotations
-import argparse, json
+import json, re, sys
+from collections import Counter
 from pathlib import Path
 import numpy as np, pandas as pd
+from . import cluster_cones as CC
+from .membership import canon
 
 
-def audit_sample(cones_dir: str, selection_path: str, clusters_path: str, members_path: str) -> dict:
-    sel = json.loads(Path(selection_path).read_text())
-    clusters_df = pd.read_csv(clusters_path)
-    members_df = pd.read_csv(members_path)
-    manifest = json.loads((Path(cones_dir) / "manifest.json").read_text())
-
-    selected_names = sel["selected"]
-    audit_results = {
-        "n_selected": len(selected_names),
-        "member_download_audit": {},
-        "member_prob_breakdown": {},
-        "cut_uniformity": {"uniform": True, "discrepancies": []},
-        "skipped_clusters_audit": {},
-        "ok_clusters_audit": {},
-        "sample_scope": ""
-    }
-
-    # 1. Member download completeness
-    truncated_downloads = []
-    for name in selected_names:
-        cl_row = clusters_df[clusters_df["Name"] == name]
-        cat_N = int(cl_row["N"].values[0]) if not cl_row.empty else None
-        mem_rows = members_df[members_df["Name"] == name]
-        fetched_N = len(mem_rows)
-        p07 = int((pd.to_numeric(mem_rows["Prob"], errors="coerce") >= 0.7).sum())
-
-        audit_results["member_download_audit"][name] = {
-            "catalog_N": cat_N,
-            "fetched_N": fetched_N,
-            "prob_ge_07": p07,
-            "download_complete": (cat_N == fetched_N)
-        }
-        if cat_N is not None and fetched_N < cat_N:
-            truncated_downloads.append(name)
-
-    audit_results["truncated_downloads"] = truncated_downloads
-
-    # 2. Dropped for member count (<100 with prob >= 0.7)
-    manifest_clusters = set(manifest.get("clusters", {}).keys())
-    dropped_member_count = [name for name in selected_names if name not in manifest_clusters]
-    for name in dropped_member_count:
-        info = audit_results["member_download_audit"][name]
-        audit_results["member_prob_breakdown"][name] = {
-            "catalog_N": info["catalog_N"],
-            "fetched_N": info["fetched_N"],
-            "prob_ge_07": info["prob_ge_07"],
-            "reason": f"Fetched 100% of catalog members ({info['fetched_N']}/{info['catalog_N']}), but only {info['prob_ge_07']} have Prob >= 0.7 (need >= 100)"
-        }
-
-    # 3. Cut uniformity check
-    adql_templates = set()
-    for name, cinfo in manifest.get("clusters", {}).items():
-        adql = cinfo.get("adql", "")
-        # Normalize coordinates out to compare predicate structure
-        norm_adql = " ".join(adql.split())
-        for pred in ("parallax_over_error >= 5.0", "phot_g_mean_mag <= 16.0", "pmra IS NOT NULL"):
-            if pred not in norm_adql:
-                audit_results["cut_uniformity"]["uniform"] = False
-                audit_results["cut_uniformity"]["discrepancies"].append(f"{name}: missing '{pred}'")
-
-    # 4. Truncation and crowded fields check
-    for name, cinfo in manifest.get("clusters", {}).items():
-        if cinfo.get("truncated") or cinfo.get("status") != "ok":
-            cl_row = clusters_df[clusters_df["Name"] == name]
-            ra = float(cl_row["RA_ICRS"].values[0]) if not cl_row.empty else None
-            dec = float(cl_row["DE_ICRS"].values[0]) if not cl_row.empty else None
-            audit_results["skipped_clusters_audit"][name] = {
-                "n_cone": cinfo.get("n_cone"),
-                "status": cinfo.get("status"),
-                "ra": ra,
-                "dec": dec,
-                "reason": "Dense stellar field hit 60,000 row cap; skipped to prevent cone truncation bias"
-            }
-        else:
-            audit_results["ok_clusters_audit"][name] = {
-                "n_cone": cinfo.get("n_cone"),
-                "n_published_total": cinfo.get("n_published_total"),
-                "n_published_in_cone": cinfo.get("n_published_in_cone"),
-                "member_coverage": cinfo.get("member_coverage"),
-                "cone_purity": cinfo.get("cone_purity")
-            }
-
-    n_ok = len(audit_results["ok_clusters_audit"])
-    n_dense = len(audit_results["skipped_clusters_audit"])
-    n_few_mem = len(dropped_member_count)
-    audit_results["sample_scope"] = (
-        f"Out of 30 drawn clusters, {n_few_mem} were excluded for having <100 members with Prob >= 0.7 "
-        f"(despite catalog N >= 100), and {n_dense} were excluded for hitting the 60,000 row cap in dense fields. "
-        f"The evaluated sample of {n_ok} clusters represents compact open clusters in uncrowded fields within 1 kpc."
-    )
-    return audit_results
+def abs_b(ra, dec):
+    from astropy.coordinates import SkyCoord
+    import astropy.units as u
+    return np.abs(SkyCoord(np.asarray(ra, float) * u.deg, np.asarray(dec, float) * u.deg).galactic.b.deg)
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Audit cone sample selection and download integrity.")
-    ap.add_argument("--cones", default="hr23/cones")
-    ap.add_argument("--selection", default="hr23/selection.json")
-    ap.add_argument("--clusters", default="hr23/clusters.csv")
-    ap.add_argument("--members", default="hr23/selected_members.csv")
-    a = ap.parse_args()
-
-    rep = audit_sample(a.cones, a.selection, a.clusters, a.members)
-
-    print("=" * 70)
-    print("CONE SAMPLE AUDIT REPORT")
-    print("=" * 70)
-    print(f"Total Selected Clusters: {rep['n_selected']}")
-    print(f"Truncated Downloads:     {len(rep['truncated_downloads'])} ({rep['truncated_downloads'] or 'None - 100% complete'})")
-    print(f"Cut Uniformity:          {'PASS (Identical cuts on all cones)' if rep['cut_uniformity']['uniform'] else 'FAIL'}")
-    print()
-    print("--- 1. Member Count Filter Audit (5 excluded clusters) ---")
-    for name, v in rep["member_prob_breakdown"].items():
-        print(f"  * {name:<12}: Catalog N={v['catalog_N']}, Fetched={v['fetched_N']} (100%), Prob>=0.7={v['prob_ge_07']} (< 100)")
-    print()
-    print("--- 2. Crowded Field Truncation Audit (6 skipped clusters) ---")
-    for name, v in rep["skipped_clusters_audit"].items():
-        print(f"  * {name:<12}: n_cone={v['n_cone']} (ROW CAP HIT), RA={v['ra']:.2f}, Dec={v['dec']:.2f} -> Skipped")
-    print()
-    print("--- 3. Evaluated Clean Sample (19 clusters) ---")
-    ok_cones = [v["n_cone"] for v in rep["ok_clusters_audit"].values()]
-    ok_purity = [v["cone_purity"] for v in rep["ok_clusters_audit"].values()]
-    ok_cov = [v["member_coverage"] for v in rep["ok_clusters_audit"].values()]
-    print(f"  * Count:           {len(rep['ok_clusters_audit'])} clusters")
-    print(f"  * Cone Size:       min={min(ok_cones):,}, median={int(np.median(ok_cones)):,}, max={max(ok_cones):,}")
-    print(f"  * Member Coverage: min={min(ok_cov):.1%}, median={np.median(ok_cov):.1%}, max={max(ok_cov):.1%}")
-    print(f"  * Cone Purity:     min={min(ok_purity):.2%}, median={np.median(ok_purity):.2%}, max={max(ok_purity):.2%}")
-    print()
-    print("--- 4. Honest Scope Definition ---")
-    print(f"  {rep['sample_scope']}")
-    print("=" * 70)
+def audit(cones_dir, selection_json, clusters_csv=None, members_csv=None, top=60000, min_cov=0.5, shortfall=0.10) -> dict:
+    cones = Path(cones_dir); man = json.loads((cones / "manifest.json").read_text()); sel = json.loads(Path(selection_json).read_text())
+    cl = man["clusters"]; ok = {k: v for k, v in cl.items() if v.get("status") == "ok"}; skipped = {k: v for k, v in cl.items() if v.get("status") != "ok"}
+    hard, soft = [], []
+    forms = Counter(re.sub(r"CIRCLE\('ICRS',[^)]*\)", "CIRCLE(<cone>)", v["adql"]) for v in cl.values() if "adql" in v)
+    if len(forms) > 1: hard.append(f"{len(forms)} different ADQL forms across cones: cuts are not uniform, results are not comparable")
+    over = [k for k, v in ok.items() if v["n_cone"] >= top]
+    if over: hard.append(f"truncated cones kept as 'ok': {over}")
+    lowcov = {k: v["member_coverage"] for k, v in ok.items() if v["member_coverage"] < min_cov}
+    if lowcov: soft.append(f"low published-member coverage (<{min_cov}) in {len(lowcov)} cone(s): the cone radius misses much of the cluster: {lowcov}")
+    selected = sel["selected"]; known = {canon(k) for k in cl}
+    dropped_members = [c for c in selected if canon(c) not in known]
+    out = dict(n_selected=len(selected), n_evaluable=len(ok), n_skipped_truncated=len(skipped), dropped_before_cones=dropped_members, adql_forms=len(forms), low_coverage=lowcov)
+    # (4) fetched members vs the catalogue's own count
+    if clusters_csv and members_csv:
+        raw = pd.read_csv(clusters_csv); nm = raw[CC._pick(raw, CC.CLUSTER_COLS["name"])].astype(str); cnt = pd.to_numeric(raw[CC._pick(raw, CC.CLUSTER_COLS["n"])], errors="coerce")
+        want = dict(zip(nm, cnt)); got = CC.load_members(members_csv, min_prob=0.7, min_members=0).cluster.value_counts().to_dict()
+        short = {c: (int(got.get(c, 0)), int(want[c])) for c in selected if c in want and got.get(c, 0) < (1 - shortfall) * want[c]}
+        out["member_shortfall"] = short
+        if short: hard.append(f"{len(short)} cluster(s) have >{int(shortfall*100)}% fewer P>=0.7 members than the catalogue says (fetched, expected): {short}; the member download was probably truncated or the criteria column differs")
+    # (5) selective exclusion by crowding
+    pos = lambda d: ([v["ra0"] for v in d.values() if "ra0" in v], [v["dec0"] for v in d.values() if "dec0" in v])
+    ra_ok, de_ok = pos(ok); ra_sk, de_sk = pos(skipped)
+    if len(ra_ok) >= 3 and len(ra_sk) >= 3:
+        b_ok, b_sk = abs_b(ra_ok, de_ok), abs_b(ra_sk, de_sk)
+        from scipy.stats import mannwhitneyu
+        p = float(mannwhitneyu(b_ok, b_sk).pvalue)
+        out["abs_b_median"] = dict(kept=round(float(np.median(b_ok)), 1), skipped_truncated=round(float(np.median(b_sk)), 1), mannwhitney_p=round(p, 3))
+        if np.median(b_sk) < np.median(b_ok) and p < 0.1: soft.append("truncated (skipped) cones sit at lower galactic latitude than kept ones: the sample is biased toward uncrowded fields; state this")
+    # (6) overlap between cones
+    sp = cones / "stars.csv"
+    if sp.exists():
+        st = pd.read_csv(sp, usecols=["cluster", "source_id"], dtype={"source_id": str}); dup = st.drop_duplicates().source_id.duplicated().sum()
+        out["stars_shared_between_cones"] = int(dup)
+        if dup: soft.append(f"{dup} stars appear in more than one cone (overlapping clusters); fine for per-cluster scoring, but not independent units")
+    out.update(hard_failures=hard, warnings=soft, passed=not hard)
+    return out
 
 
 if __name__ == "__main__":
-    main()
-
+    import argparse; ap = argparse.ArgumentParser(); ap.add_argument("--cones", required=True); ap.add_argument("--selection", required=True)
+    ap.add_argument("--clusters"); ap.add_argument("--members"); a = ap.parse_args(); r = audit(a.cones, a.selection, a.clusters, a.members)
+    print(json.dumps(r, indent=2)); sys.exit(0 if r["passed"] else 1)

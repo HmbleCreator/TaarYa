@@ -49,7 +49,7 @@ def build_tex(results: dict, out_dir) -> list:
     if r and r.get("aggregate"):
         rows = []
         for k, v in r["aggregate"].items():
-            d = v.get("AP_diff_vs_seed_box"); rows.append([esc(k), mci(v["AP"]), mci(v.get("R-precision")), mci(v["nDCG@100"]), (mci(d) + (" (Holm: " + ("sig." if d.get("holm_separated") else "n.s.") + ")" if d.get("holm_separated") is not None else "")) if d else "baseline"])
+            d = v.get("AP_diff_vs_seed_box"); rows.append([esc(k), mci(v["AP"]), mci(v.get("R-precision")), mci(v["nDCG@100"]), (mci(d) + (f" W/L {d['wins']}/{d['losses']}" if "wins" in d else "") + (" (Holm: " + ("sig." if d.get("holm_separated") else "n.s.") + ")" if d.get("holm_separated") is not None else "")) if d else "baseline"])
         (out / "retrieval.tex").write_text(tabular(["Method", "AP", "R-precision", "nDCG@100", "$\\Delta$AP vs seed box"], rows,
                                                    f"Cluster-member retrieval from {r['n_seeds']} seeds, mean over {r['n_clusters']} clusters (95\\% CI).", "tab:retrieval")); made.append("retrieval.tex")
         nums += macro("nRetrClusters", r["n_clusters"]) + macro("graphCurrentAP", f(r["aggregate"]["current_graph_traversal"]["AP"]["mean"], 3))
@@ -84,9 +84,9 @@ def build_tex(results: dict, out_dir) -> list:
         nums += macro("nStarNodes", g(c["neo4j"]["nodes_star"])) + macro("nPaperNodes", g(c["neo4j"]["nodes_paper"])) + macro("nClusterNodes", g(c["neo4j"]["nodes_cluster"]))
         nums += macro("nMemberOfEdges", g(c["neo4j"]["edges_member_of"])) + macro("nCoversEdges", g(c["neo4j"]["edges_covers"])) + macro("nMentionedInEdges", g(c["neo4j"]["edges_mentioned_in"]))
         if "regions" in c["postgres"]: nums += macro("nRegions", c["postgres"]["regions"])
-        gap_stars = c["postgres"]["stars_total"] - c["neo4j"]["nodes_star"]
+        gap_stars = abs(c["neo4j"]["nodes_star"] - (c["postgres"]["stars_real"] + c["postgres"]["stars_synthetic"]))
+        gap_papers = abs(c["neo4j"]["nodes_paper"] - c["qdrant"]["papers"])
         nums += macro("nStoreStarGap", f"{gap_stars:,}".replace(",", "{,}"))
-        gap_papers = c["neo4j"]["nodes_paper"] - c["qdrant"]["papers"]
         nums += macro("nStorePaperGap", f"{gap_papers:,}".replace(",", "{,}"))
         if "toi_catalog" in c:
             t = c["toi_catalog"]; nums += macro("nTOICatalog", g(t["total"])) + macro("nTOICatalogPlanets", g(t["planets_cp_kp"])) + macro("nTOICatalogFP", g(t["false_positives"]))

@@ -23,4 +23,3 @@ def test_counts_become_macros_with_the_real_numbers():
     n = (d / "numbers.tex").read_text()
     assert "\\newcommand{\\nStarsReal}{5{,}000}" in n and "\\newcommand{\\nStarsSynthetic}{560}" in n and "\\nMemberOfEdges}{28{,}881}" in n
     assert "\\newcommand{\\nTOICatalog}{5}" in n and "\\nTOICatalogPlanets}{2}" in n
-

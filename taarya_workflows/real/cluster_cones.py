@@ -53,7 +53,7 @@ def select_clusters(clusters_csv, max_dist_pc=1000.0, min_members=100, max_r50_d
     raw = pd.read_csv(clusters_csv); nm = raw[_pick(raw, CLUSTER_COLS["name"])]
     try: dist = pd.to_numeric(raw[_pick(raw, CLUSTER_COLS["dist"])], errors="coerce")
     except KeyError: dist = 1000.0 / pd.to_numeric(raw[_pick(raw, CLUSTER_COLS["plx"])], errors="coerce")
-    cnt = pd.to_numeric(raw[_pick(raw, CLUSTER_COLS["n"])], errors="coerce"); r50 = pd.to_numeric(raw[_pick(raw, CLUSTER_COLS["r50"])], errors="coerce")
+    ncol = _pick(raw, CLUSTER_COLS["n"]); cnt = pd.to_numeric(raw[ncol], errors="coerce"); r50 = pd.to_numeric(raw[_pick(raw, CLUSTER_COLS["r50"])], errors="coerce")
     ok = (dist <= max_dist_pc) & (cnt >= min_members) & (r50 <= max_r50_deg)
     kind_used = None
     if open_only:                                          # the catalogue also lists globular clusters and moving groups: not what this test is about
@@ -62,7 +62,7 @@ def select_clusters(clusters_csv, max_dist_pc=1000.0, min_members=100, max_r50_d
         except KeyError: pass
     pool = sorted(nm[ok].astype(str).tolist()); rng = np.random.default_rng(seed)
     pick = sorted(rng.choice(pool, size=min(n, len(pool)), replace=False).tolist()) if pool else []
-    return dict(selected=pick, eligible=len(pool), criteria=dict(max_dist_pc=max_dist_pc, min_members=min_members, max_r50_deg=max_r50_deg, n=n, seed=seed, open_only=open_only, kind_column=kind_used))
+    return dict(selected=pick, eligible=len(pool), criteria=dict(max_dist_pc=max_dist_pc, min_members=min_members, max_r50_deg=max_r50_deg, n=n, seed=seed, open_only=open_only, kind_column=kind_used, count_column=ncol))
 
 
 def cone_params(g: pd.DataFrame, min_deg=0.5, cap_deg=5.0):
@@ -81,55 +81,12 @@ def adql(ra0, dec0, r, snr_min, g_max, top):
             f"AND parallax_over_error >= {snr_min} AND phot_g_mean_mag <= {g_max} AND pmra IS NOT NULL")
 
 
-def tap_async_csv(tap_url, query, timeout=600):
-    import requests, time
-    from xml.etree import ElementTree as ET
-    base = tap_url.rstrip("/")
-    r = requests.post(f"{base}/async", data=dict(REQUEST="doQuery", LANG="ADQL", FORMAT="csv", QUERY=query), timeout=60,
-                      headers={"User-Agent": "taarya-cluster-cones"})
-    r.raise_for_status()
-    root = ET.fromstring(r.content)
-    job_id = root.find("{http://www.ivoa.net/xml/UWS/v1.0}jobId")
-    if job_id is None or not job_id.text: job_id = root.find("jobId")
-    jid = job_id.text if job_id is not None else None
-    if not jid: raise RuntimeError("no jobId in TAP async response")
-    job_url = f"{base}/async/{jid}"
-    requests.post(f"{job_url}/phase", data=dict(PHASE="RUN"), headers={"User-Agent": "taarya-cluster-cones"}, timeout=30)
-    t0 = time.time()
-    while time.time() - t0 < timeout:
-        time.sleep(2)
-        phase = requests.get(f"{job_url}/phase", headers={"User-Agent": "taarya-cluster-cones"}, timeout=30).text.strip()
-        if phase == "COMPLETED":
-            res = requests.get(f"{job_url}/results/result", headers={"User-Agent": "taarya-cluster-cones"}, timeout=120)
-            res.raise_for_status()
-            if res.content.strip().startswith(b"<"):
-                from astropy.io.votable import parse_single_table
-                df = parse_single_table(io.BytesIO(res.content)).to_table().to_pandas()
-                if "datalinkID" in df.columns and "source_id" not in df.columns:
-                    df = df.rename(columns={"datalinkID": "source_id"})
-                return df
-            return pd.read_csv(io.BytesIO(res.content), dtype={"source_id": "int64"})
-        elif phase in ("ERROR", "ABORTED"):
-            err = requests.get(f"{job_url}/error", headers={"User-Agent": "taarya-cluster-cones"}, timeout=30).text
-            raise RuntimeError(f"TAP async job {jid} {phase}: {err}")
-    raise TimeoutError(f"TAP async job {jid} timed out after {timeout}s")
-
-
 def tap_sync_csv(tap_url, query, timeout=300):
     import requests
-    try:
-        r = requests.post(tap_url.rstrip("/") + "/sync", data=dict(REQUEST="doQuery", LANG="ADQL", FORMAT="csv", QUERY=query), timeout=timeout,
-                          headers={"User-Agent": "taarya-cluster-cones"})
-        r.raise_for_status()
-        if r.content.strip().startswith(b"<"):
-            from astropy.io.votable import parse_single_table
-            df = parse_single_table(io.BytesIO(r.content)).to_table().to_pandas()
-            if "datalinkID" in df.columns and "source_id" not in df.columns:
-                df = df.rename(columns={"datalinkID": "source_id"})
-            return df
-        return pd.read_csv(io.BytesIO(r.content), dtype={"source_id": "int64"})
-    except Exception:
-        return tap_async_csv(tap_url, query)
+    r = requests.post(tap_url.rstrip("/") + "/sync", data=dict(REQUEST="doQuery", LANG="ADQL", FORMAT="csv", QUERY=query), timeout=timeout,
+                      headers={"User-Agent": "taarya-cluster-cones"})
+    r.raise_for_status()
+    return pd.read_csv(io.BytesIO(r.content), dtype={"source_id": "int64"})
 
 
 def build(members_csv, out_dir, fetch=None, tap_url=DEFAULT_TAP, snr_min=5.0, g_max=18.0, top=60000, min_prob=0.7,

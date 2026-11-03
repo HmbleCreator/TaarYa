@@ -46,13 +46,7 @@ def evaluate_all(stars=None, gold=None, edges_cone=None, toi_table=None, n_seeds
 def build_toi_table(toi_source, cache_path, n, fetch=None, seed=0):
     """Defined random sample of labelled TOI stars (seeded), neighbours fetched into the cache. Reports fetch failures."""
     df = exofop.load_tois(toi_source); lab = df[df.label >= 0].drop_duplicates("tic")
-    cache_existing = json.load(open(cache_path)) if cache_path and os.path.exists(cache_path) else {}
-    cached_tics = {int(k) for k in cache_existing.keys() if k.isdigit()}
-    if cached_tics and (fetch is None or not os.environ.get("TAARYA_ONLINE_EVAL")):
-        in_cache = lab[lab.tic.isin(cached_tics)]
-        sub = in_cache.sample(min(n, len(in_cache)), random_state=seed) if (n and len(in_cache) > n) else in_cache
-    else:
-        sub = lab.sample(min(n, len(lab)), random_state=seed) if n else lab
+    sub = lab.sample(min(n, len(lab)), random_state=seed) if n else lab
     cache = exofop.cached_neighbours(sub, fetch or exofop.fetch_neighbours_gaia, cache_path)
     tab = exofop.build_table(df[df.tic.isin(sub.tic)], cache)
     errs = sum(1 for t in sub.tic if "error" in cache.get(str(int(t)), {"error": 1}))
@@ -83,4 +77,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

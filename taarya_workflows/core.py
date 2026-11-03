@@ -51,17 +51,35 @@ def bootstrap_ci(x, B: int = 2000, seed: int = 0, min_n: int = 0) -> dict:
                                                        round(float(np.quantile(m, .975)), 4)], n=int(len(x)))
 
 
+def sign_flip_p(d, n_mc: int = 200_000, seed: int = 0):
+    """Two-sided paired sign-flip permutation test on mean(d). Exact for n <= 20 (all 2^n sign patterns), Monte Carlo above.
+    Appropriate for a small number of matched units (clusters), where percentile-bootstrap p-values are approximate."""
+    d = np.asarray(d, float); d = d[np.isfinite(d)]; n = len(d)
+    if n == 0: return None
+    obs = abs(d.mean()) - 1e-12
+    if n <= 20:
+        ar, cnt, total = np.arange(n), 0, 2 ** n
+        for start in range(0, total, 1 << 16):
+            idx = np.arange(start, min(start + (1 << 16), total)); sg = (((idx[:, None] >> ar) & 1) * 2 - 1).astype(float)
+            cnt += int((np.abs(sg @ d) / n >= obs).sum())
+        return cnt / total
+    sg = np.random.default_rng(seed).integers(0, 2, (n_mc, n)) * 2 - 1
+    return (1 + int((np.abs(sg @ d) / n >= obs).sum())) / (1 + n_mc)
+
+
 def paired_diff(a, b, B: int = 2000, seed: int = 0, min_n: int = 0) -> dict:
-    """Bootstrap CI and two-sided bootstrap p-value for mean(a-b) over matched units. `separated` = CI excludes zero.
-    With several comparisons against one baseline, adjust the p-values (see holm)."""
-    d = np.asarray(a, float) - np.asarray(b, float)
+    """Bootstrap CI for mean(a-b) over matched units, plus wins/losses and (with enough units) an exact sign-flip p-value.
+    `separated` = CI excludes zero. With several comparisons against one baseline, adjust p_perm with holm()."""
+    d = np.asarray(a, float) - np.asarray(b, float); x = d[np.isfinite(d)]
     r = bootstrap_ci(d, B, seed, min_n)
+    r.update(wins=int((x > 1e-12).sum()), losses=int((x < -1e-12).sum()), ties=int((np.abs(x) <= 1e-12).sum()))
     lo, hi = r["ci95"]
-    if lo is None and r["n"] > 0:
-        r["separated"], r["direction"], r["p_boot"] = None, None, None
+    if lo is None and r["n"] > 0:                       # too few units: counts only, no inference
+        r["separated"], r["direction"], r["p_boot"], r["p_perm"] = None, None, None, None
         return r
-    x = d[np.isfinite(d)]; m = x[np.random.default_rng(seed + 1).integers(0, len(x), (B, len(x)))].mean(axis=1)
+    m = x[np.random.default_rng(seed + 1).integers(0, len(x), (B, len(x)))].mean(axis=1)
     r["p_boot"] = round(float(max(2 * min((m <= 0).mean(), (m >= 0).mean()), 1.0 / B)), 4)
+    r["p_perm"] = round(float(sign_flip_p(x, seed=seed)), 5)
     r["separated"] = bool(lo is not None and (lo > 0 or hi < 0))
     r["direction"] = None if not r["separated"] else ("a>b" if lo > 0 else "a<b")
     return r
