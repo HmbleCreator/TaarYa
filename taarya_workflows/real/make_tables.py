@@ -49,8 +49,8 @@ def build_tex(results: dict, out_dir) -> list:
     if r and r.get("aggregate"):
         rows = []
         for k, v in r["aggregate"].items():
-            d = v.get("AP_diff_vs_seed_box"); rows.append([esc(k), mci(v["AP"]), mci(v["P@50"]), mci(v["nDCG@100"]), mci(d) if d else "baseline"])
-        (out / "retrieval.tex").write_text(tabular(["Method", "AP", "P@50", "nDCG@100", "$\\Delta$AP vs seed box"], rows,
+            d = v.get("AP_diff_vs_seed_box"); rows.append([esc(k), mci(v["AP"]), mci(v.get("R-precision")), mci(v["nDCG@100"]), (mci(d) + (" (Holm: " + ("sig." if d.get("holm_separated") else "n.s.") + ")" if d.get("holm_separated") is not None else "")) if d else "baseline"])
+        (out / "retrieval.tex").write_text(tabular(["Method", "AP", "R-precision", "nDCG@100", "$\\Delta$AP vs seed box"], rows,
                                                    f"Cluster-member retrieval from {r['n_seeds']} seeds, mean over {r['n_clusters']} clusters (95\\% CI).", "tab:retrieval")); made.append("retrieval.tex")
         nums += macro("nRetrClusters", r["n_clusters"]) + macro("graphCurrentAP", f(r["aggregate"]["current_graph_traversal"]["AP"]["mean"], 3))
         if "seed_box" in r["aggregate"]: nums += macro("seedBoxAP", f(r["aggregate"]["seed_box"]["AP"]["mean"], 3))

@@ -22,7 +22,7 @@ all methods are measuring agreement with that algorithm; confirm on an independe
 from __future__ import annotations
 import json
 import numpy as np, pandas as pd
-from ..core import Workflow, Claim, rank_by_score, average_precision, precision_at_k, ndcg_at_k, bootstrap_ci, paired_diff, MIN_UNITS
+from ..core import Workflow, Claim, rank_by_score, average_precision, precision_at_k, ndcg_at_k, bootstrap_ci, paired_diff, holm, MIN_UNITS
 from .membership import canon, drop_synthetic
 
 FEATS = ["pmra", "pmdec", "parallax"]
@@ -82,7 +82,7 @@ def evaluate_retrieval(stars: pd.DataFrame, gold: pd.DataFrame, n_seeds=10, repe
     methods = methods or METHODS
     stars, _ = drop_synthetic(stars, "stars"); gold = gold.assign(cluster=gold.cluster.map(canon))
     stars = stars.assign(cluster=stars.cluster.map(canon)); rng = np.random.default_rng(seed)
-    per, skipped, acc = {}, [], {m: dict(ap=[], pk=[], ndcg=[]) for m in methods}
+    per, skipped, acc = {}, [], {m: dict(ap=[], pk=[], ndcg=[], rp=[]) for m in methods}
     for cl, g in stars.groupby("cluster"):
         g = g.dropna(subset=FEATS).reset_index(drop=True); ids = g.source_id.to_numpy(object); pos = {int(i): j for j, i in enumerate(ids)}
         gc = gold[gold.cluster == cl]; gold_idx = np.array(sorted({pos[int(i)] for i in gc.source_id if int(i) in pos}))
@@ -90,22 +90,25 @@ def evaluate_retrieval(stars: pd.DataFrame, gold: pd.DataFrame, n_seeds=10, repe
         if len(gold_idx) < n_seeds + min_hidden or len(conf) < n_seeds:
             skipped.append(dict(cluster=cl, reason=f"{len(gold_idx)} gold in cone ({len(conf)} confident); need >= {n_seeds + min_hidden}")); continue
         Z = _z(g[FEATS].to_numpy(float)); is_gold = np.zeros(len(g), bool); is_gold[gold_idx] = True
-        m_res = {m: dict(ap=[], pk=[], ndcg=[]) for m in methods}
+        m_res = {m: dict(ap=[], pk=[], ndcg=[], rp=[]) for m in methods}
         for _ in range(repeats):
             seeds = rng.choice(conf, n_seeds, replace=False); cand = np.ones(len(g), bool); cand[seeds] = False       # seeds are not candidates
             for m, fn in methods.items():
                 sc = fn(Z, seeds, rng)[cand]; order = rank_by_score(sc, rng); rel = is_gold[cand][order].astype(int)
-                m_res[m]["ap"].append(average_precision(rel)); m_res[m]["pk"].append(precision_at_k(rel, k_eval)); m_res[m]["ndcg"].append(ndcg_at_k(rel, 100))
+                m_res[m]["ap"].append(average_precision(rel)); m_res[m]["pk"].append(precision_at_k(rel, k_eval)); m_res[m]["ndcg"].append(ndcg_at_k(rel, 100)); R = int(rel.sum()); m_res[m]["rp"].append(float(rel[:R].mean()) if R else float("nan"))
         per[cl] = dict(n_cone=len(g), n_gold_in_cone=int(len(gold_idx)), cone_purity=round(len(gold_idx) / len(g), 4),
                        **{m: {k: round(float(np.mean(v)), 3) for k, v in r.items()} for m, r in m_res.items()})
         for m in methods:
-            for k in ("ap", "pk", "ndcg"): acc[m][k].append(float(np.mean(m_res[m][k])))
+            for k in ("ap", "pk", "ndcg", "rp"): acc[m][k].append(float(np.nanmean(m_res[m][k])))
     if not per: return dict(n_clusters=0, skipped=skipped, error="no cluster has enough gold members in its cone")
-    agg = {m: dict(AP=bootstrap_ci(acc[m]["ap"], min_n=MIN_UNITS), **{f"P@{k_eval}": bootstrap_ci(acc[m]["pk"], min_n=MIN_UNITS), "nDCG@100": bootstrap_ci(acc[m]["ndcg"], min_n=MIN_UNITS)}) for m in methods}
+    agg = {m: dict(AP=bootstrap_ci(acc[m]["ap"], min_n=MIN_UNITS), **{f"P@{k_eval}": bootstrap_ci(acc[m]["pk"], min_n=MIN_UNITS), "nDCG@100": bootstrap_ci(acc[m]["ndcg"], min_n=MIN_UNITS), "R-precision": bootstrap_ci(acc[m]["rp"], min_n=MIN_UNITS)}) for m in methods}
     for m in methods:
         if m != BASELINE and BASELINE in methods: agg[m]["AP_diff_vs_seed_box"] = paired_diff(acc[m]["ap"], acc[BASELINE]["ap"], min_n=MIN_UNITS)
-    caution = f"descriptive only: n={len(per)} < {MIN_UNITS} clusters; read per_cluster" if len(per) < MIN_UNITS else "agreement with Hunt & Reffert (itself a clustering in this space)"
-    return dict(n_clusters=len(per), n_seeds=n_seeds, repeats=repeats, per_cluster=per, skipped=skipped, aggregate=agg, caution=caution)
+    comp = [m for m in methods if m != BASELINE and "AP_diff_vs_seed_box" in agg[m]]
+    for m, ph in zip(comp, holm([agg[m]["AP_diff_vs_seed_box"].get("p_boot") for m in comp])):
+        d = agg[m]["AP_diff_vs_seed_box"]; d["p_holm"] = ph; d["holm_separated"] = None if ph is None else bool(ph < 0.05)
+    return dict(n_clusters=len(per), n_seeds=n_seeds, repeats=repeats, per_cluster=per, skipped=skipped, aggregate=agg,
+                caution=("agreement with Hunt & Reffert (itself a clustering in this space); " + (f"{len(per)} clusters < {MIN_UNITS}: descriptive only, no intervals or significance claims" if len(per) < MIN_UNITS else f"{len(per)} clusters")))
 
 
 class ClusterMemberRetrieval(Workflow):

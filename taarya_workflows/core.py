@@ -52,16 +52,27 @@ def bootstrap_ci(x, B: int = 2000, seed: int = 0, min_n: int = 0) -> dict:
 
 
 def paired_diff(a, b, B: int = 2000, seed: int = 0, min_n: int = 0) -> dict:
-    """Bootstrap CI for mean(a-b) over matched units. `separated` = CI excludes zero."""
+    """Bootstrap CI and two-sided bootstrap p-value for mean(a-b) over matched units. `separated` = CI excludes zero.
+    With several comparisons against one baseline, adjust the p-values (see holm)."""
     d = np.asarray(a, float) - np.asarray(b, float)
     r = bootstrap_ci(d, B, seed, min_n)
     lo, hi = r["ci95"]
     if lo is None and r["n"] > 0:
-        r["separated"], r["direction"] = None, None
+        r["separated"], r["direction"], r["p_boot"] = None, None, None
         return r
+    x = d[np.isfinite(d)]; m = x[np.random.default_rng(seed + 1).integers(0, len(x), (B, len(x)))].mean(axis=1)
+    r["p_boot"] = round(float(max(2 * min((m <= 0).mean(), (m >= 0).mean()), 1.0 / B)), 4)
     r["separated"] = bool(lo is not None and (lo > 0 or hi < 0))
     r["direction"] = None if not r["separated"] else ("a>b" if lo > 0 else "a<b")
     return r
+
+
+def holm(pvals) -> list:
+    """Holm-Bonferroni adjusted p-values (None passes through)."""
+    idx = [i for i, p in enumerate(pvals) if p is not None]; out = [None] * len(pvals); run = 0.0; m = len(idx)
+    for rank, i in enumerate(sorted(idx, key=lambda i: pvals[i])):
+        run = max(run, min(1.0, (m - rank) * pvals[i])); out[i] = round(run, 4)
+    return out
 
 
 # ------------------------------------------------------------------ ranking metrics
