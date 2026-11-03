@@ -122,10 +122,14 @@ def reconcile_papers(neo_driver, qdrant_client, vs: VectorSearch) -> dict:
 
 
 def main():
-    pg_dsn = os.environ.get("TAARYA_PG_DSN", "postgresql://taarya:taarya123@localhost:5432/astronomy")
+    pg_dsn = os.environ.get("TAARYA_PG_DSN")
+    if not pg_dsn:
+        raise ValueError("TAARYA_PG_DSN environment variable must be set")
     neo_uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
     neo_user = os.environ.get("NEO4J_USER", "neo4j")
-    neo_pass = os.environ.get("NEO4J_PASSWORD", "taarya123")
+    neo_pass = os.environ.get("NEO4J_PASSWORD")
+    if not neo_pass:
+        raise ValueError("NEO4J_PASSWORD environment variable must be set")
     qdrant_url = os.environ.get("QDRANT_URL", "http://localhost:6333")
 
     pg_conn = psycopg2.connect(pg_dsn)
