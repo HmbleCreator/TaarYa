@@ -1,0 +1,21 @@
+{
+  "utc": "2026-11-03T10:46:03Z",
+  "code_hash": "43e6247e13f02cfe",
+  "git_commit": "9449c8356083ea84f796e049b6b22f41bd63eaeb",
+  "versions": {
+    "python": "3.12.11",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "numpy": "1.26.4",
+    "pandas": "3.0.5",
+    "scipy": "1.13.1",
+    "sklearn": "1.7.2",
+    "astropy": "6.0.0"
+  },
+  "cone_manifest_hash": "41406daa27da05bc",
+  "toi_sample": null,
+  "seed": 0,
+  "outputs": [
+    "membership",
+    "retrieval"
+  ]
+}

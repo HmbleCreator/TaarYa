@@ -1,20 +1,24 @@
 FROM postgres:15-bookworm
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
+# Install build dependencies (must run as root)
+RUN mkdir -p /var/lib/apt/lists/partial && \
+    apt-get update && apt-get install -y \
     build-essential \
     pkg-config \
     postgresql-server-dev-15 \
     git \
+    ca-certificates \
     zlib1g-dev \
     libzstd-dev \
     liblz4-dev \
     libreadline-dev \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone and build Q3C
 WORKDIR /tmp
-RUN git clone https://github.com/segasai/q3c.git && \
+RUN git config --global http.sslCAInfo /etc/ssl/certs/ca-certificates.crt && \
+    git clone --depth 1 https://github.com/segasai/q3c.git && \
     cd q3c && \
     make && \
     make install && \

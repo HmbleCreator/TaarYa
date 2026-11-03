@@ -10,29 +10,35 @@ FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
-# Install build dependencies (no root package manager during pip install)
+# Install build dependencies
 RUN apt-get update && apt-get install --no-install-recommends -y \
         gcc \
         g++ \
         libpq-dev \
         cmake \
         pkg-config \
-        libfreetype6-dev \
-        libjpeg-dev \
-        zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv for fast dependency management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Pre-install heavy astronomy dependencies (pre-built wheels = faster rebuilds)
+# Explicitly use CPU-only index for PyTorch and others to avoid CUDA bloat
+ENV UV_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu
+ENV UV_INDEX_STRATEGY=unsafe-best-match
+
+# 1. Install heavy dependencies first (cached if pyproject.toml doesn't change)
+COPY pyproject.toml ./
 RUN uv pip install --system --no-cache \
         "numpy>=1.26.3" \
-        "scipy>=1.11.0"
+        "scipy>=1.11.0" \
+        "torch>=2.0.0" \
+        "sentence-transformers>=3.0.0"
 
-# Copy and install the project (editable for entrypoints to resolve)
-COPY pyproject.toml ./
-RUN uv pip install --system --no-cache --editable ".[all]"
+# 2. Copy source and install the project normally.
+# Do not use an editable install here: the runtime image does not contain
+# the builder path, and editable metadata can leave imports pointing at /build.
+COPY . .
+RUN uv pip install --system --no-cache .
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
@@ -53,13 +59,17 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
         libpq5 \
         libgomp1 \
         libfreetype6 \
-        libjpeg-turbo \
+        libjpeg62-turbo \
         fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy pre-built site-packages from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application source from builder so `PYTHONPATH=/app` also works for
+# direct module execution and local debugging inside the container.
+COPY --from=builder /build/src /app/src
 
 # Copy static files (required for web UI)
 COPY static/ /app/static/
@@ -81,6 +91,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 # Default: start the API server
 EXPOSE 8000
 
+ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 

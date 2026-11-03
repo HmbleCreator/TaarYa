@@ -1,0 +1,1079 @@
+{
+  "n_clusters": 19,
+  "n_seeds": 10,
+  "repeats": 5,
+  "per_cluster": {
+    "alessi19": {
+      "n_cone": 33786,
+      "n_gold_in_cone": 56,
+      "cone_purity": 0.0017,
+      "current_graph_traversal": {
+        "ap": 0.002,
+        "pk": 0.0,
+        "ndcg": 0.002,
+        "rp": 0.0
+      },
+      "seed_box": {
+        "ap": 0.941,
+        "pk": 0.848,
+        "ndcg": 0.986,
+        "rp": 0.874
+      },
+      "seed_mahalanobis": {
+        "ap": 0.945,
+        "pk": 0.852,
+        "ndcg": 0.988,
+        "rp": 0.891
+      },
+      "seed_knn": {
+        "ap": 0.95,
+        "pk": 0.844,
+        "ndcg": 0.989,
+        "rp": 0.896
+      },
+      "graph_ppr": {
+        "ap": 0.946,
+        "pk": 0.844,
+        "ndcg": 0.988,
+        "rp": 0.887
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.649,
+        "pk": 0.644,
+        "ndcg": 0.861,
+        "rp": 0.643
+      }
+    },
+    "ascc115": {
+      "n_cone": 14082,
+      "n_gold_in_cone": 49,
+      "cone_purity": 0.0035,
+      "current_graph_traversal": {
+        "ap": 0.003,
+        "pk": 0.004,
+        "ndcg": 0.004,
+        "rp": 0.005
+      },
+      "seed_box": {
+        "ap": 0.985,
+        "pk": 0.78,
+        "ndcg": 0.997,
+        "rp": 0.933
+      },
+      "seed_mahalanobis": {
+        "ap": 0.991,
+        "pk": 0.78,
+        "ndcg": 0.998,
+        "rp": 0.959
+      },
+      "seed_knn": {
+        "ap": 0.992,
+        "pk": 0.78,
+        "ndcg": 0.998,
+        "rp": 0.959
+      },
+      "graph_ppr": {
+        "ap": 0.986,
+        "pk": 0.78,
+        "ndcg": 0.997,
+        "rp": 0.938
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.789,
+        "pk": 0.748,
+        "ndcg": 0.925,
+        "rp": 0.769
+      }
+    },
+    "ascc79": {
+      "n_cone": 8627,
+      "n_gold_in_cone": 45,
+      "cone_purity": 0.0052,
+      "current_graph_traversal": {
+        "ap": 0.004,
+        "pk": 0.0,
+        "ndcg": 0.003,
+        "rp": 0.0
+      },
+      "seed_box": {
+        "ap": 0.768,
+        "pk": 0.628,
+        "ndcg": 0.91,
+        "rp": 0.726
+      },
+      "seed_mahalanobis": {
+        "ap": 0.772,
+        "pk": 0.648,
+        "ndcg": 0.926,
+        "rp": 0.72
+      },
+      "seed_knn": {
+        "ap": 0.783,
+        "pk": 0.62,
+        "ndcg": 0.929,
+        "rp": 0.743
+      },
+      "graph_ppr": {
+        "ap": 0.791,
+        "pk": 0.664,
+        "ndcg": 0.908,
+        "rp": 0.777
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.341,
+        "pk": 0.336,
+        "ndcg": 0.66,
+        "rp": 0.331
+      }
+    },
+    "fsr1197": {
+      "n_cone": 9548,
+      "n_gold_in_cone": 62,
+      "cone_purity": 0.0065,
+      "current_graph_traversal": {
+        "ap": 0.006,
+        "pk": 0.004,
+        "ndcg": 0.011,
+        "rp": 0.004
+      },
+      "seed_box": {
+        "ap": 0.958,
+        "pk": 0.928,
+        "ndcg": 0.979,
+        "rp": 0.912
+      },
+      "seed_mahalanobis": {
+        "ap": 0.952,
+        "pk": 0.916,
+        "ndcg": 0.973,
+        "rp": 0.888
+      },
+      "seed_knn": {
+        "ap": 0.95,
+        "pk": 0.904,
+        "ndcg": 0.969,
+        "rp": 0.877
+      },
+      "graph_ppr": {
+        "ap": 0.954,
+        "pk": 0.916,
+        "ndcg": 0.972,
+        "rp": 0.888
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.757,
+        "pk": 0.788,
+        "ndcg": 0.888,
+        "rp": 0.788
+      }
+    },
+    "gulliver22": {
+      "n_cone": 17364,
+      "n_gold_in_cone": 56,
+      "cone_purity": 0.0032,
+      "current_graph_traversal": {
+        "ap": 0.004,
+        "pk": 0.008,
+        "ndcg": 0.006,
+        "rp": 0.009
+      },
+      "seed_box": {
+        "ap": 0.71,
+        "pk": 0.684,
+        "ndcg": 0.884,
+        "rp": 0.691
+      },
+      "seed_mahalanobis": {
+        "ap": 0.775,
+        "pk": 0.732,
+        "ndcg": 0.929,
+        "rp": 0.752
+      },
+      "seed_knn": {
+        "ap": 0.766,
+        "pk": 0.728,
+        "ndcg": 0.915,
+        "rp": 0.743
+      },
+      "graph_ppr": {
+        "ap": 0.742,
+        "pk": 0.732,
+        "ndcg": 0.884,
+        "rp": 0.748
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.655,
+        "pk": 0.66,
+        "ndcg": 0.852,
+        "rp": 0.657
+      }
+    },
+    "hsc1865": {
+      "n_cone": 3713,
+      "n_gold_in_cone": 47,
+      "cone_purity": 0.0127,
+      "current_graph_traversal": {
+        "ap": 0.013,
+        "pk": 0.012,
+        "ndcg": 0.026,
+        "rp": 0.016
+      },
+      "seed_box": {
+        "ap": 0.831,
+        "pk": 0.668,
+        "ndcg": 0.948,
+        "rp": 0.741
+      },
+      "seed_mahalanobis": {
+        "ap": 0.87,
+        "pk": 0.728,
+        "ndcg": 0.956,
+        "rp": 0.805
+      },
+      "seed_knn": {
+        "ap": 0.885,
+        "pk": 0.696,
+        "ndcg": 0.973,
+        "rp": 0.795
+      },
+      "graph_ppr": {
+        "ap": 0.861,
+        "pk": 0.696,
+        "ndcg": 0.967,
+        "rp": 0.773
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.51,
+        "pk": 0.504,
+        "ndcg": 0.801,
+        "rp": 0.481
+      }
+    },
+    "ngc1647": {
+      "n_cone": 1356,
+      "n_gold_in_cone": 235,
+      "cone_purity": 0.1733,
+      "current_graph_traversal": {
+        "ap": 0.177,
+        "pk": 0.196,
+        "ndcg": 0.192,
+        "rp": 0.17
+      },
+      "seed_box": {
+        "ap": 0.965,
+        "pk": 0.98,
+        "ndcg": 0.981,
+        "rp": 0.917
+      },
+      "seed_mahalanobis": {
+        "ap": 0.97,
+        "pk": 0.98,
+        "ndcg": 0.977,
+        "rp": 0.932
+      },
+      "seed_knn": {
+        "ap": 0.975,
+        "pk": 0.988,
+        "ndcg": 0.988,
+        "rp": 0.932
+      },
+      "graph_ppr": {
+        "ap": 0.949,
+        "pk": 0.988,
+        "ndcg": 0.974,
+        "rp": 0.881
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.724,
+        "pk": 0.7,
+        "ndcg": 0.709,
+        "rp": 0.729
+      }
+    },
+    "ngc3532": {
+      "n_cone": 15670,
+      "n_gold_in_cone": 529,
+      "cone_purity": 0.0338,
+      "current_graph_traversal": {
+        "ap": 0.035,
+        "pk": 0.036,
+        "ndcg": 0.036,
+        "rp": 0.039
+      },
+      "seed_box": {
+        "ap": 0.83,
+        "pk": 0.92,
+        "ndcg": 0.916,
+        "rp": 0.761
+      },
+      "seed_mahalanobis": {
+        "ap": 0.833,
+        "pk": 0.896,
+        "ndcg": 0.914,
+        "rp": 0.765
+      },
+      "seed_knn": {
+        "ap": 0.825,
+        "pk": 0.928,
+        "ndcg": 0.905,
+        "rp": 0.76
+      },
+      "graph_ppr": {
+        "ap": 0.802,
+        "pk": 0.888,
+        "ndcg": 0.883,
+        "rp": 0.744
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.516,
+        "pk": 0.54,
+        "ndcg": 0.522,
+        "rp": 0.511
+      }
+    },
+    "ngc5662": {
+      "n_cone": 5168,
+      "n_gold_in_cone": 147,
+      "cone_purity": 0.0284,
+      "current_graph_traversal": {
+        "ap": 0.029,
+        "pk": 0.028,
+        "ndcg": 0.028,
+        "rp": 0.028
+      },
+      "seed_box": {
+        "ap": 0.994,
+        "pk": 1.0,
+        "ndcg": 1.0,
+        "rp": 0.952
+      },
+      "seed_mahalanobis": {
+        "ap": 0.995,
+        "pk": 1.0,
+        "ndcg": 0.999,
+        "rp": 0.956
+      },
+      "seed_knn": {
+        "ap": 0.994,
+        "pk": 1.0,
+        "ndcg": 1.0,
+        "rp": 0.955
+      },
+      "graph_ppr": {
+        "ap": 0.978,
+        "pk": 0.992,
+        "ndcg": 0.979,
+        "rp": 0.93
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.725,
+        "pk": 0.72,
+        "ndcg": 0.719,
+        "rp": 0.727
+      }
+    },
+    "oc0395": {
+      "n_cone": 6890,
+      "n_gold_in_cone": 56,
+      "cone_purity": 0.0081,
+      "current_graph_traversal": {
+        "ap": 0.007,
+        "pk": 0.008,
+        "ndcg": 0.014,
+        "rp": 0.009
+      },
+      "seed_box": {
+        "ap": 0.942,
+        "pk": 0.86,
+        "ndcg": 0.987,
+        "rp": 0.891
+      },
+      "seed_mahalanobis": {
+        "ap": 0.935,
+        "pk": 0.836,
+        "ndcg": 0.985,
+        "rp": 0.874
+      },
+      "seed_knn": {
+        "ap": 0.921,
+        "pk": 0.852,
+        "ndcg": 0.971,
+        "rp": 0.874
+      },
+      "graph_ppr": {
+        "ap": 0.927,
+        "pk": 0.828,
+        "ndcg": 0.982,
+        "rp": 0.865
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.54,
+        "pk": 0.528,
+        "ndcg": 0.803,
+        "rp": 0.517
+      }
+    },
+    "pozzo1": {
+      "n_cone": 16558,
+      "n_gold_in_cone": 135,
+      "cone_purity": 0.0082,
+      "current_graph_traversal": {
+        "ap": 0.008,
+        "pk": 0.008,
+        "ndcg": 0.007,
+        "rp": 0.01
+      },
+      "seed_box": {
+        "ap": 0.753,
+        "pk": 0.856,
+        "ndcg": 0.791,
+        "rp": 0.69
+      },
+      "seed_mahalanobis": {
+        "ap": 0.758,
+        "pk": 0.852,
+        "ndcg": 0.796,
+        "rp": 0.694
+      },
+      "seed_knn": {
+        "ap": 0.74,
+        "pk": 0.848,
+        "ndcg": 0.793,
+        "rp": 0.677
+      },
+      "graph_ppr": {
+        "ap": 0.726,
+        "pk": 0.836,
+        "ndcg": 0.765,
+        "rp": 0.682
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.454,
+        "pk": 0.456,
+        "ndcg": 0.449,
+        "rp": 0.445
+      }
+    },
+    "ptb9": {
+      "n_cone": 1537,
+      "n_gold_in_cone": 170,
+      "cone_purity": 0.1106,
+      "current_graph_traversal": {
+        "ap": 0.11,
+        "pk": 0.12,
+        "ndcg": 0.108,
+        "rp": 0.11
+      },
+      "seed_box": {
+        "ap": 0.776,
+        "pk": 0.796,
+        "ndcg": 0.776,
+        "rp": 0.774
+      },
+      "seed_mahalanobis": {
+        "ap": 0.777,
+        "pk": 0.792,
+        "ndcg": 0.778,
+        "rp": 0.772
+      },
+      "seed_knn": {
+        "ap": 0.782,
+        "pk": 0.804,
+        "ndcg": 0.789,
+        "rp": 0.769
+      },
+      "graph_ppr": {
+        "ap": 0.725,
+        "pk": 0.784,
+        "ndcg": 0.752,
+        "rp": 0.703
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.539,
+        "pk": 0.528,
+        "ndcg": 0.521,
+        "rp": 0.55
+      }
+    },
+    "rsg8": {
+      "n_cone": 42103,
+      "n_gold_in_cone": 43,
+      "cone_purity": 0.001,
+      "current_graph_traversal": {
+        "ap": 0.001,
+        "pk": 0.0,
+        "ndcg": 0.0,
+        "rp": 0.0
+      },
+      "seed_box": {
+        "ap": 0.838,
+        "pk": 0.612,
+        "ndcg": 0.961,
+        "rp": 0.745
+      },
+      "seed_mahalanobis": {
+        "ap": 0.847,
+        "pk": 0.612,
+        "ndcg": 0.964,
+        "rp": 0.752
+      },
+      "seed_knn": {
+        "ap": 0.85,
+        "pk": 0.612,
+        "ndcg": 0.965,
+        "rp": 0.758
+      },
+      "graph_ppr": {
+        "ap": 0.868,
+        "pk": 0.616,
+        "ndcg": 0.97,
+        "rp": 0.788
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.376,
+        "pk": 0.36,
+        "ndcg": 0.705,
+        "rp": 0.364
+      }
+    },
+    "theia172": {
+      "n_cone": 29948,
+      "n_gold_in_cone": 85,
+      "cone_purity": 0.0028,
+      "current_graph_traversal": {
+        "ap": 0.002,
+        "pk": 0.0,
+        "ndcg": 0.0,
+        "rp": 0.0
+      },
+      "seed_box": {
+        "ap": 0.967,
+        "pk": 0.972,
+        "ndcg": 0.992,
+        "rp": 0.896
+      },
+      "seed_mahalanobis": {
+        "ap": 0.971,
+        "pk": 0.968,
+        "ndcg": 0.995,
+        "rp": 0.912
+      },
+      "seed_knn": {
+        "ap": 0.967,
+        "pk": 0.972,
+        "ndcg": 0.994,
+        "rp": 0.904
+      },
+      "graph_ppr": {
+        "ap": 0.982,
+        "pk": 0.992,
+        "ndcg": 0.997,
+        "rp": 0.923
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.701,
+        "pk": 0.692,
+        "ndcg": 0.849,
+        "rp": 0.731
+      }
+    },
+    "theia38": {
+      "n_cone": 21317,
+      "n_gold_in_cone": 95,
+      "cone_purity": 0.0045,
+      "current_graph_traversal": {
+        "ap": 0.004,
+        "pk": 0.0,
+        "ndcg": 0.0,
+        "rp": 0.0
+      },
+      "seed_box": {
+        "ap": 0.839,
+        "pk": 0.86,
+        "ndcg": 0.859,
+        "rp": 0.772
+      },
+      "seed_mahalanobis": {
+        "ap": 0.884,
+        "pk": 0.92,
+        "ndcg": 0.886,
+        "rp": 0.784
+      },
+      "seed_knn": {
+        "ap": 0.872,
+        "pk": 0.884,
+        "ndcg": 0.894,
+        "rp": 0.791
+      },
+      "graph_ppr": {
+        "ap": 0.882,
+        "pk": 0.92,
+        "ndcg": 0.903,
+        "rp": 0.793
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.436,
+        "pk": 0.432,
+        "ndcg": 0.48,
+        "rp": 0.419
+      }
+    },
+    "theia986": {
+      "n_cone": 17142,
+      "n_gold_in_cone": 60,
+      "cone_purity": 0.0035,
+      "current_graph_traversal": {
+        "ap": 0.003,
+        "pk": 0.0,
+        "ndcg": 0.005,
+        "rp": 0.0
+      },
+      "seed_box": {
+        "ap": 0.661,
+        "pk": 0.612,
+        "ndcg": 0.847,
+        "rp": 0.612
+      },
+      "seed_mahalanobis": {
+        "ap": 0.675,
+        "pk": 0.64,
+        "ndcg": 0.877,
+        "rp": 0.64
+      },
+      "seed_knn": {
+        "ap": 0.692,
+        "pk": 0.636,
+        "ndcg": 0.886,
+        "rp": 0.636
+      },
+      "graph_ppr": {
+        "ap": 0.736,
+        "pk": 0.656,
+        "ndcg": 0.916,
+        "rp": 0.656
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.004,
+        "pk": 0.004,
+        "ndcg": 0.005,
+        "rp": 0.004
+      }
+    },
+    "upk136": {
+      "n_cone": 37314,
+      "n_gold_in_cone": 51,
+      "cone_purity": 0.0014,
+      "current_graph_traversal": {
+        "ap": 0.001,
+        "pk": 0.0,
+        "ndcg": 0.0,
+        "rp": 0.0
+      },
+      "seed_box": {
+        "ap": 0.977,
+        "pk": 0.816,
+        "ndcg": 0.995,
+        "rp": 0.946
+      },
+      "seed_mahalanobis": {
+        "ap": 0.967,
+        "pk": 0.812,
+        "ndcg": 0.992,
+        "rp": 0.941
+      },
+      "seed_knn": {
+        "ap": 0.962,
+        "pk": 0.796,
+        "ndcg": 0.992,
+        "rp": 0.917
+      },
+      "graph_ppr": {
+        "ap": 0.954,
+        "pk": 0.804,
+        "ndcg": 0.979,
+        "rp": 0.907
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.815,
+        "pk": 0.804,
+        "ndcg": 0.928,
+        "rp": 0.8
+      }
+    },
+    "upk429": {
+      "n_cone": 4341,
+      "n_gold_in_cone": 52,
+      "cone_purity": 0.012,
+      "current_graph_traversal": {
+        "ap": 0.011,
+        "pk": 0.0,
+        "ndcg": 0.003,
+        "rp": 0.0
+      },
+      "seed_box": {
+        "ap": 0.983,
+        "pk": 0.816,
+        "ndcg": 0.997,
+        "rp": 0.933
+      },
+      "seed_mahalanobis": {
+        "ap": 0.986,
+        "pk": 0.824,
+        "ndcg": 0.997,
+        "rp": 0.957
+      },
+      "seed_knn": {
+        "ap": 0.982,
+        "pk": 0.82,
+        "ndcg": 0.997,
+        "rp": 0.948
+      },
+      "graph_ppr": {
+        "ap": 0.983,
+        "pk": 0.82,
+        "ndcg": 0.997,
+        "rp": 0.948
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.653,
+        "pk": 0.664,
+        "ndcg": 0.847,
+        "rp": 0.676
+      }
+    },
+    "upk51": {
+      "n_cone": 29543,
+      "n_gold_in_cone": 52,
+      "cone_purity": 0.0018,
+      "current_graph_traversal": {
+        "ap": 0.001,
+        "pk": 0.0,
+        "ndcg": 0.0,
+        "rp": 0.0
+      },
+      "seed_box": {
+        "ap": 0.794,
+        "pk": 0.692,
+        "ndcg": 0.905,
+        "rp": 0.729
+      },
+      "seed_mahalanobis": {
+        "ap": 0.786,
+        "pk": 0.672,
+        "ndcg": 0.9,
+        "rp": 0.743
+      },
+      "seed_knn": {
+        "ap": 0.768,
+        "pk": 0.668,
+        "ndcg": 0.905,
+        "rp": 0.71
+      },
+      "graph_ppr": {
+        "ap": 0.8,
+        "pk": 0.684,
+        "ndcg": 0.912,
+        "rp": 0.748
+      },
+      "hdbscan_with_seeds": {
+        "ap": 0.585,
+        "pk": 0.62,
+        "ndcg": 0.802,
+        "rp": 0.619
+      }
+    }
+  },
+  "skipped": [],
+  "aggregate": {
+    "current_graph_traversal": {
+      "AP": {
+        "mean": 0.0222,
+        "ci95": [
+          0.006,
+          0.0445
+        ],
+        "n": 19
+      },
+      "P@50": {
+        "mean": 0.0223,
+        "ci95": [
+          0.0044,
+          0.0476
+        ],
+        "n": 19
+      },
+      "nDCG@100": {
+        "mean": 0.0236,
+        "ci95": [
+          0.0064,
+          0.0477
+        ],
+        "n": 19
+      },
+      "R-precision": {
+        "mean": 0.021,
+        "ci95": [
+          0.0048,
+          0.0432
+        ],
+        "n": 19
+      },
+      "AP_diff_vs_seed_box": {
+        "mean": -0.8467,
+        "ci95": [
+          -0.8952,
+          -0.7987
+        ],
+        "n": 19,
+        "wins": 0,
+        "losses": 19,
+        "ties": 0,
+        "p_boot": 0.0005,
+        "p_perm": 0.0,
+        "separated": true,
+        "direction": "a<b",
+        "p_holm": 0.0,
+        "holm_separated": true
+      }
+    },
+    "seed_box": {
+      "AP": {
+        "mean": 0.8689,
+        "ci95": [
+          0.8225,
+          0.914
+        ],
+        "n": 19
+      },
+      "P@50": {
+        "mean": 0.8067,
+        "ci95": [
+          0.7518,
+          0.8617
+        ],
+        "n": 19
+      },
+      "nDCG@100": {
+        "mean": 0.9321,
+        "ci95": [
+          0.9008,
+          0.9619
+        ],
+        "n": 19
+      },
+      "R-precision": {
+        "mean": 0.8155,
+        "ci95": [
+          0.7694,
+          0.8618
+        ],
+        "n": 19
+      }
+    },
+    "seed_mahalanobis": {
+      "AP": {
+        "mean": 0.8784,
+        "ci95": [
+          0.835,
+          0.9202
+        ],
+        "n": 19
+      },
+      "P@50": {
+        "mean": 0.8137,
+        "ci95": [
+          0.7608,
+          0.8653
+        ],
+        "n": 19
+      },
+      "nDCG@100": {
+        "mean": 0.9384,
+        "ci95": [
+          0.9094,
+          0.9659
+        ],
+        "n": 19
+      },
+      "R-precision": {
+        "mean": 0.8283,
+        "ci95": [
+          0.7841,
+          0.8714
+        ],
+        "n": 19
+      },
+      "AP_diff_vs_seed_box": {
+        "mean": 0.0094,
+        "ci95": [
+          0.0016,
+          0.0196
+        ],
+        "n": 19,
+        "wins": 15,
+        "losses": 4,
+        "ties": 0,
+        "p_boot": 0.003,
+        "p_perm": 0.03479,
+        "separated": true,
+        "direction": "a>b",
+        "p_holm": 0.1044,
+        "holm_separated": false
+      }
+    },
+    "seed_knn": {
+      "AP": {
+        "mean": 0.8768,
+        "ci95": [
+          0.8337,
+          0.9189
+        ],
+        "n": 19
+      },
+      "P@50": {
+        "mean": 0.8095,
+        "ci95": [
+          0.7549,
+          0.8634
+        ],
+        "n": 19
+      },
+      "nDCG@100": {
+        "mean": 0.9395,
+        "ci95": [
+          0.9106,
+          0.9667
+        ],
+        "n": 19
+      },
+      "R-precision": {
+        "mean": 0.8232,
+        "ci95": [
+          0.778,
+          0.866
+        ],
+        "n": 19
+      },
+      "AP_diff_vs_seed_box": {
+        "mean": 0.0078,
+        "ci95": [
+          -0.0014,
+          0.0187
+        ],
+        "n": 19,
+        "wins": 12,
+        "losses": 7,
+        "ties": 0,
+        "p_boot": 0.103,
+        "p_perm": 0.15197,
+        "separated": false,
+        "direction": null,
+        "p_holm": 0.3039,
+        "holm_separated": false
+      }
+    },
+    "graph_ppr": {
+      "AP": {
+        "mean": 0.8732,
+        "ci95": [
+          0.8313,
+          0.9155
+        ],
+        "n": 19
+      },
+      "P@50": {
+        "mean": 0.8126,
+        "ci95": [
+          0.7608,
+          0.8644
+        ],
+        "n": 19
+      },
+      "nDCG@100": {
+        "mean": 0.9329,
+        "ci95": [
+          0.8997,
+          0.9628
+        ],
+        "n": 19
+      },
+      "R-precision": {
+        "mean": 0.8199,
+        "ci95": [
+          0.7798,
+          0.8609
+        ],
+        "n": 19
+      },
+      "AP_diff_vs_seed_box": {
+        "mean": 0.0043,
+        "ci95": [
+          -0.0088,
+          0.0181
+        ],
+        "n": 19,
+        "wins": 11,
+        "losses": 8,
+        "ties": 0,
+        "p_boot": 0.529,
+        "p_perm": 0.54577,
+        "separated": false,
+        "direction": null,
+        "p_holm": 0.5458,
+        "holm_separated": false
+      }
+    },
+    "hdbscan_with_seeds": {
+      "AP": {
+        "mean": 0.5667,
+        "ci95": [
+          0.4745,
+          0.6452
+        ],
+        "n": 19
+      },
+      "P@50": {
+        "mean": 0.5646,
+        "ci95": [
+          0.4747,
+          0.6428
+        ],
+        "n": 19
+      },
+      "nDCG@100": {
+        "mean": 0.7014,
+        "ci95": [
+          0.5926,
+          0.7905
+        ],
+        "n": 19
+      },
+      "R-precision": {
+        "mean": 0.5664,
+        "ci95": [
+          0.4744,
+          0.6484
+        ],
+        "n": 19
+      },
+      "AP_diff_vs_seed_box": {
+        "mean": -0.3023,
+        "ci95": [
+          -0.3651,
+          -0.2473
+        ],
+        "n": 19,
+        "wins": 0,
+        "losses": 19,
+        "ties": 0,
+        "p_boot": 0.0005,
+        "p_perm": 0.0,
+        "separated": true,
+        "direction": "a<b",
+        "p_holm": 0.0,
+        "holm_separated": true
+      }
+    }
+  },
+  "caution": "agreement with Hunt & Reffert (itself a clustering in this space); 19 clusters"
+}

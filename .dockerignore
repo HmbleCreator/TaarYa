@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+build/
+dist/
+*.egg-info/
+
+# Data and Logs
+data/
+logs/
+*.log
+*.db
+*.sqlite
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Docker
+docker-compose.override.yml
+.env
+!.env.example
+
+# Git
+.git/
+.gitignore

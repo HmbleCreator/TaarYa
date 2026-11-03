@@ -1,28 +1,62 @@
-<aside class="sidebar" style="display:flex; flex-direction:column;">
-  <button id="sidebar-toggle" class="sidebar-toggle"></button>
+<aside class="sidebar" aria-label="TaarYa navigation">
+  <button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Collapse navigation" title="Collapse navigation"></button>
   <div class="sidebar-brand">
-    <h1>TaarYa</h1>
-    <p>Star Catalog Intelligence</p>
+    <img class="sidebar-mark" src="/static/TaarYaLogo.png" alt="">
+    <div class="sidebar-wordmark">
+      <h1>TaarYa</h1>
+      <p>Research workbench</p>
+    </div>
   </div>
-  <ul class="sidebar-nav">
-    <li><a href="/static/dashboard.html">
-      <span class="material-icons">dashboard</span> Dashboard
+  <ul class="sidebar-nav" aria-label="Primary navigation">
+    <li><a href="/static/chat.html" aria-label="Research" title="Research">
+      <span class="material-icons" aria-hidden="true">science</span> Research
     </a></li>
-    <li><a href="/static/explore.html">
-      <span class="material-icons">explore</span> Explore
+    <li><a href="/static/explore.html" aria-label="Sky" title="Sky">
+      <span class="material-icons" aria-hidden="true">public</span> Sky
     </a></li>
-    <li><a href="/static/chat.html">
-      <span class="material-icons">smart_toy</span> Chat
+    <li><a href="/static/benchmark.html" aria-label="Benchmark" title="Benchmark">
+      <span class="material-icons" aria-hidden="true">fact_check</span> Benchmark
+    </a></li>
+    <li><a href="/static/tess.html" aria-label="TESS light curves" title="TESS light curves">
+      <span class="material-icons" aria-hidden="true">show_chart</span> TESS
+    </a></li>
+    <li><a href="/static/dashboard.html" aria-label="Workspace status" title="Workspace status">
+      <span class="material-icons" aria-hidden="true">monitor_heart</span> Status
     </a></li>
   </ul>
-  <div class="nav-section-title">Recent Chats</div>
-  <button id="new-chat-btn" class="new-chat-btn">+ New Chat</button>
+  <div class="projects-heading">
+    <span class="nav-section-title">Projects</span>
+    <button id="new-project-btn" type="button" title="Create project" aria-label="Create project"><span class="material-icons" aria-hidden="true">add</span></button>
+  </div>
+  <div id="project-list" class="project-list" aria-label="Research projects"></div>
+  <div class="nav-section-title session-section-title">Sessions</div>
+  <button id="new-chat-btn" class="new-chat-btn" type="button">
+    <span class="material-icons" aria-hidden="true">add</span><span>New session</span>
+  </button>
   <div id="session-list" class="session-list"></div>
+  <section class="project-items" aria-label="Saved project items">
+    <div class="nav-section-title">Saved items</div>
+    <div id="project-items-list" class="project-items-list"><span class="project-items-empty">Select a project</span></div>
+  </section>
   <div class="sidebar-footer">
-    <a href="/static/settings.html" style="display:flex;align-items:center;gap:8px;color:var(--text-secondary);text-decoration:none;margin-bottom:4px;">
-      <span class="material-icons" style="font-size:18px;">settings</span> Settings
+    <a href="/static/settings.html" aria-label="Settings" title="Settings">
+      <span class="material-icons" aria-hidden="true">settings</span> Settings
     </a>
-    <span class="version">v0.2.0</span>
+    <span class="version">TaarYa</span>
   </div>
 </aside>
+<dialog id="project-create-dialog" class="project-dialog">
+  <form id="project-create-form" method="dialog">
+    <h2>New research project</h2>
+    <label for="project-name">Name</label>
+    <input id="project-name" name="name" maxlength="120" required autocomplete="off">
+    <label for="project-description">Description <span>Optional</span></label>
+    <textarea id="project-description" name="description" rows="3" maxlength="2000"></textarea>
+    <p id="project-create-error" class="project-form-error" role="alert" hidden></p>
+    <div class="project-dialog-actions">
+      <button type="button" id="project-cancel-btn">Cancel</button>
+      <button type="submit" id="project-submit-btn">Create project</button>
+    </div>
+  </form>
+</dialog>
 

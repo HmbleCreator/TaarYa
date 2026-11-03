@@ -59,6 +59,13 @@ def f1_at_k(retrieved: List[str], relevant: Set[str], k: int) -> float:
     return 2 * p * r / (p + r)
 
 
+def hit_rate_at_k(retrieved: List[str], relevant: Set[str], k: int) -> float:
+    """Whether at least one relevant item appears in the top-k."""
+    if k <= 0 or not relevant:
+        return 0.0
+    return 1.0 if any(item in relevant for item in retrieved[:k]) else 0.0
+
+
 def mean_reciprocal_rank(retrieved: List[str], relevant: Set[str]) -> float:
     """Reciprocal of the rank of the first relevant item.
 
@@ -100,6 +107,76 @@ def ndcg_at_k(retrieved: List[str], relevant: Set[str], k: int) -> float:
     return dcg / idcg
 
 
+def average_precision(retrieved: List[str], relevant: Set[str], k: int = None) -> float:
+    """Average Precision (AP) for a single query.
+
+    Computes the mean of precision values at each rank where a relevant
+    item is retrieved.  When *k* is given the computation is truncated
+    at rank *k*.
+
+    Returns:
+        AP in [0, 1].
+    """
+    if not relevant:
+        return 0.0
+    items = retrieved[:k] if k else retrieved
+    hits = 0
+    sum_prec = 0.0
+    for i, item in enumerate(items, start=1):
+        if item in relevant:
+            hits += 1
+            sum_prec += hits / i
+    return sum_prec / len(relevant)
+
+
+def mean_average_precision(
+    queries: List[tuple],  # list of (retrieved_ids, relevant_set)
+    k: int = None,
+) -> float:
+    """Mean Average Precision across multiple queries."""
+    if not queries:
+        return 0.0
+    aps = [average_precision(r, rel, k) for r, rel in queries]
+    return sum(aps) / len(aps)
+
+
+def bootstrap_confidence_interval(
+    values: List[float],
+    n_boot: int = 1000,
+    ci: float = 0.95,
+    seed: int = 42,
+) -> Dict[str, float]:
+    """Non-parametric bootstrap CI for a list of per-query metric values.
+
+    Returns dict with 'mean', 'lower', 'upper', 'std'.
+    """
+    import random
+
+    if not values:
+        return {"mean": 0.0, "lower": 0.0, "upper": 0.0, "std": 0.0}
+
+    n = len(values)
+    rng = random.Random(seed)
+    means = []
+    for _ in range(n_boot):
+        sample = [rng.choice(values) for _ in range(n)]
+        means.append(sum(sample) / n)
+
+    means.sort()
+    alpha = (1 - ci) / 2
+    lo = means[int(alpha * n_boot)]
+    hi = means[int((1 - alpha) * n_boot)]
+    overall_mean = sum(values) / n
+
+    std = (sum((v - overall_mean) ** 2 for v in values) / n) ** 0.5
+    return {
+        "mean": round(overall_mean, 4),
+        "lower": round(lo, 4),
+        "upper": round(hi, 4),
+        "std": round(std, 4),
+    }
+
+
 def evaluate_query(
     retrieved_ids: List[str],
     relevant_ids: List[str],
@@ -129,7 +206,9 @@ def evaluate_query(
         results[f"precision@{k}"] = round(precision_at_k(retrieved_ids, relevant_set, k), 4)
         results[f"recall@{k}"] = round(recall_at_k(retrieved_ids, relevant_set, k), 4)
         results[f"f1@{k}"] = round(f1_at_k(retrieved_ids, relevant_set, k), 4)
+        results[f"hit@{k}"] = round(hit_rate_at_k(retrieved_ids, relevant_set, k), 4)
         results[f"ndcg@{k}"] = round(ndcg_at_k(retrieved_ids, relevant_set, k), 4)
+        results[f"ap@{k}"] = round(average_precision(retrieved_ids, relevant_set, k), 4)
 
     return results
 

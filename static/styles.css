@@ -143,10 +143,7 @@ a:hover {
 
 /* ── Sidebar ───────────────────────────────────────────── */
 .sidebar {
-  background:
-    radial-gradient(circle at top, rgba(255,255,255,0.04), transparent 36%),
-    linear-gradient(180deg, rgba(255,255,255,0.015), rgba(0,0,0,0.02)),
-    var(--bg-base);
+  background: var(--bg-base);
   border-right: 1px solid var(--border);
   padding: 14px 0 12px;
   display: flex;
@@ -363,7 +360,7 @@ a:hover {
 .sidebar-brand h1 {
   font-size: 1.3rem;
   font-weight: 700;
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
   color: var(--text-primary);
 }
 
@@ -443,7 +440,7 @@ a:hover {
 .page-header h2 {
   font-size: 1.5rem;
   font-weight: 700;
-  letter-spacing: -0.3px;
+  letter-spacing: 0;
 }
 
 .page-header p {

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TaarYa â€” Dashboard</title>
-  <meta name="description" content="TaarYa astronomy research dashboard â€” system stats and quick search.">
+  <title>TaarYa | Research Workspace</title>
+  <meta name="description" content="Explore indexed astronomy data and research candidates in TaarYa.">
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
   <style>
@@ -48,7 +48,7 @@
       font-weight: 700;
       font-family: 'JetBrains Mono', monospace;
       color: var(--dashboard-panel-text);
-      letter-spacing: -0.5px;
+      letter-spacing: 0;
     }
     .dash-stat-label {
       font-size: 10px;
@@ -199,9 +199,9 @@
       box-shadow: 0 0 8px currentColor;
     }
     .legend-swatch.hot { background: #7dd3fc; color: #7dd3fc; }
-    .legend-swatch.mid { background: #f59e0b; color: #f59e0b; }
+    .legend-swatch.mid { background: #dfb86e; color: #dfb86e; }
     .legend-swatch.cool { background: #f8fafc; color: #f8fafc; }
-    .legend-swatch.quality { background: #a78bfa; color: #a78bfa; }
+    .legend-swatch.quality { background: #94a5ab; color: #94a5ab; }
     .catalog-color-chip,
     .catalog-tone {
       display: inline-flex;
@@ -354,10 +354,10 @@
       height: 6px;
       border-radius: 50%;
     }
-    .be-online  { background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.3);  color: #10b981; }
-    .be-offline { background: rgba(239,68,68,.12);  border: 1px solid rgba(239,68,68,.3);   color: #ef4444; }
-    .be-dot-on  { background: #10b981; box-shadow: 0 0 4px #10b981; }
-    .be-dot-off { background: #ef4444; }
+    .be-online  { background: var(--accent-soft); border: 1px solid var(--border); color: var(--success); }
+    .be-offline { background: rgba(229,142,135,.1); border: 1px solid var(--border); color: var(--error); }
+    .be-dot-on  { background: var(--success); }
+    .be-dot-off { background: var(--error); }
 
     /* â”€â”€ Quick search card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .qs-card {
@@ -660,90 +660,88 @@
       display: none;
     }
   </style>
+  <link rel="stylesheet" href="/static/workstation.css">
 </head>
 <body>
 <div class="app-layout">
   <div id="sidebar-mount"></div>
 
-  <main class="main-content">
-    <!-- Header -->
-    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+  <main class="main-content dashboard-content">
+    <header class="dashboard-header">
       <div>
-        <h2 style="margin:0;">Dashboard</h2>
-        <p style="margin:4px 0 0;color:var(--text-muted);font-size:13px;">System overview and quick search</p>
+        <h1>Explore the indexed sky</h1>
+        <p>Gaia sources, astronomy papers, and their connections.</p>
       </div>
-      <button id="theme-toggle"
-        style="background:var(--bg-surface);border:1px solid var(--border);border-radius:50%;
-               width:38px;height:38px;display:flex;align-items:center;justify-content:center;
-               cursor:pointer;color:var(--text-secondary);transition:all .2s;">
-      </button>
-    </div>
+      <button id="theme-toggle" class="dashboard-theme-toggle" type="button"
+        title="Switch color theme" aria-label="Switch color theme"></button>
+    </header>
 
-    <!-- Backend status badges -->
-    <div class="backend-row" id="backend-badges">
-      <span class="be-badge be-offline"><span class="be-badge-dot be-dot-off"></span>Loadingâ€¦</span>
-    </div>
+    <section class="dashboard-toolbar" aria-label="Search and system status">
+      <div class="qs-card">
+        <label class="search-label" for="quick-q">Find a source or paper</label>
+        <div class="qs-input-row">
+          <input type="text" id="quick-q" placeholder="Gaia source ID, object name, paper, or coordinates">
+          <button id="qs-btn" class="btn btn-primary" type="button" aria-label="Search archive">
+            <span class="material-icons" aria-hidden="true">search</span><span>Search</span>
+          </button>
+        </div>
+        <div id="quick-results" class="mt-4"></div>
+      </div>
+      <div class="system-status">
+        <div class="status-heading"><span class="status-indicator" aria-hidden="true"></span><span>Connected services</span></div>
+        <div class="backend-row" id="backend-badges">
+          <span class="be-badge be-offline"><span class="be-badge-dot be-dot-off"></span>Loadingâ€¦</span>
+        </div>
+      </div>
+    </section>
 
-    <!-- Top stats row -->
-    <div class="dash-stats-row" id="stats-row">
+    <section class="dash-stats-row" id="stats-row" aria-label="Indexed data summary">
       <div class="dash-stat">
-        <span class="material-icons dash-stat-icon">star</span>
         <div class="dash-stat-value" id="stat-stars">â€”</div>
-        <div class="dash-stat-label">Stars in DB</div>
+        <div class="dash-stat-label">Stars</div>
       </div>
       <div class="dash-stat">
-        <span class="material-icons dash-stat-icon">article</span>
         <div class="dash-stat-value" id="stat-papers">â€”</div>
-        <div class="dash-stat-label">Papers Indexed</div>
+        <div class="dash-stat-label">Papers</div>
       </div>
       <div class="dash-stat">
-        <span class="material-icons dash-stat-icon">hub</span>
         <div class="dash-stat-value" id="stat-nodes">â€”</div>
-        <div class="dash-stat-label">Graph Nodes</div>
+        <div class="dash-stat-label">Graph nodes</div>
       </div>
       <div class="dash-stat">
-        <span class="material-icons dash-stat-icon">share</span>
         <div class="dash-stat-value" id="stat-rels">â€”</div>
-        <div class="dash-stat-label">Relationships</div>
+        <div class="dash-stat-label">Relations</div>
       </div>
       <div class="dash-stat">
-        <span class="material-icons dash-stat-icon">scatter_plot</span>
         <div class="dash-stat-value" id="stat-clusters">â€”</div>
         <div class="dash-stat-label">Clusters</div>
       </div>
-    </div>
-
-    <!-- Neo4j graph breakdown -->
-    <div class="graph-breakdown" id="graph-breakdown" style="margin-bottom:18px;">
-      <div class="graph-mini"><div class="graph-mini-val" id="neo-stars">â€”</div><div class="graph-mini-lbl">Star nodes</div></div>
-      <div class="graph-mini"><div class="graph-mini-val" id="neo-papers">â€”</div><div class="graph-mini-lbl">Paper nodes</div></div>
-      <div class="graph-mini"><div class="graph-mini-val" id="neo-clusters">â€”</div><div class="graph-mini-lbl">Cluster nodes</div></div>
-    </div>
-
-
-        <!-- Quick Search -->
-    <div class="qs-card">
-      <h3>Quick Search</h3>
-      <div class="qs-input-row">
-        <div class="input-group">
-          <label>Search anything</label>
-          <input type="text" id="quick-q"
-            placeholder='e.g. "stellar evolution" or a Gaia Source ID'>
-        </div>
-        <button id="qs-btn" class="btn btn-primary" style="height:42px;">
-          <span class="material-icons" style="font-size:18px;">search</span> Search
-        </button>
+    </section>
+    <div id="dataset-empty-state" class="dataset-empty-state" role="status" hidden>
+      <span class="material-icons" aria-hidden="true">database</span>
+      <div class="empty-state-copy">
+        <strong id="dataset-empty-title">No catalog indexed</strong>
+        <span id="dataset-empty-message">Add a Gaia catalog or astronomy papers to populate this workspace.</span>
       </div>
-      <div id="quick-results" class="mt-4"></div>
+      <button id="empty-import-btn" class="empty-state-action" type="button">Load a catalog</button>
     </div>
+    <details class="graph-inventory">
+      <summary>Graph inventory <span>Node types</span></summary>
+      <div class="graph-breakdown" id="graph-breakdown">
+        <div class="graph-mini"><div class="graph-mini-val" id="neo-stars">â€”</div><div class="graph-mini-lbl">Star nodes</div></div>
+        <div class="graph-mini"><div class="graph-mini-val" id="neo-papers">â€”</div><div class="graph-mini-lbl">Paper nodes</div></div>
+        <div class="graph-mini"><div class="graph-mini-val" id="neo-clusters">â€”</div><div class="graph-mini-lbl">Cluster nodes</div></div>
+      </div>
+    </details>
 
-
-    <!-- Main two-column section -->
     <div class="dash-grid">
 
       <!-- Sky coverage map -->
-      <div class="sky-map-wrap">
-        <div class="sky-map-title">3D Space Volume</div>
+      <section class="sky-map-wrap" aria-labelledby="space-volume-title">
+        <div class="space-volume-heading">
+          <div><h2 id="space-volume-title">Sky volume</h2></div>
+          <span class="space-volume-note">3D source distribution</span>
+        </div>
         <div class="sky-map-toolbar">
           <div class="sky-filter-group">
             <div class="sky-filter">
@@ -855,19 +853,23 @@
             Celestial equator
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Region list panel -->
-      <div class="side-stack">
-        <div class="region-list">
-          <div class="sky-map-title">Data-Driven Clusters</div>
+      <aside class="side-stack" aria-label="Research tools">
+        <div class="workbench-tabs" role="tablist" aria-label="Research tools">
+          <button id="tool-tab-clusters" class="workbench-tab" type="button" role="tab" aria-selected="true" aria-controls="tool-panel-clusters" tabindex="0" data-tool-tab="clusters">Clusters</button>
+          <button id="tool-tab-discovery" class="workbench-tab" type="button" role="tab" aria-selected="false" aria-controls="tool-panel-discovery" tabindex="-1" data-tool-tab="discovery">Discovery</button>
+          <button id="tool-tab-import" class="workbench-tab" type="button" role="tab" aria-selected="false" aria-controls="tool-panel-import" tabindex="-1" data-tool-tab="import">Catalog</button>
+        </div>
+        <section id="tool-panel-clusters" class="workbench-panel region-list" role="tabpanel" aria-labelledby="tool-tab-clusters" tabindex="0">
+          <div class="panel-heading"><h2>Data-driven clusters</h2><span>REGIONS</span></div>
           <div id="region-rows">
             <div style="text-align:center;padding:24px;color:var(--dashboard-panel-text-muted);font-size:12px;">Loadingâ€¦</div>
           </div>
-        </div>
+        </section>
 
-        <div class="discovery-panel">
-          <div class="sky-map-title" style="margin-bottom:0;">Discovery Mode</div>
+        <section id="tool-panel-discovery" class="workbench-panel discovery-panel" role="tabpanel" aria-labelledby="tool-tab-discovery" tabindex="0" hidden>
+          <div class="panel-heading"><h2>Discovery candidates</h2><span>RANKING</span></div>
           <div class="discovery-toolbar">
             <div class="discovery-controls">
               <div class="discovery-control">
@@ -901,10 +903,10 @@
           <div class="discovery-list" id="discovery-list">
             <div style="color:var(--dashboard-panel-text-muted);font-size:12px;padding:10px 0;">Loading discovery candidates…</div>
           </div>
-        </div>
+        </section>
 
-        <div class="catalog-import-panel">
-          <div class="sky-map-title" style="margin-bottom:0;">Catalog Import</div>
+        <section id="tool-panel-import" class="workbench-panel catalog-import-panel" role="tabpanel" aria-labelledby="tool-tab-import" tabindex="0" hidden>
+          <div class="panel-heading"><h2>Catalog import</h2><span>INGEST</span></div>
           <div class="catalog-import-grid">
             <div class="catalog-import-field">
               <label for="catalog-source-select">Catalog Source</label>
@@ -928,8 +930,8 @@
             <button id="catalog-upload-btn" class="btn btn-primary" type="button">Upload &amp; Ingest</button>
           </div>
           <div id="catalog-import-status" class="catalog-import-status">Use a server path or upload a local catalog to add it to the shared dataset.</div>
-        </div>
-      </div>
+        </section>
+      </aside>
     </div>
 
 
@@ -939,6 +941,45 @@
 <script src="/static/taarya-api.js"></script>
 <script src="/static/theme.js"></script>
 <script src="/static/js/sidebar.js"></script>
+<script src="/static/workstation.js"></script>
+<script>
+(function () {
+  const tabs = Array.from(document.querySelectorAll('[data-tool-tab]'));
+  const panels = tabs.map((tab) => document.getElementById(tab.getAttribute('aria-controls')));
+
+  function activateTab(index, moveFocus) {
+    tabs.forEach((tab, current) => {
+      const active = current === index;
+      tab.setAttribute('aria-selected', String(active));
+      tab.tabIndex = active ? 0 : -1;
+      panels[current].hidden = !active;
+    });
+    if (moveFocus) tabs[index].focus();
+  }
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => activateTab(index, false));
+    tab.addEventListener('keydown', (event) => {
+      let next = index;
+      if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+      else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = tabs.length - 1;
+      else return;
+      event.preventDefault();
+      activateTab(next, true);
+    });
+  });
+
+  const emptyImportButton = document.getElementById('empty-import-btn');
+  if (emptyImportButton) {
+    emptyImportButton.addEventListener('click', () => {
+      document.getElementById('tool-tab-import').click();
+      document.getElementById('tool-tab-import').focus();
+    });
+  }
+})();
+</script>
 <script>
 (function () {
   'use strict';
@@ -959,7 +1000,7 @@
     return Math.max((raPx + decPx) / 2, 4);
   }
 
-  const REGION_TONES = ['#7dd3fc', '#93c5fd', '#a78bfa', '#fda4af', '#fde68a', '#86efac'];
+  const REGION_TONES = ['#83c8df', '#91b8d8', '#86c4b0', '#d48f81', '#dfb86e', '#8ebba2'];
   const DEG2RAD = Math.PI / 180;
 
   function clamp(value, min, max) {
@@ -1105,6 +1146,19 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, w, h);
 
+      if (!state.regions.length) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#d2d8d3';
+        ctx.font = '600 14px Bahnschrift, Segoe UI, sans-serif';
+        ctx.fillText('No sky records in this workspace', w / 2, h / 2 - 8);
+        ctx.fillStyle = '#8e9a94';
+        ctx.font = '12px Bahnschrift, Segoe UI, sans-serif';
+        ctx.fillText('Import a catalog to explore sources and clusters', w / 2, h / 2 + 16);
+        updateReadout(null);
+        return;
+      }
+
       const visible = [];
       state.regions.forEach((region, index) => {
         const rotated = rotateVec(state.vectors[index], state.yaw, state.pitch);
@@ -1245,7 +1299,9 @@
     const pg  = data.postgresql || {};
     const qd  = data.qdrant     || {};
     const neo = data.neo4j      || {};
-
+    const hasIndexedData = Number(pg.total_stars || 0) > 0 ||
+      Number(qd.points_count || qd.vectors_count || 0) > 0 ||
+      Number(neo.stars || 0) + Number(neo.papers || 0) + Number(neo.clusters || 0) > 0;
     // Stat cards
     setText('stat-stars',    fmt(pg.total_stars));
     setText('stat-papers',   fmt(qd.points_count || qd.vectors_count || 0));
@@ -1261,18 +1317,42 @@
 
     // Backend badges
     const badges = [
-      ['PostgreSQL', pg.status],
-      ['Qdrant',     qd.status || (qd.exists === false ? 'error' : 'connected')],
-      ['Neo4j',      neo.status],
+      { name: 'PostgreSQL', status: pg.status },
+      { name: 'Qdrant', status: qd.status || (qd.exists === false ? 'error' : 'connected'), detail: qd.exists === false ? 'empty index' : '' },
+      { name: 'Neo4j', status: neo.status },
     ];
-    document.getElementById('backend-badges').innerHTML = badges.map(([name, st]) => {
-      const ok  = st && st !== 'error' && st !== 'disconnected';
+    const isBackendHealthy = status => ['connected', 'green', 'ready'].includes(status);
+    const servicesHealthy = badges.every(({ status }) => isBackendHealthy(status));
+    const emptyState = document.getElementById('dataset-empty-state');
+    emptyState.hidden = hasIndexedData;
+    if (!hasIndexedData) {
+      document.getElementById('dataset-empty-title').textContent = servicesHealthy
+        ? 'No catalog indexed'
+        : 'Catalog data is unavailable';
+      document.getElementById('dataset-empty-message').textContent = servicesHealthy
+        ? 'Services are responding. Add a Gaia catalog or astronomy papers to populate this workspace.'
+        : 'Check the service indicators above before loading data. An unavailable service can prevent records from appearing.';
+    }
+    const statusIndicator = document.querySelector('.status-indicator');
+    statusIndicator.classList.toggle('is-error', !servicesHealthy);
+    document.querySelector('.status-heading > span:last-child').textContent = servicesHealthy
+      ? 'All services available'
+      : 'Some services need attention';
+    document.getElementById('backend-badges').innerHTML = badges.map(({ name, status, detail }) => {
+      const st = status;
+      const ok  = isBackendHealthy(st);
       const cls = ok ? 'be-online' : 'be-offline';
       const dot = ok ? 'be-dot-on' : 'be-dot-off';
-      return `<span class="be-badge ${cls}"><span class="be-badge-dot ${dot}"></span>${name}</span>`;
+      const label = detail ? `${name} · ${detail}` : name;
+      return `<span class="be-badge ${cls}" title="${name}: ${ok ? (detail || 'connected') : 'unavailable'}"><span class="be-badge-dot ${dot}"></span>${label}</span>`;
     }).join('');
 
   }).catch(() => {
+    document.querySelector('.status-indicator').classList.add('is-error');
+    document.querySelector('.status-heading > span:last-child').textContent = 'API unavailable';
+    document.getElementById('dataset-empty-title').textContent = 'Workspace status unavailable';
+    document.getElementById('dataset-empty-message').textContent = 'The API did not return catalog status. Check the service before attempting an ingest.';
+    document.getElementById('dataset-empty-state').hidden = false;
     document.getElementById('backend-badges').innerHTML =
       '<span class="be-badge be-offline"><span class="be-badge-dot be-dot-off"></span>API Offline</span>';
   });
@@ -1472,11 +1552,11 @@
   volumeRefreshBtn.addEventListener('click', () => {
     loadSpaceVolume().catch(err => {
       volumeRowsEl.innerHTML =
-        `<div style="color:#ef4444;font-size:11px;padding:12px 0;">Failed to load space volume: ${err.message}</div>`;
+        `<div style="color:var(--error);font-size:11px;padding:12px 0;">Failed to load space volume: ${err.message}</div>`;
     });
     loadDiscovery().catch(err => {
       discoveryListEl.innerHTML =
-        `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
+        `<div style="color:var(--error);font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
     });
   });
 
@@ -1494,18 +1574,18 @@
     volumeMagLimitEl.value = '';
     loadSpaceVolume().catch(err => {
       volumeRowsEl.innerHTML =
-        `<div style="color:#ef4444;font-size:11px;padding:12px 0;">Failed to load space volume: ${err.message}</div>`;
+        `<div style="color:var(--error);font-size:11px;padding:12px 0;">Failed to load space volume: ${err.message}</div>`;
     });
     loadDiscovery().catch(err => {
       discoveryListEl.innerHTML =
-        `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
+        `<div style="color:var(--error);font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
     });
   });
 
   discoveryRefreshBtn.addEventListener('click', () => {
     loadDiscovery().catch(err => {
       discoveryListEl.innerHTML =
-        `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
+        `<div style="color:var(--error);font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
     });
   });
 
@@ -1513,7 +1593,7 @@
     discoveryModeEl.addEventListener('change', () => {
       loadDiscovery().catch(err => {
         discoveryListEl.innerHTML =
-          `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
+          `<div style="color:var(--error);font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
       });
     });
   }
@@ -1600,11 +1680,11 @@
 
   loadSpaceVolume().catch(err => {
     volumeRowsEl.innerHTML =
-      `<div style="color:#ef4444;font-size:11px;padding:12px 0;">Failed to load space volume: ${err.message}</div>`;
+      `<div style="color:var(--error);font-size:11px;padding:12px 0;">Failed to load space volume: ${err.message}</div>`;
   });
   loadDiscovery().catch(err => {
     discoveryListEl.innerHTML =
-      `<div style="color:#ef4444;font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
+      `<div style="color:var(--error);font-size:11px;padding:10px 0;">Failed to load discovery mode: ${err.message}</div>`;
   });
   syncIngestionStatus();
   setInterval(syncIngestionStatus, 15000);
@@ -1930,8 +2010,8 @@
     catalogImportStatusEl.textContent = message;
     const colors = {
       muted: 'var(--dashboard-panel-text-muted)',
-      success: '#10b981',
-      error: '#ef4444',
+      success: 'var(--success)',
+      error: 'var(--error)',
       info: 'var(--dashboard-panel-text-secondary)',
     };
     catalogImportStatusEl.style.color = colors[tone] || colors.muted;

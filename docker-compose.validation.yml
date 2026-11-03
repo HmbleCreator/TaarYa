@@ -1,0 +1,39 @@
+services:
+  postgres:
+    container_name: taarya-validation-postgres
+    ports: !override
+      - "127.0.0.1:15432:5432"
+  qdrant:
+    container_name: taarya-validation-qdrant
+    ports: !override
+      - "127.0.0.1:16333:6333"
+      - "127.0.0.1:16334:6334"
+  neo4j:
+    container_name: taarya-validation-neo4j
+    ports: !override
+      - "127.0.0.1:17474:7474"
+      - "127.0.0.1:17687:7687"
+  app:
+    container_name: taarya-validation-app
+    ports: !override
+      - "127.0.0.1:18000:8000"
+    volumes: !override
+      - validation_data:/app/data
+      - ./src/retrieval/vector_search.py:/app/src/retrieval/vector_search.py:ro
+      - ./static:/app/static:ro
+
+volumes:
+  postgres_data:
+    name: taarya_validation_postgres_data
+  qdrant_storage:
+    name: taarya_validation_qdrant_storage
+  neo4j_data:
+    name: taarya_validation_neo4j_data
+  neo4j_logs:
+    name: taarya_validation_neo4j_logs
+  validation_data:
+    name: taarya_validation_data
+
+networks:
+  taarya-net:
+    name: taarya-validation-network

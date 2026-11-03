@@ -1,0 +1,13 @@
+{
+  "study_id": "replace-with-unique-study-id",
+  "protocol_version": "1.0",
+  "dataset": {
+    "dataset_id": "replace-with-catalog-release-id",
+    "release": "replace-with-exact-data-release",
+    "source": "replace-with-primary-archive-or-publication",
+    "retrieved_at": "replace-with-UTC-timestamp",
+    "path": "snapshot.csv",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "scenarios": []
+}

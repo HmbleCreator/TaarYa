@@ -1,0 +1,40 @@
+{
+  "utc": "2026-11-03T11:32:07Z",
+  "postgres": {
+    "stars_total": 34860,
+    "stars_synthetic": 560,
+    "stars_real": 34300,
+    "by_catalog_source": {
+      "SYNTHETIC_BENCHMARK": 560,
+      "2MASS": 4,
+      "SYNTH_ANOM": 40,
+      "WISE": 4,
+      "GAIA": 29786,
+      "PAN-STARRS": 4,
+      "GAIA_DR3": 4462
+    }
+  },
+  "neo4j": {
+    "nodes_star": 34860,
+    "nodes_paper": 6464,
+    "nodes_cluster": 42,
+    "nodes_alert": 0,
+    "edges_member_of": 33525,
+    "edges_covers": 481,
+    "edges_mentioned_in": 5420,
+    "edges_near_alert": 0,
+    "edges_cites": 0
+  },
+  "qdrant": {
+    "papers": 6464
+  },
+  "toi_catalog": {
+    "total": 8151,
+    "planets_cp_kp": 1421,
+    "false_positives": 1315,
+    "unresolved_or_other": 5415
+  },
+  "warnings": [
+    "560 synthetic fixture rows are present in stars; exclude them from every reported scientific number"
+  ]
+}

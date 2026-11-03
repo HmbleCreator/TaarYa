@@ -1,0 +1,63 @@
+\documentclass[11pt,twoside]{article}
+\usepackage{asp2014}
+
+\aspvolume{XXXVI}
+\aspcp{ADASS XXXVI}
+\aspvoltitle{Astronomical Data Analysis Software and Systems XXXVI}
+\aspvolauthor{A. Kumar}
+
+\begin{document}
+
+\title{TaarYa: A Hybrid Retrieval Extension for Discovery-to-Desktop Workflows}
+
+\author{Amit Kumar}
+\affil{Department of Computer Science, Indian Institute of Science, Bengaluru, India; \email{amit.kumar@inst.edu.in}}
+
+\paperauthor{Amit Kumar}{amit.kumar@inst.edu.in}{0000-0000-0000-0000}{Indian Institute of Science}{Department of Computer Science}{Bengaluru}{Karnataka}{560012}{India}
+
+\begin{abstract}
+Modern astronomical discovery requires the joint analysis of tabular survey data and unstructured scientific literature. TaarYa is a hybrid retrieval extension that coordinates spatial, semantic, and knowledge-graph engines to identify scientifically anomalous objects. We present a "Discovery-to-Desktop" workflow, demonstrating how TaarYa integrates directly with TOPCAT, Aladin, and DS9 via the SAMP protocol to automate the synthesis of cross-modal candidates.
+\end{abstract}
+
+\section{Introduction}
+
+The Gaia DR3 catalog contains approximately 1.8 billion sources, while thousands of astrophysical preprints are published annually. However, the retrieval infrastructure available to working astronomers remains largely unchanged: SIMBAD and VizieR provide powerful tabular queries but treat each catalog as an isolated repository. TaarYa addresses this gap by embedding discovery scoring directly into the retrieval layer and coordinating multiple backend engines through a unified interface.
+
+\section{System Architecture}
+
+TaarYa coordinates three specialized retrieval engines:
+\begin{itemize}
+    \item \textbf{Spatial Engine}: PostgreSQL with the Q3C extension for radial indexing.
+    \item \textbf{Semantic Engine}: Qdrant vector search for literature retrieval.
+    \item \textbf{Graph Engine}: Neo4j for modeling star--paper--cluster relationships.
+\end{itemize}
+
+A \textit{Discovery Scoring Engine} ranks stellar candidates by astrometric anomalies (RUWE), photometric color extremes, and proper-motion signals. The system is designed not as a standalone application, but as an orchestrator that bridges disparate data modalities and desktop analysis tools.
+
+\section{The Discovery-to-Desktop Workflow}
+
+The key scientific contribution of TaarYa is the "Discovery-to-Desktop" loop. A researcher can discover a candidate in TaarYa's natural-language interface and instantly:
+\begin{enumerate}
+    \item \textbf{Broadcast a point} to Aladin for visual inspection via SAMP.
+    \item \textbf{Load a candidate table} into TOPCAT for complex cross-matching.
+    \item \textbf{Inspect FITS metadata} in SAOImage DS9 using the XPA protocol.
+\end{enumerate}
+
+This workflow automates the synthesis of cross-modal candidates while keeping the expert in the loop for final physical interpretation.
+
+\section{Evaluation}
+
+On a 33-query benchmark, TaarYa achieves a 91.7\% pass rate for semantic retrieval and a 100\% success rate for hybrid discovery tasks. A Monte-Carlo weight-perturbation study confirms that 88\% of high-confidence candidates maintain score stability ($\sigma < 1.0$), providing a baseline for future validation against external catalogs.
+
+\section{Conclusion}
+
+TaarYa is an open-source extension that bridges the gap between survey data and literature context. By exposing discovery-ranked candidates via standard VO protocols, it acts as a force multiplier for the professional astronomer's daily analysis workflow.
+
+\acknowledgements The authors thank the Gaia Collaboration and the developers of TOPCAT, Aladin, Qdrant, and Neo4j for their contributions to the open-source astronomical ecosystem.
+
+\begin{thebibliography}{}
+\bibitem[Taylor (2015)]{Taylor2015} Taylor, M. 2015, ASPC, 495, 329
+\bibitem[Gaia Collaboration (2021)]{Gaia2021} Gaia Collaboration 2021, A\&A, 649, A1
+\end{thebibliography}
+
+\end{document}

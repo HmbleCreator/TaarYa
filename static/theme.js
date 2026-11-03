@@ -45,6 +45,8 @@
     const collapsed = sidebar.classList.contains('collapsed');
     btn.innerHTML = '<span class="material-icons" style="font-size:18px">'
       + (collapsed ? 'chevron_right' : 'chevron_left') + '</span>';
+    btn.setAttribute('aria-label', collapsed ? 'Expand navigation' : 'Collapse navigation');
+    btn.title = collapsed ? 'Expand navigation' : 'Collapse navigation';
   }
 
   function toggleSidebar() {
@@ -60,7 +62,7 @@
     const sidebar = document.querySelector('.sidebar');
     if (!sidebar) return;
     const state = localStorage.getItem(SIDEBAR_KEY);
-    if (state === 'collapsed' || state === null) {
+    if (state === 'collapsed') {
       sidebar.classList.add('collapsed');
     }
     updateSidebarIcon();

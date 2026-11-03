@@ -3,520 +3,234 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TaarYa - Chat</title>
-  <meta name="description" content="Conversational AI agent for astronomy research.">
+  <title>TaarYa Research</title>
+  <meta name="description" content="Explore indexed stellar catalogues and astronomy literature.">
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/chat.css">
+  <link rel="stylesheet" href="/static/workstation.css">
+  <link rel="stylesheet" href="/static/research-workbench.css">
   <style>
-    /* ── Hide Aladin built-in controls ───────────────────── */
-    .aladin-logo-container,
-    .aladin-widgets-toolbar,
-    .aladin-location,
-    .aladin-fov,
-    .aladin-projection-control,
-    .aladin-fullScreen-control,
-    .aladin-status-bar {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
+    /* ── Hide ALL built-in Aladin chrome ───────────────────── */
+    #chat-aladin-container .aladin-logo-container,
+    #chat-aladin-container .aladin-widgets-toolbar,
+    #chat-aladin-container .aladin-location,
+    #chat-aladin-container .aladin-fov,
+    #chat-aladin-container .aladin-projection-control,
+    #chat-aladin-container .aladin-fullScreen-control,
+    #chat-aladin-container .aladin-status-bar { display: none !important; }
 
-    /* ── Observatory — Right-Side Slide Panel ─────────────── */
-    .observatory-panel {
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 360px;
-      height: 100vh;
-      background: rgba(8, 8, 12, 0.96);
-      backdrop-filter: blur(20px);
-      border-left: 1px solid rgba(255,255,255,0.06);
-      z-index: 900;
-      transform: translateX(100%);
-      transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      display: flex;
-      flex-direction: column;
-      box-shadow: -8px 0 40px rgba(0,0,0,0.5);
-    }
-
-    .observatory-panel.open {
-      transform: translateX(0);
-    }
-
-    /* Panel header */
-    .obs-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      flex-shrink: 0;
-    }
-
-    .obs-header-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .obs-header-left .material-icons {
-      font-size: 18px;
-      color: #a3e635;
-    }
-
-    .obs-header-left span:last-child {
-      font-family: 'Syne', sans-serif;
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: 0.5px;
-    }
-
-    .obs-close-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 4px;
-      border-radius: 6px;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-    }
-
-    .obs-close-btn:hover {
-      background: rgba(255,255,255,0.06);
-      color: var(--text-primary);
-    }
-
-    /* Sky viewer area */
-    .obs-sky-area {
-      position: relative;
-      width: 100%;
-      height: 300px;
-      flex-shrink: 0;
-      background: #060606;
-    }
-
-    #chat-aladin-container {
-      width: 100%;
-      height: 100%;
-    }
-
-    .obs-sky-area .sky-coord-readout {
+    /* ── Covered-regions control (Google Maps layers style) ── */
+    .cr-control {
       position: absolute;
-      bottom: 12px;
-      left: 12px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem;
-      color: rgba(255,255,255,0.7);
-      background: rgba(10,10,16,0.85);
-      backdrop-filter: blur(10px);
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid rgba(255,255,255,0.1);
-      pointer-events: none;
-      z-index: 200;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      white-space: nowrap;
+      bottom: 10px;
+      left: 10px;
+      z-index: 20;
     }
-
-    .obs-sky-area .sky-survey-select {
-      position: absolute;
-      bottom: 12px;
-      right: 12px;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.65rem;
-      font-weight: 600;
-      color: #f0f0f0;
-      background: rgba(10,10,16,0.85) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a3e635' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 8px center;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(163,230,53,0.3);
-      border-radius: 6px;
-      padding: 4px 28px 4px 10px;
-      cursor: pointer;
-      z-index: 200;
-      outline: none;
-      appearance: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      transition: all 0.2s ease;
-      max-width: 160px;
-    }
-
-    .obs-sky-area .sky-survey-select:hover {
-      border-color: rgba(163,230,53,0.6);
-      background-color: rgba(163,230,53,0.1);
-    }
-
-    .obs-sky-area .sky-survey-select option {
-      background: #1a1a1a;
-      color: #f0f0f0;
-    }
-
-    /* Controls below the sky */
-    .obs-controls {
-      padding: 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      background: rgba(255,255,255,0.01);
-      flex-shrink: 0;
-    }
-
-    .obs-controls-label {
-      font-size: 0.62rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 8px;
-    }
-
-    .obs-quick-locs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    .obs-loc-chip {
-      font-family: 'Inter', sans-serif;
-      font-size: 0.65rem;
-      padding: 4px 10px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.03);
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .obs-loc-chip:hover {
-      background: rgba(163,230,53,0.1);
-      border-color: rgba(163,230,53,0.25);
-      color: #a3e635;
-    }
-
-    /* Info area (scrollable) */
-    .obs-info {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px 16px;
-    }
-
-    .obs-info-empty {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-    }
-
-    .obs-info-empty .material-icons {
-      font-size: 32px;
-      color: #a3e635;
-      opacity: 0.15;
-      margin-bottom: 4px;
-    }
-
-    /* ── Floating Action Button ───────────────────────────── */
-    .obs-fab {
-      position: fixed;
-      top: 50%;
-      right: 24px;
-      transform: translateY(-50%);
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      border: 1px solid rgba(163,230,53,0.3);
-      background: rgba(10, 10, 16, 0.8);
-      backdrop-filter: blur(12px);
-      color: #a3e635;
-      cursor: pointer;
-      z-index: 800;
+    .cr-btn {
       display: flex;
       align-items: center;
-      justify-content: center;
-      box-shadow: 
-        0 8px 32px rgba(0,0,0,0.5),
-        inset 0 0 15px rgba(163,230,53,0.05);
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      overflow: visible; /* Changed to visible for the ring */
-    }
-
-    /* Rotating outer ring */
-    .obs-fab::before {
-      content: '';
-      position: absolute;
-      inset: -4px;
-      background: conic-gradient(from 0deg, transparent, #a3e635, transparent 30%);
-      border-radius: 50%;
-      animation: rotateRing 4s linear infinite;
-      opacity: 0.4;
-      pointer-events: none;
-      -webkit-mask: radial-gradient(circle, transparent 68%, black 70%);
-      mask: radial-gradient(circle, transparent 68%, black 70%);
-    }
-
-    @keyframes rotateRing {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    .obs-fab:hover {
-      border-color: rgba(163,230,53,0.6);
-      box-shadow: 
-        0 12px 48px rgba(0,0,0,0.6),
-        0 0 30px rgba(163,230,53,0.3);
-      transform: translateY(-50%) scale(1.12);
-    }
-
-    .obs-fab:hover::before {
-      opacity: 0.8;
-      animation-duration: 2s;
-    }
-
-    .obs-fab.active {
-      background: linear-gradient(135deg, rgba(163,230,53,0.2), rgba(10,10,16,0.95));
-      border-color: rgba(163,230,53,0.6);
-    }
-
-    .obs-fab .material-icons {
-      font-size: 26px;
-      position: relative;
-      z-index: 2;
-      text-shadow: 0 0 10px rgba(163,230,53,0.5);
-    }
-
-    /* Pulse animation for auto-open */
-    @keyframes obsPulse {
-      0% { box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 0 rgba(163,230,53,0.6); }
-      70% { box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 20px rgba(163,230,53,0); }
-      100% { box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 0 rgba(163,230,53,0); }
-    }
-
-    .obs-fab.pulse {
-      animation: obsPulse 1.5s ease-out infinite;
-    }
-
-    /* Hide FAB when panel is open */
-    .obs-fab.hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(-50%) scale(0.8);
-    }
-
-    /* Tooltip on FAB */
-    .obs-fab::after {
-      content: 'Open Observatory';
-      position: absolute;
-      right: 72px;
-      top: 50%;
-      transform: translateY(-50%) translateX(10px);
-      font-family: 'Syne', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #a3e635;
-      background: rgba(10,10,16,0.95);
-      border: 1px solid rgba(163,230,53,0.2);
-      padding: 6px 14px;
+      gap: 6px;
+      padding: 6px 11px;
+      background: rgba(18, 22, 30, 0.88);
+      border: 1px solid rgba(255,255,255,0.13);
       border-radius: 8px;
+      color: var(--text-secondary, #c9d1df);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: border-color .2s, background .2s;
       white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.3s var(--ease);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
+    .cr-btn:hover { background: rgba(30,36,48,0.95); border-color: rgba(255,255,255,0.25); }
+    .cr-btn .material-icons { font-size: 15px; color: #a5b4fc; }
 
-    .obs-fab:hover::after {
-      opacity: 1;
-      transform: translateY(-50%) translateX(0);
+    .cr-panel {
+      position: absolute;
+      bottom: 44px;
+      left: 0;
+      min-width: 230px;
+      background: rgba(14, 18, 26, 0.96);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      backdrop-filter: blur(12px);
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    .cr-panel-head {
+      padding: 9px 13px 7px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted, #8899aa);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .cr-list {
+      list-style: none;
+      margin: 0;
+      padding: 4px 0;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .cr-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 13px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .cr-item:hover { background: rgba(255,255,255,0.05); }
+    .cr-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #a3e635;
+      flex-shrink: 0;
+      box-shadow: 0 0 4px #a3e635;
+    }
+    .cr-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary, #e4e9f0);
+      flex: 1;
+    }
+    .cr-coords {
+      font-size: 10px;
+      color: var(--text-muted, #8899aa);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+    .cr-empty {
+      padding: 10px 13px;
+      font-size: 11px;
+      color: var(--text-muted, #8899aa);
     }
   </style>
 </head>
 <body>
-<div class="app-layout">
-
-  <div id="sidebar-mount"></div>
-
-  <main class="main-content">
-    <div class="chat-topbar">
-      <div class="topbar-left">
-        <img src="/static/TaarYaLogo.png" alt="TaarYa" class="topbar-logo" id="topbar-logo">
-        <span class="topbar-title">TaarYa Chat</span>
-      </div>
-      <div class="topbar-right">
-        <div class="topbar-status">
-          <div class="status-dot"></div>
-          <span>ONLINE</span>
-        </div>
-        <div class="query-count" id="query-count">0 queries</div>
-        <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">
-          <span class="material-icons">light_mode</span>
-        </button>
-      </div>
+<div class="research-shell">
+  <div class="chat-topbar">
+    <div class="topbar-left">
+      <img src="/static/TaarYaLogo.png" alt="TaarYa" class="topbar-logo" id="topbar-logo">
+      <span class="topbar-title">TaarYa</span>
+      <span class="topbar-divider" aria-hidden="true"></span>
+      <span class="topbar-workspace-label">Research</span>
+      <span id="active-project-name" class="topbar-project-name">No project selected</span>
+      <select id="mobile-project-select" aria-label="Select project"></select>
+      <button id="mobile-new-project" type="button" title="Create project" aria-label="Create project"><span class="material-icons" aria-hidden="true">create_new_folder</span></button>
     </div>
+    <div class="topbar-right">
+      <div class="topbar-status" id="system-status" role="status" aria-live="polite">
+        <div class="status-dot" aria-hidden="true"></div>
+        <span>Checking services</span>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" type="button" title="Switch color theme" aria-label="Switch color theme">
+        <span class="material-icons">light_mode</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="main-content">
 
     <div class="chat-layout">
-      <div class="chat-area">
+      <div class="chat-area" aria-label="Research assistant">
+        <div class="assistant-titlebar">
+          <span>Research assistant</span>
+          <button id="assistant-new-session" type="button" title="New session" aria-label="New session"><span class="material-icons" aria-hidden="true">add_comment</span></button>
+        </div>
         <div class="chat-messages" id="chat-messages">
           <div class="welcome-screen" id="welcome">
-            <img src="/static/TaarYaLogo.png" alt="TaarYa" class="welcome-logo" id="welcome-logo">
-            <h3>Ask TaarYa anything</h3>
-            <p>Your AI astronomy assistant. I can search stars, find research papers, explore knowledge graphs, and more - in real time.</p>
+            <p class="welcome-kicker">TaarYa Research</p>
+            <h3>Ask about the sky</h3>
+            <p>Search indexed Gaia sources and astronomy papers. Results include source context and catalogue measurements.</p>
             <div class="welcome-chips" id="suggestion-chips">
-              <div class="welcome-chip" data-query="Find stars near RA=83.8, Dec=-5.4">Stars near Orion</div>
-              <div class="welcome-chip" data-query="Search for papers about exoplanet atmospheres">Exoplanet papers</div>
-              <div class="welcome-chip" data-query="Surprise me with something interesting">Surprise me</div>
-              <div class="welcome-chip" data-query="Find solar twin stars">Solar twins</div>
+              <button class="welcome-chip" type="button" data-query="Find stars near RA=83.8, Dec=-5.4">Stars near Orion</button>
             </div>
           </div>
         </div>
 
         <div class="input-area">
           <div class="input-row">
-            <input type="text" id="chat-input" placeholder="Ask about stars, papers, coordinates..." autocomplete="off">
-            <button class="send-btn" id="chat-send">
+            <input type="text" id="chat-input" aria-label="Research query" placeholder="Enter a research query or coordinates" autocomplete="off">
+            <button class="send-btn" id="chat-send" type="button" title="Send query" aria-label="Send query">
               <span class="material-icons">arrow_upward</span>
             </button>
           </div>
-          <div class="input-hint">Press Enter to send · Observatory auto-opens when results arrive</div>
+          <div class="input-hint">Enter to submit. Shift+Enter for a new line.</div>
         </div>
+      </div>
+
+      <!-- Catalog map and coverage workspace -->
+      <div class="observatory-panel open" id="observatory-panel">
+        <div class="obs-header">
+          <div class="sky-tool-tabs" aria-label="Workspace tools">
+            <span class="sky-tool-tab active">Explore</span>
+          </div>
+          <div class="sky-toolbar-controls">
+            <span class="sky-coord-readout" id="chat-sky-coords">RA --  Dec --</span>
+            <span class="sky-data-source">Gaia local catalog</span>
+          </div>
+        </div>
+
+        <div class="obs-sky-area" style="position:relative;">
+          <div id="chat-aladin-container" aria-label="Interactive sky map" style="width:100%;height:100%;"></div>
+          <!-- Sky map label removed — it's obviously a sky map -->
+          <div id="sky-map-status" class="sky-map-status" role="status" aria-live="polite">Loading catalog sources…</div>
+
+          <!-- Covered Regions control — bottom-left, like Google Maps "Layers" -->
+          <div class="cr-control" id="cr-control">
+            <div class="cr-panel" id="covered-regions-panel" hidden>
+              <div class="cr-panel-head">Covered Regions</div>
+              <ul class="cr-list" id="covered-regions-list">
+                <li class="cr-empty">Loading…</li>
+              </ul>
+            </div>
+            <button class="cr-btn" id="covered-regions-btn" type="button" title="Show covered sky regions">
+              <span class="material-icons">layers</span>
+              Covered regions
+            </button>
+          </div>
+        </div>
+
+        <section class="coverage-strip" aria-label="Indexed sky coverage">
+          <div class="coverage-heading"><strong>Data coverage</strong><span id="coverage-state">Loading</span></div>
+          <div class="coverage-metrics">
+            <div><strong id="coverage-stars">-</strong><span>Stars</span></div>
+            <div><strong id="coverage-papers">-</strong><span>Papers</span></div>
+            <div><strong id="coverage-regions">-</strong><span>Regions</span></div>
+          </div>
+          <div id="coverage-summary" class="coverage-summary">Checking indexed sky regions…</div>
+        </section>
+
+        <div class="obs-controls">
+          <div class="obs-controls-head"><div class="obs-controls-label">Quick Navigate</div><button id="save-current-region" type="button" title="Save selected region to this project"><span class="material-icons" aria-hidden="true">bookmark_add</span><span>Save region</span></button></div>
+          <div class="obs-quick-locs">
+            <button class="obs-loc-chip" type="button" data-ra="83.82" data-dec="-5.39" data-fov="2">Orion</button>
+            <button class="obs-loc-chip" type="button" data-ra="56.87" data-dec="24.11" data-fov="3">Pleiades</button>
+            <button class="obs-loc-chip" type="button" data-ra="66.75" data-dec="15.96" data-fov="5">Hyades</button>
+            <button class="obs-loc-chip" type="button" data-ra="266.4" data-dec="-29.0" data-fov="10">Galactic center</button>
+          </div>
+        </div>
+
       </div>
     </div>
   </main>
 </div>
-
-<!-- Floating Observatory Button -->
-<button class="obs-fab" id="obs-fab" title="Observatory">
-  <span class="material-icons">explore</span>
-</button>
-
-<!-- Observatory Panel (Right Side) -->
-<div class="observatory-panel" id="observatory-panel">
-  <div class="obs-header">
-    <div class="obs-header-left">
-      <span class="material-icons">explore</span>
-      <span>Observatory</span>
-    </div>
-    <button class="obs-close-btn" id="obs-close" title="Close">
-      <span class="material-icons">close</span>
-    </button>
-  </div>
-
-  <div class="obs-sky-area">
-    <div id="chat-aladin-container" style="width:100%;height:300px;"></div>
-    <div class="sky-coord-readout" id="chat-sky-coords">RA —  Dec —</div>
-    <select class="sky-survey-select" id="chat-sky-survey">
-      <option value="P/DSS2/color">DSS2 Color</option>
-      <option value="P/2MASS/color">2MASS</option>
-      <option value="P/PanSTARRS/DR1/color-i-r-g">PanSTARRS</option>
-      <option value="P/allWISE/color">AllWISE</option>
-      <option value="P/SDSS9/color">SDSS</option>
-    </select>
-  </div>
-
-  <div class="obs-controls">
-    <div class="obs-controls-label">Quick Navigate</div>
-    <div class="obs-quick-locs">
-      <div class="obs-loc-chip" data-ra="83.82" data-dec="-5.39" data-fov="2">Orion</div>
-      <div class="obs-loc-chip" data-ra="56.87" data-dec="24.11" data-fov="3">Pleiades</div>
-      <div class="obs-loc-chip" data-ra="66.75" data-dec="15.96" data-fov="5">Hyades</div>
-      <div class="obs-loc-chip" data-ra="187.7" data-dec="12.39" data-fov="0.5">M87</div>
-      <div class="obs-loc-chip" data-ra="266.4" data-dec="-29.0" data-fov="10">Gal. Center</div>
-      <div class="obs-loc-chip" data-ra="10.68" data-dec="41.27" data-fov="2">Andromeda</div>
-    </div>
-  </div>
-
-  <div class="obs-info" id="obs-info">
-    <div class="obs-info-empty">
-      <span class="material-icons">explore</span>
-      Ask a question — stars and results will appear here
-    </div>
-  </div>
 </div>
 
-<script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+<!-- Scripts -->
 <script src="/static/taarya-api.js"></script>
-<script src="/static/js/aladin-panel.js"></script>
+<script src="/static/js/local-sky-map.js"></script>
 <script src="/static/chat.js"></script>
 <script src="/static/theme.js"></script>
 <script src="/static/js/sidebar.js"></script>
-<script>
-(function() {
-  'use strict';
-
-  const panel = document.getElementById('observatory-panel');
-  const fab = document.getElementById('obs-fab');
-  const closeBtn = document.getElementById('obs-close');
-  let aladinInited = false;
-
-  function initAladinIfNeeded() {
-    if (aladinInited) return;
-    aladinInited = true;
-    if (typeof A === 'undefined') {
-      console.error('[Observatory] Aladin Lite not loaded');
-      return;
-    }
-    A.init.then(() => {
-      TaarYaAladin.init('chat-aladin-container', {
-        fov: 60,
-        ra: 0,
-        dec: 0,
-        survey: 'P/DSS2/color',
-        coordReadout: 'chat-sky-coords',
-      });
-      console.log('[Observatory] Aladin initialized');
-    }).catch(err => {
-      console.error('[Observatory] Aladin init failed:', err);
-    });
-  }
-
-  function openPanel() {
-    panel.classList.add('open');
-    fab.classList.add('active', 'hidden');
-    initAladinIfNeeded();
-  }
-
-  function closePanel() {
-    panel.classList.remove('open');
-    fab.classList.remove('active', 'hidden');
-  }
-
-  fab.addEventListener('click', openPanel);
-  closeBtn.addEventListener('click', closePanel);
-
-  // Survey selector
-  document.getElementById('chat-sky-survey').addEventListener('change', (e) => {
-    if (window.TaarYaAladin) TaarYaAladin.setSurvey(e.target.value);
-  });
-
-  // Quick navigate chips
-  document.querySelectorAll('.obs-loc-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const ra  = parseFloat(chip.dataset.ra);
-      const dec = parseFloat(chip.dataset.dec);
-      const fov = parseFloat(chip.dataset.fov) || 2;
-      if (window.TaarYaAladin) TaarYaAladin.goto(ra, dec, fov);
-    });
-  });
-
-  // Expose to chat.js for auto-open + navigate
-  window.TaarYaSkyPanel = {
-    open: openPanel,
-    close: closePanel,
-    isOpen: () => panel.classList.contains('open'),
-    pulse: () => {
-      fab.classList.remove('pulse');
-      void fab.offsetWidth; // reflow
-      fab.classList.add('pulse');
-    }
-  };
-})();
-</script>
+<script src="/static/workstation.js"></script>
+<script src="/static/js/workspace.js"></script>
 </body>
 </html>

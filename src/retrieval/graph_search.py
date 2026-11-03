@@ -121,6 +121,74 @@ class GraphSearch:
                 },
             ).single()
             return bool(record and record["created"])
+
+    def link_stars_to_papers(self, links: List[Dict[str, Any]]) -> int:
+        """Create MENTIONED_IN relationships in one Neo4j batch."""
+        normalized: List[Dict[str, Any]] = []
+        seen = set()
+        for link in links:
+            source_id = str(link.get("source_id", "")).strip()
+            arxiv_id = str(link.get("arxiv_id", "")).strip()
+            if not source_id or not arxiv_id:
+                continue
+            key = (source_id, arxiv_id)
+            if key in seen:
+                continue
+            seen.add(key)
+            normalized.append(
+                {
+                    "source_id": source_id,
+                    "arxiv_id": arxiv_id,
+                    "evidence": link.get("evidence", ""),
+                    "confidence": float(link.get("confidence", 1.0)),
+                    "method": link.get("method", "batched"),
+                }
+            )
+
+        if not normalized:
+            return 0
+
+        marker = time.time_ns()
+        query = """
+        UNWIND $links AS link
+        MATCH (s:Star {source_id: link.source_id})
+        MATCH (p:Paper {arxiv_id: link.arxiv_id})
+        MERGE (s)-[r:MENTIONED_IN]->(p)
+        ON CREATE SET r.ingested_at = $marker
+        SET r.updated_at = $marker,
+            r.evidence = CASE
+                WHEN r.evidence IS NULL OR r.evidence = '' THEN link.evidence
+                ELSE r.evidence
+            END,
+            r.confidence = CASE
+                WHEN r.confidence IS NULL OR link.confidence > r.confidence THEN link.confidence
+                ELSE r.confidence
+            END,
+            r.method = CASE
+                WHEN r.method IS NULL OR r.method = '' THEN link.method
+                ELSE r.method
+            END
+        RETURN sum(CASE WHEN r.ingested_at = $marker THEN 1 ELSE 0 END) AS created
+        """
+        with neo4j_conn.session() as session:
+            record = session.run(query, {"links": normalized, "marker": marker}).single()
+            return int(record["created"] or 0) if record else 0
+
+    def delete_paper_star_links(self, arxiv_ids: List[str]) -> int:
+        """Delete existing MENTIONED_IN links for selected papers before re-linking."""
+        normalized = [str(arxiv_id).strip() for arxiv_id in arxiv_ids if str(arxiv_id).strip()]
+        if not normalized:
+            return 0
+        query = """
+        MATCH (:Star)-[r:MENTIONED_IN]->(p:Paper)
+        WHERE p.arxiv_id IN $arxiv_ids
+        WITH collect(r) AS rels
+        FOREACH (r IN rels | DELETE r)
+        RETURN size(rels) AS deleted
+        """
+        with neo4j_conn.session() as session:
+            record = session.run(query, {"arxiv_ids": normalized}).single()
+            return int(record["deleted"] or 0) if record else 0
     
     def link_star_to_cluster(self, source_id: str, cluster_name: str) -> None:
         """Create MEMBER_OF relationship between a star and a cluster."""
@@ -131,6 +199,27 @@ class GraphSearch:
         """
         with neo4j_conn.session() as session:
             session.run(query, {"source_id": source_id, "cluster_name": cluster_name})
+
+    def replace_star_cluster_links(self, source_id: str, cluster_names: List[str]) -> None:
+        """Replace a star's cluster memberships with the supplied set."""
+        unique_names = sorted({name for name in cluster_names if name})
+        with neo4j_conn.session() as session:
+            session.run(
+                """
+                MATCH (s:Star {source_id: $source_id})-[r:MEMBER_OF]->(:Cluster)
+                DELETE r
+                """,
+                {"source_id": source_id},
+            )
+            for cluster_name in unique_names:
+                session.run(
+                    """
+                    MATCH (s:Star {source_id: $source_id})
+                    MATCH (c:Cluster {name: $cluster_name})
+                    MERGE (s)-[:MEMBER_OF]->(c)
+                    """,
+                    {"source_id": source_id, "cluster_name": cluster_name},
+                )
     
     def link_paper_cites(self, citing_id: str, cited_id: str) -> None:
         """Create CITES relationship between papers."""
@@ -221,6 +310,147 @@ class GraphSearch:
             return ordered[:limit]
         return ordered
 
+    def find_papers_for_stars(
+        self,
+        source_ids: List[str],
+        include_cluster_context: bool = True,
+        limit_per_star: int = 10,
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """Find literature for many stars with one Neo4j query."""
+        ordered_ids: List[str] = []
+        seen = set()
+        for source_id in source_ids:
+            sid = str(source_id).strip()
+            if sid and sid not in seen:
+                ordered_ids.append(sid)
+                seen.add(sid)
+        if not ordered_ids:
+            return {}
+
+        if include_cluster_context:
+            query = """
+            UNWIND $source_ids AS sid
+            CALL {
+                WITH sid
+                MATCH (s:Star {source_id: sid})-[:MENTIONED_IN]->(p:Paper)
+                RETURN p.arxiv_id AS arxiv_id,
+                       p.title AS title,
+                       p.abstract AS abstract,
+                       p.categories AS categories,
+                       p.published_date AS published_date,
+                       "direct" AS link_type,
+                       null AS cluster_name
+                UNION
+                WITH sid
+                MATCH (s:Star {source_id: sid})-[:MEMBER_OF]->(c:Cluster)<-[:COVERS]-(p:Paper)
+                RETURN p.arxiv_id AS arxiv_id,
+                       p.title AS title,
+                       p.abstract AS abstract,
+                       p.categories AS categories,
+                       p.published_date AS published_date,
+                       "cluster_context" AS link_type,
+                       c.name AS cluster_name
+            }
+            WITH sid AS source_id, arxiv_id, title, abstract, categories, published_date,
+                 collect(link_type) AS link_types, collect(cluster_name) AS cluster_names
+            WITH source_id, arxiv_id, title, abstract, categories, published_date,
+                 CASE WHEN "direct" IN link_types THEN "direct" ELSE "cluster_context" END AS link_type,
+                 [name IN cluster_names WHERE name IS NOT NULL][0] AS cluster_name
+            ORDER BY source_id, published_date DESC, arxiv_id
+            WITH source_id, collect({
+                arxiv_id: arxiv_id,
+                title: title,
+                abstract: abstract,
+                categories: categories,
+                published_date: published_date,
+                link_type: link_type,
+                cluster_name: cluster_name
+            })[..$limit_per_star] AS papers
+            RETURN source_id, papers
+            """
+        else:
+            query = """
+            UNWIND $source_ids AS source_id
+            MATCH (s:Star {source_id: source_id})-[:MENTIONED_IN]->(p:Paper)
+            WITH source_id, p
+            ORDER BY p.published_date DESC, p.arxiv_id
+            WITH source_id, collect({
+                arxiv_id: p.arxiv_id,
+                title: p.title,
+                abstract: p.abstract,
+                categories: p.categories,
+                published_date: p.published_date,
+                link_type: "direct",
+                cluster_name: null
+            })[..$limit_per_star] AS papers
+            RETURN source_id, papers
+            """
+
+        with neo4j_conn.session() as session:
+            result = session.run(
+                query,
+                {"source_ids": ordered_ids, "limit_per_star": max(1, limit_per_star)},
+            )
+            return {record["source_id"]: list(record["papers"] or []) for record in result}
+
+    def find_paper_stars(
+        self,
+        arxiv_id: str,
+        limit: int = 50,
+        include_cluster_context: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """Find stars connected to a paper.
+
+        Args:
+            arxiv_id: The paper's arXiv identifier.
+            limit: Maximum number of stars to return.
+            include_cluster_context: Include stars in clusters covered by the paper.
+
+        Returns:
+            List of star records with source_id, ra, dec, etc.
+        """
+        if include_cluster_context:
+            query = """
+            CALL {
+                MATCH (p:Paper {arxiv_id: $arxiv_id})<-[:MENTIONED_IN]-(s:Star)
+                RETURN s.source_id AS source_id,
+                       s.ra AS ra,
+                       s.dec AS dec,
+                       s.phot_g_mean_mag AS phot_g_mean_mag,
+                       s.catalog AS catalog,
+                       "direct" AS link_type,
+                       null AS cluster_name
+                UNION
+                MATCH (p:Paper {arxiv_id: $arxiv_id})-[:COVERS]->(c:Cluster)<-[:MEMBER_OF]-(s:Star)
+                RETURN s.source_id AS source_id,
+                       s.ra AS ra,
+                       s.dec AS dec,
+                       s.phot_g_mean_mag AS phot_g_mean_mag,
+                       s.catalog AS catalog,
+                       "cluster_context" AS link_type,
+                       c.name AS cluster_name
+            }
+            RETURN source_id, ra, dec, phot_g_mean_mag, catalog, link_type, cluster_name
+            ORDER BY CASE link_type WHEN "direct" THEN 0 ELSE 1 END, phot_g_mean_mag
+            LIMIT $limit
+            """
+        else:
+            query = """
+            MATCH (p:Paper {arxiv_id: $arxiv_id})<-[:MENTIONED_IN]-(s:Star)
+            RETURN s.source_id AS source_id,
+                   s.ra AS ra,
+                   s.dec AS dec,
+                   s.phot_g_mean_mag AS phot_g_mean_mag,
+                   s.catalog AS catalog,
+                   "direct" AS link_type,
+                   null AS cluster_name
+            LIMIT $limit
+            """
+        with neo4j_conn.session() as session:
+            return [dict(record) for record in session.run(
+                query, {"arxiv_id": arxiv_id, "limit": limit}
+            )]
+
     def find_cluster_papers_for_star(
         self,
         source_id: str,
@@ -250,29 +480,30 @@ class GraphSearch:
         limit: int = 50
     ) -> List[Dict[str, Any]]:
         """
-        Find stars connected via shared papers or clusters.
+        Find stars that share a physical cluster with the given star.
         
         Args:
             source_id: Starting star's Gaia source ID
-            max_hops: Maximum relationship depth (1-3)
+            max_hops: Ignored (kept for API compat); always 1-hop cluster
             limit: Maximum results
             
         Returns:
-            List of related stars with connection path info
+            List of co-cluster member stars with cluster context
         """
-        max_hops = min(max_hops, 3)  # Safety cap
-        
-        query = f"""
-        MATCH (s1:Star {{source_id: $source_id}})
-        MATCH path = (s1)-[*1..{max_hops}]-(s2:Star)
+        # Use explicit cluster-membership traversal. The old [*1..N]
+        # wildcard matched any relationship type and returned thousands
+        # of unrelated stars, degrading Full Hybrid precision.
+        query = """
+        MATCH (s1:Star {source_id: $source_id})-[:MEMBER_OF]->(c:Cluster)<-[:MEMBER_OF]-(s2:Star)
         WHERE s1 <> s2
-        WITH DISTINCT s2, length(path) AS distance
+        WITH DISTINCT s2, c.name AS cluster_name
         RETURN s2.source_id AS source_id, s2.ra AS ra, s2.dec AS dec,
-               s2.phot_g_mean_mag AS phot_g_mean_mag, distance
-        ORDER BY distance, s2.phot_g_mean_mag
+               s2.phot_g_mean_mag AS phot_g_mean_mag, cluster_name,
+               1 AS distance
+        ORDER BY s2.phot_g_mean_mag
         LIMIT $limit
         """
-        
+
         with neo4j_conn.session() as session:
             result = session.run(query, {"source_id": source_id, "limit": limit})
             return [dict(record) for record in result]
@@ -432,4 +663,7 @@ class GraphSearch:
             "papers":        _count("MATCH (p:Paper)   RETURN count(p) AS cnt"),
             "clusters":      _count("MATCH (c:Cluster) RETURN count(c) AS cnt"),
             "relationships": _count("MATCH ()-[r]->()  RETURN count(r) AS cnt"),
+            "mentioned_in":  _count("MATCH ()-[r:MENTIONED_IN]->() RETURN count(r) AS cnt"),
+            "member_of":     _count("MATCH ()-[r:MEMBER_OF]->() RETURN count(r) AS cnt"),
+            "covers":        _count("MATCH ()-[r:COVERS]->() RETURN count(r) AS cnt"),
         }

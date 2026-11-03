@@ -24,6 +24,7 @@ class CatalogIngestor:
     def ingest_file(self, filepath: Path, limit: Optional[int] = None) -> int:
         logger.info(f"Starting {self.catalog_source} ingestion: {filepath}")
         total_ingested = 0
+        touched_source_ids = set()
 
         postgres_conn.connect()
 
@@ -40,6 +41,10 @@ class CatalogIngestor:
                 records = chunk.to_dict("records")
                 if not records:
                     continue
+                for record in records:
+                    source_id = record.get("source_id")
+                    if source_id is not None:
+                        touched_source_ids.add(str(source_id))
 
                 stmt = insert(Star).values(records)
                 stmt = stmt.on_conflict_do_update(
@@ -55,6 +60,14 @@ class CatalogIngestor:
                 except Exception as exc:
                     logger.error(f"Failed to ingest {self.catalog_source} chunk: {exc}", exc_info=True)
                     session.rollback()
+
+        if touched_source_ids:
+            try:
+                from src.ingestion.graph_ingest import sync_graph_incremental
+
+                sync_graph_incremental(source_ids=sorted(touched_source_ids))
+            except Exception as exc:
+                logger.warning(f"Graph auto-sync after {self.catalog_source} ingest failed: {exc}")
 
         logger.info(f"{self.catalog_source} ingestion complete: {total_ingested} total records")
         return total_ingested

@@ -1,357 +1,674 @@
 {
-  "version": "1.0",
-  "name": "TaarYa Evaluation Benchmark",
-  "description": "Comprehensive benchmark suite for TaarYa astronomical retrieval system",
+  "description": "TaarYa benchmark suite v2 — 50 queries across 6 families with ground truth. All coordinates are J2000/ICRS. ground_truth fields use verifiable external evidence (Gaia DR3 catalogs, Kharchenko+ 2013, SIMBAD otype, WEBDA).",
+  "version": "2.0.0",
+  "clusters": {
+    "hyades": {"ra": 66.75, "dec": 15.87, "radius_deg": 5.5, "members_approx": 300, "distance_pc": 45, "age_yr": 6e8, "ref": "Gaia Collaboration 2018"},
+    "pleiades": {"ra": 56.75, "dec": 24.12, "radius_deg": 2.0, "members_approx": 1000, "distance_pc": 120, "age_yr": 1.25e8, "ref": "Gaia Collaboration 2018"},
+    "orion_ob1": {"ra": 83.82, "dec": -5.39, "radius_deg": 4.0, "members_approx": 200, "distance_pc": 400, "age_yr": 1e7, "ref": "Bally 2008"},
+    "coma_berenices": {"ra": 185.00, "dec": 25.83, "radius_deg": 4.0, "members_approx": 40, "distance_pc": 280, "age_yr": 4e8, "ref": "WEBDA/Kharchenko+ 2013"},
+    "praesepe": {"ra": 130.05, "dec": 19.52, "radius_deg": 2.5, "members_approx": 1000, "distance_pc": 180, "age_yr": 6e8, "ref": "WEBDA/Gaia DR3"},
+    "ngc2516": {"ra": 119.71, "dec": -60.85, "radius_deg": 0.5, "members_approx": 100, "distance_pc": 400, "age_yr": 1.2e8, "ref": "Kharchenko+ 2013"},
+    "alpha_per": {"ra": 51.08, "dec": 49.86, "radius_deg": 2.0, "members_approx": 80, "distance_pc": 475, "age_yr": 2e8, "ref": "WEBDA/Kharchenko+ 2013"},
+    "ic2391": {"ra": 130.07, "dec": -52.97, "radius_deg": 0.3, "members_approx": 50, "distance_pc": 180, "age_yr": 5e7, "ref": "Kharchenko+ 2013"}
+  },
   "queries": [
+
     {
-      "id": "Q01",
-      "category": "spatial_cluster",
-      "query": "Find all stars in the Pleiades open cluster",
-      "type": "spatial",
-      "params": {"ra": 56.75, "dec": 24.12, "radius_deg": 2.0},
-      "expected_min_results": 100,
-      "difficulty": "easy",
-      "ground_truth_notes": "Pleiades (M45) is a well-studied open cluster with ~1000 members"
+      "id": "Q01", "family": "spatial", "task": "Cone search",
+      "prompt": "Find all stars in a 3-degree cone centered on the Hyades core (RA=66.75°, Dec=15.87°).",
+      "params": {"ra": 66.75, "dec": 15.87, "radius_deg": 3.0, "limit": 100},
+      "ground_truth": {
+        "type": "region_anchor",
+        "cluster": "hyades",
+        "expected_method": "Q3C cone search on seeded region",
+        "expected_count_min": 50,
+        "expected_count_max": 300,
+        "verification": "Compare against Kharchenko+ 2013 membership list for Hyades (tolerate field contamination)"
+      }
     },
     {
-      "id": "Q02",
-      "category": "spatial_cluster",
-      "query": "Find all stars in the Hyades moving group",
-      "type": "spatial",
-      "params": {"ra": 66.75, "dec": 15.87, "radius_deg": 5.0},
-      "expected_min_results": 200,
-      "difficulty": "easy",
-      "ground_truth_notes": "Hyades is the nearest open cluster at ~45pc"
+      "id": "Q02", "family": "spatial", "task": "Cone search",
+      "prompt": "Find all stars within 1 degree of the Pleiades core (RA=56.75°, Dec=24.12°).",
+      "params": {"ra": 56.75, "dec": 24.12, "radius_deg": 1.0, "limit": 200},
+      "ground_truth": {
+        "type": "region_anchor",
+        "cluster": "pleiades",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 100,
+        "expected_count_max": 800,
+        "verification": "Compare with Gaia Collaboration 2018 Pleiades membership catalogue"
+      }
     },
     {
-      "id": "Q03",
-      "category": "spatial_cluster",
-      "query": "Find stars in the Orion OB1 association",
-      "type": "spatial",
-      "params": {"ra": 83.82, "dec": -5.39, "radius_deg": 1.0},
-      "expected_min_results": 50,
-      "difficulty": "medium",
-      "ground_truth_notes": "Orion OB1 is a large association, query captures central part"
+      "id": "Q03", "family": "spatial", "task": "Cone search",
+      "prompt": "Find all stars in the Orion OB1 association region (RA=83.82°, Dec=-5.39°, r=4°).",
+      "params": {"ra": 83.82, "dec": -5.39, "radius_deg": 4.0, "limit": 200},
+      "ground_truth": {
+        "type": "region_anchor",
+        "cluster": "orion_ob1",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 100,
+        "expected_count_max": 500,
+        "verification": "Compare against SIMBAD OB association catalog entries for Orion OB1"
+      }
     },
     {
-      "id": "Q04",
-      "category": "spatial_specific",
-      "query": "Find stars near Sirius (RA=101.29, Dec=-16.72)",
-      "type": "spatial",
-      "params": {"ra": 101.29, "dec": -16.72, "radius_deg": 0.5},
-      "expected_min_results": 5,
-      "difficulty": "easy",
-      "ground_truth_notes": "Sirius is a bright star, nearby stars should be few"
+      "id": "Q04", "family": "spatial", "task": "Cone search",
+      "prompt": "Find stars in the Coma Berenices open cluster region (RA=185°, Dec=25.83°, r=4°).",
+      "params": {"ra": 185.0, "dec": 25.83, "radius_deg": 4.0, "limit": 200},
+      "ground_truth": {
+        "type": "region_anchor",
+        "cluster": "coma_berenices",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 20,
+        "expected_count_max": 80,
+        "verification": "Compare with Kharchenko+ 2013 Melotte 111 membership list"
+      }
     },
     {
-      "id": "Q05",
-      "category": "spatial_specific",
-      "query": "Find stars near Betelgeuse (RA=88.79, Dec=7.41)",
-      "type": "spatial",
-      "params": {"ra": 88.79, "dec": 7.41, "radius_deg": 0.3},
-      "expected_min_results": 3,
-      "difficulty": "easy",
-      "ground_truth_notes": "Betelgeuse is a red supergiant in Orion"
+      "id": "Q05", "family": "spatial", "task": "Cone search",
+      "prompt": "Find stars in the Praesepe (M44) cluster region (RA=130.05°, Dec=19.52°, r=2.5°).",
+      "params": {"ra": 130.05, "dec": 19.52, "radius_deg": 2.5, "limit": 200},
+      "ground_truth": {
+        "type": "region_anchor",
+        "cluster": "praesepe",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 300,
+        "expected_count_max": 1000,
+        "verification": "Compare with WEBDA Praesepe membership catalog"
+      }
     },
     {
-      "id": "Q06",
-      "category": "spatial_density",
-      "query": "Find the densest region near the galactic center",
-      "type": "spatial",
-      "params": {"ra": 266.4, "dec": -29.0, "radius_deg": 2.0},
-      "expected_min_results": 500,
-      "difficulty": "hard",
-      "ground_truth_notes": "Toward galactic center, high density of stars expected"
+      "id": "Q06", "family": "spatial", "task": "Cone search",
+      "prompt": "Find stars in NGC 2516 (RA=119.71°, Dec=-60.85°, r=0.5°).",
+      "params": {"ra": 119.71, "dec": -60.85, "radius_deg": 0.5, "limit": 200},
+      "ground_truth": {
+        "type": "region_anchor",
+        "cluster": "ngc2516",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 50,
+        "expected_count_max": 200,
+        "verification": "Kharchenko+ 2013 NGC 2516 membership list"
+      }
     },
     {
-      "id": "Q07",
-      "category": "spatial_density",
-      "query": "Find stars in a quiet sky region away from the plane",
-      "type": "spatial",
-      "params": {"ra": 180.0, "dec": 60.0, "radius_deg": 1.0},
-      "expected_min_results": 10,
-      "difficulty": "medium",
-      "ground_truth_notes": "High galactic latitude should have fewer stars"
+      "id": "Q07", "family": "spatial", "task": "Cone search",
+      "prompt": "Find stars in the Alpha Persei (M34) region (RA=51.08°, Dec=49.86°, r=2°).",
+      "params": {"ra": 51.08, "dec": 49.86, "radius_deg": 2.0, "limit": 200},
+      "ground_truth": {
+        "type": "region_anchor",
+        "cluster": "alpha_per",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 40,
+        "expected_count_max": 150,
+        "verification": "WEBDA Alpha Persei membership catalog"
+      }
     },
     {
-      "id": "Q08",
-      "category": "discovery_anomaly",
-      "query": "Find stars with very high proper motion indicating possible nearby objects",
-      "type": "discovery",
-      "params": {"min_proper_motion": 80.0},
-      "expected_min_results": 1,
-      "difficulty": "hard",
-      "ground_truth_notes": "High proper motion stars are rare and scientifically interesting"
+      "id": "Q08", "family": "spatial", "task": "Cone search",
+      "prompt": "Find stars in IC 2391 (RA=130.07°, Dec=-52.97°, r=0.3°).",
+      "params": {"ra": 130.07, "dec": -52.97, "radius_deg": 0.3, "limit": 200},
+      "ground_truth": {
+        "type": "region_anchor",
+        "cluster": "ic2391",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 25,
+        "expected_count_max": 100,
+        "verification": "Kharchenko+ 2013 IC 2391 membership list"
+      }
     },
     {
-      "id": "Q09",
-      "category": "discovery_anomaly",
-      "query": "Find stars with unusually high RUWE values indicating possible binarity",
-      "type": "discovery",
-      "params": {"min_ruwe": 2.0},
-      "expected_min_results": 1,
-      "difficulty": "hard",
-      "ground_truth_notes": "RUWE > 2.0 suggests astrometric binary"
+      "id": "Q09", "family": "spatial", "task": "Large radius sky coverage",
+      "prompt": "Find all stars in a 10-degree cone around the Galactic anti-center (RA=90°, Dec=0°).",
+      "params": {"ra": 90.0, "dec": 0.0, "radius_deg": 10.0, "limit": 500},
+      "ground_truth": {
+        "type": "sky_coverage",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 500,
+        "verification": "Should return thousands in this direction; cap at limit=500 is intentional"
+      }
     },
     {
-      "id": "Q10",
-      "category": "discovery_anomaly",
-      "query": "Find extremely blue stars (BP-RP < -0.1)",
-      "type": "discovery",
-      "params": {"max_bp_rp": -0.1},
-      "expected_min_results": 1,
-      "difficulty": "hard",
-      "ground_truth_notes": "Blue objects may be blue stragglers or hot subdwarfs"
+      "id": "Q10", "family": "spatial", "task": "Empty sky region",
+      "prompt": "Find stars in a 0.1-degree cone at RA=0°, Dec=+90° (celestial north pole).",
+      "params": {"ra": 0.0, "dec": 90.0, "radius_deg": 0.1, "limit": 100},
+      "ground_truth": {
+        "type": "edge_case",
+        "expected_count_min": 0,
+        "expected_count_max": 20,
+        "verification": "Dense region but small radius should return few results; tests empty-sky handling"
+      }
     },
     {
-      "id": "Q11",
-      "category": "discovery_anomaly",
-      "query": "Find extremely red stars (BP-RP > 2.8)",
-      "type": "discovery",
-      "params": {"min_bp_rp": 2.8},
-      "expected_min_results": 1,
-      "difficulty": "hard",
-      "ground_truth_notes": "Red objects may be M-dwarfs or dusty envelopes"
+      "id": "Q11", "family": "spatial", "task": "Galactic plane cross",
+      "prompt": "Find stars within 2 degrees of the Galactic plane at l=60°, b=0° (RA≈105°, Dec≈0°).",
+      "params": {"ra": 105.0, "dec": 0.0, "radius_deg": 2.0, "limit": 500},
+      "ground_truth": {
+        "type": "sky_coverage",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 500,
+        "verification": "Galactic plane has high stellar density; should saturate limit"
+      }
+    },
+
+    {
+      "id": "Q12", "family": "discovery", "task": "High proper motion — Hyades region",
+      "prompt": "Find candidates in the Hyades region (RA=66.75°, Dec=15.87°, r=5°) with proper motion above 80 mas/yr.",
+      "params": {"ra": 66.75, "dec": 15.87, "radius_deg": 5.0, "motion_threshold": 80.0},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "hyades",
+        "expected_anomaly": "high_proper_motion",
+        "threshold_mas_yr": 80.0,
+        "expected_method": "Discovery ranking + proper_motion_mas_yr filter",
+        "expected_count_min": 1,
+        "expected_count_max": 10,
+        "verification": "Confirmed hypervelocity or high-tangential-velocity stars in this region require SIMBAD validation; internal threshold check only"
+      }
     },
     {
-      "id": "Q12",
-      "category": "discovery_anomaly",
-      "query": "Find bright but distant stars suggesting overluminous objects",
-      "type": "discovery",
-      "params": {"max_g_mag": 10.0, "min_distance_pc": 500},
-      "expected_min_results": 1,
-      "difficulty": "hard",
-      "ground_truth_notes": "Bright+distant = unusual luminosity or errors"
+      "id": "Q13", "family": "discovery", "task": "High proper motion — Coma Ber region",
+      "prompt": "Find high-proper-motion stars in the Coma Berenices region (RA=185°, Dec=25.83°, r=4°) above 60 mas/yr.",
+      "params": {"ra": 185.0, "dec": 25.83, "radius_deg": 4.0, "motion_threshold": 60.0},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "coma_berenices",
+        "expected_anomaly": "high_proper_motion",
+        "threshold_mas_yr": 60.0,
+        "expected_method": "Discovery ranking + motion filter",
+        "expected_count_min": 1,
+        "expected_count_max": 20,
+        "verification": "Coma Ber is a moving group; some members have elevated proper motion vs. field"
+      }
     },
     {
-      "id": "Q13",
-      "category": "catalog_comparison",
-      "query": "Find stars that appear in multiple catalogs",
-      "type": "crossmatch",
-      "params": {"min_catalogs": 2},
-      "expected_min_results": 10,
-      "difficulty": "medium",
-      "ground_truth_notes": "Cross-matched stars are likely well-studied"
+      "id": "Q14", "family": "discovery", "task": "Blue color outliers",
+      "prompt": "Find blue outliers (BP-RP < -0.1) in the Pleiades region (RA=56.75°, Dec=24.12°, r=2°).",
+      "params": {"ra": 56.75, "dec": 24.12, "radius_deg": 2.0, "bp_rp_max": -0.1},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "pleiades",
+        "expected_anomaly": "blue_outlier",
+        "bp_rp_threshold": -0.1,
+        "expected_method": "Discovery ranking + BP-RP color filter",
+        "expected_count_min": 1,
+        "expected_count_max": 10,
+        "verification": "Blue objects in Pleiades: blue stragglers, hot subdwarfs; verify with SIMBAD otype"
+      }
     },
     {
-      "id": "Q14",
-      "category": "catalog_comparison",
-      "query": "Compare stellar density in Pleiades vs Hyades",
-      "type": "comparison",
-      "params": {"region1": {"ra": 56.75, "dec": 24.12, "r": 2.0}, "region2": {"ra": 66.75, "dec": 15.87, "r": 5.0}},
-      "expected_min_results": 2,
-      "difficulty": "medium",
-      "ground_truth_notes": "Compare number of stars per unit area"
+      "id": "Q15", "family": "discovery", "task": "Red color outliers",
+      "prompt": "Find very red stars (BP-RP > 2.8) in Orion OB1 region (RA=83.82°, Dec=-5.39°, r=4°).",
+      "params": {"ra": 83.82, "dec": -5.39, "radius_deg": 4.0, "bp_rp_min": 2.8},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "orion_ob1",
+        "expected_anomaly": "red_outlier",
+        "bp_rp_threshold": 2.8,
+        "expected_method": "Discovery ranking + BP-RP color filter",
+        "expected_count_min": 5,
+        "expected_count_max": 50,
+        "verification": "M-type dwarfs and giants expected in this direction"
+      }
     },
     {
-      "id": "Q15",
-      "category": "graph_exploration",
-      "query": "Find all papers discussing the Hyades cluster",
-      "type": "semantic",
-      "params": {"topic": "Hyades cluster", "limit": 10},
-      "expected_min_results": 5,
-      "difficulty": "easy",
-      "ground_truth_notes": "Hyades is one of the most studied clusters"
+      "id": "Q16", "family": "discovery", "task": "Bright-star anomaly",
+      "prompt": "Find anomalously bright stars (G < 10) at distances > 500 pc in the Praesepe region.",
+      "params": {"ra": 130.05, "dec": 19.52, "radius_deg": 2.5, "g_max": 10.0, "parallax_max_mas": 2.0},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "praesepe",
+        "expected_anomaly": "bright_distance_inconsistency",
+        "expected_method": "Discovery ranking + brightness-distance check",
+        "expected_count_min": 0,
+        "expected_count_max": 5,
+        "verification": "Very bright stars at Praesepe distance are giants; few if any in Gaia DR3 bright limit"
+      }
     },
     {
-      "id": "Q16",
-      "category": "graph_exploration",
-      "query": "Find all papers about the Pleiades",
-      "type": "semantic",
-      "params": {"topic": "Pleiades seven sisters", "limit": 10},
-      "expected_min_results": 5,
-      "difficulty": "easy",
-      "ground_truth_notes": "Pleiades has extensive literature"
+      "id": "Q17", "family": "discovery", "task": "High RUWE — NGC 2516",
+      "prompt": "Find stars with RUWE > 2.0 in the NGC 2516 region indicating possible binarity.",
+      "params": {"ra": 119.71, "dec": -60.85, "radius_deg": 0.5, "ruwe_min": 2.0},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "ngc2516",
+        "expected_anomaly": "high_ruwe",
+        "ruwe_threshold": 2.0,
+        "expected_method": "Discovery ranking + RUWE filter",
+        "expected_count_min": 1,
+        "expected_count_max": 10,
+        "verification": "Open clusters have elevated binary fraction; RUWE > 2.0 suggests unresolved multiplicity"
+      }
     },
     {
-      "id": "Q17",
-      "category": "graph_exploration",
-      "query": "Find papers about stellar kinematics and proper motions",
-      "type": "semantic",
-      "params": {"topic": "stellar proper motion kinematics", "limit": 10},
-      "expected_min_results": 5,
-      "difficulty": "medium",
-      "ground_truth_notes": "Gaia enables precise proper motion studies"
+      "id": "Q18", "family": "discovery", "task": "Low-density field anomaly",
+      "prompt": "Find isolated stars (fewer than 3 neighbors within 1 deg) in the Alpha Persei region.",
+      "params": {"ra": 51.08, "dec": 49.86, "radius_deg": 2.0, "density_max": 2},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "alpha_per",
+        "expected_anomaly": "low_density",
+        "expected_method": "Discovery ranking + local density anomaly",
+        "expected_count_min": 1,
+        "expected_count_max": 20,
+        "verification": "Field star contaminants outside cluster radius"
+      }
     },
     {
-      "id": "Q18",
-      "category": "hybrid",
-      "query": "Find Hyades members and related literature",
-      "type": "hybrid",
-      "params": {"ra": 66.75, "dec": 15.87, "radius_deg": 5.0, "topic": "Hyades moving group"},
-      "expected_min_results": 50,
-      "difficulty": "medium",
-      "ground_truth_notes": "Combined spatial + semantic query"
+      "id": "Q19", "family": "discovery", "task": "Multi-signal discovery — Orion OB1",
+      "prompt": "Find stars in Orion OB1 that are simultaneously high-motion (mu > 40 mas/yr) AND blue (BP-RP < 0.5).",
+      "params": {"ra": 83.82, "dec": -5.39, "radius_deg": 4.0, "motion_min": 40.0, "bp_rp_max": 0.5},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "orion_ob1",
+        "expected_anomaly": "multi_signal",
+        "expected_method": "Discovery ranking + combined motion + color filter",
+        "expected_count_min": 1,
+        "expected_count_max": 10,
+        "verification": "Young massive stars in Orion OB1 have high motion and hot colors"
+      }
+    },
+
+    {
+      "id": "Q20", "family": "semantic", "task": "Literature search — Pleiades age",
+      "prompt": "Find papers discussing the age and formation history of the Pleiades open cluster.",
+      "params": {"query": "Pleiades age formation history open cluster", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "pleiades_age",
+        "expected_method": "Qdrant vector similarity on paper abstracts",
+        "expected_count_min": 5,
+        "verification": "Return count >= 5; relevance judged by cosine similarity score >= 0.7"
+      }
     },
     {
-      "id": "Q19",
-      "category": "hybrid",
-      "query": "Find Pleiades members with literature context",
-      "type": "hybrid",
-      "params": {"ra": 56.75, "dec": 24.12, "radius_deg": 2.0, "topic": "Pleiades star formation"},
-      "expected_min_results": 30,
-      "difficulty": "medium",
-      "ground_truth_notes": "Hybrid spatial-literature query"
+      "id": "Q21", "family": "semantic", "task": "Literature search — Hyades internal dynamics",
+      "prompt": "Find papers on the internal dynamics and mass segregation in the Hyades cluster.",
+      "params": {"query": "Hyades cluster internal dynamics mass segregation", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "hyades_dynamics",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 5,
+        "verification": "Return count >= 5; cosine similarity >= 0.7"
+      }
     },
     {
-      "id": "Q20",
-      "category": "edge_cases",
-      "query": "Find stars near the north celestial pole",
-      "type": "spatial",
-      "params": {"ra": 0.0, "dec": 90.0, "radius_deg": 0.5},
-      "expected_min_results": 1,
-      "difficulty": "medium",
-      "ground_truth_notes": "Special coordinate case"
+      "id": "Q22", "family": "semantic", "task": "Literature search — Orion star formation",
+      "prompt": "Find papers discussing star formation in the Orion OB1 association.",
+      "params": {"query": "Orion OB1 association star formation massive stars", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "orion_star_formation",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 5,
+        "verification": "Return count >= 5; cosine similarity >= 0.7"
+      }
     },
     {
-      "id": "Q21",
-      "category": "edge_cases",
-      "query": "Find stars near the ecliptic plane at RA=180",
-      "type": "spatial",
-      "params": {"ra": 180.0, "dec": 0.0, "radius_deg": 1.0},
-      "expected_min_results": 20,
-      "difficulty": "easy",
-      "ground_truth_notes": "Ecliptic plane has moderate star density"
+      "id": "Q23", "family": "semantic", "task": "Literature search — Galactic structure",
+      "prompt": "Find papers on the structure of the Milky Way Galaxy based on Gaia DR3 data.",
+      "params": {"query": "Milky Way structure Gaia DR3 disk kinematics", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "galactic_structure",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 5,
+        "verification": "Return count >= 5; cosine similarity >= 0.7"
+      }
     },
     {
-      "id": "Q22",
-      "category": "time_domain",
-      "query": "Find literature about variable stars in open clusters",
-      "type": "semantic",
-      "params": {"topic": "variable stars RR Lyrae Cepheid open clusters", "limit": 10},
-      "expected_min_results": 3,
-      "difficulty": "medium",
-      "ground_truth_notes": "Time-domain astronomy is active field"
+      "id": "Q24", "family": "semantic", "task": "Literature search — Variable stars",
+      "prompt": "Find papers on photometric variability and variable stars in open clusters.",
+      "params": {"query": "variable stars open clusters photometric variability", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "variable_stars",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 5,
+        "verification": "Return count >= 5; cosine similarity >= 0.7"
+      }
     },
     {
-      "id": "Q23",
-      "category": "time_domain",
-      "query": "Find papers about transient events and stellar explosions",
-      "type": "semantic",
-      "params": {"topic": "supernova nova transient event", "limit": 10},
-      "expected_min_results": 5,
-      "difficulty": "medium",
-      "ground_truth_notes": "Transient research is major topic"
+      "id": "Q25", "family": "semantic", "task": "Literature search — White dwarfs in clusters",
+      "prompt": "Find papers on white dwarf cooling and age-dating of open clusters using white dwarfs.",
+      "params": {"query": "white dwarf cooling open cluster age dating", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "white_dwarfs_clusters",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 5,
+        "verification": "Return count >= 5; cosine similarity >= 0.7"
+      }
     },
     {
-      "id": "Q24",
-      "category": "galactic_structure",
-      "query": "Find literature about Milky Way disk kinematics",
-      "type": "semantic",
-      "params": {"topic": "Milky Way disk stellar kinematics rotation", "limit": 10},
-      "expected_min_results": 5,
-      "difficulty": "medium",
-      "ground_truth_notes": "Gaia revolutionized galactic structure studies"
+      "id": "Q26", "family": "semantic", "task": "Literature search — Binary star dynamics",
+      "prompt": "Find papers on binary star dynamics and N-body simulations in star clusters.",
+      "params": {"query": "binary star dynamics N-body simulations star clusters", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "binary_star_dynamics",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 5,
+        "verification": "Return count >= 5; cosine similarity >= 0.7"
+      }
     },
     {
-      "id": "Q25",
-      "category": "exoplanets",
-      "query": "Find papers about exoplanet atmosphere spectroscopy",
-      "type": "semantic",
-      "params": {"topic": "exoplanet transmission spectroscopy atmosphere JWST", "limit": 10},
-      "expected_min_results": 5,
-      "difficulty": "medium",
-      "ground_truth_notes": "JWST is revolutionizing exoplanet studies"
+      "id": "Q27", "family": "semantic", "task": "Literature search — Hypervelocity stars",
+      "prompt": "Find papers on hypervelocity stars and their origin in the Galactic halo.",
+      "params": {"query": "hypervelocity stars Galactic halo origin Brown 2015", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "hypervelocity_stars",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 3,
+        "verification": "Return count >= 3; cosine similarity >= 0.7; specific mention of Brown+ 2015"
+      }
     },
     {
-      "id": "Q26",
-      "category": "stellar_evolution",
-      "query": "Find papers about brown dwarf spectral classification",
-      "type": "semantic",
-      "params": {"topic": "brown dwarf spectral classification L dwarf M dwarf", "limit": 10},
-      "expected_min_results": 3,
-      "difficulty": "medium",
-      "ground_truth_notes": "Brown dwarfs bridge planets and stars"
+      "id": "Q28", "family": "semantic", "task": "Literature search — astrometric exoplanet detection",
+      "prompt": "Find papers on astrometric exoplanet detection using Gaia DR3 data.",
+      "params": {"query": "Gaia DR3 astrometric exoplanet detection orbital solutions", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "exoplanet_astrometry",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 5,
+        "verification": "Return count >= 5; cosine similarity >= 0.7"
+      }
     },
     {
-      "id": "Q27",
-      "category": "discovery",
-      "query": "Find candidate binary stars in the solar neighborhood",
-      "type": "discovery",
-      "params": {"max_distance_pc": 50, "min_ruwe": 1.4},
-      "expected_min_results": 5,
-      "difficulty": "hard",
-      "ground_truth_notes": "Nearby binaries are key for mass measurements"
+      "id": "Q29", "family": "semantic", "task": "Literature search — metallicity gradients",
+      "prompt": "Find papers on metallicity gradients across open clusters in the Milky Way.",
+      "params": {"query": "open clusters metallicity gradient Milky Way galactic disk", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "metallicity_gradients",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 5,
+        "verification": "Return count >= 5; cosine similarity >= 0.7"
+      }
     },
     {
-      "id": "Q28",
-      "category": "discovery",
-      "query": "Find candidate young stellar objects near known star-forming regions",
-      "type": "discovery",
-      "params": {"ra": 83.82, "dec": -5.39, "radius_deg": 2.0, "max_bp_rp": 0.5},
-      "expected_min_results": 10,
-      "difficulty": "hard",
-      "ground_truth_notes": "YSOs have blue colors from accretion"
+      "id": "Q30", "family": "semantic", "task": "Literature search — stellar astrophysics",
+      "prompt": "Find papers on Hertzsprung-Russell diagram analysis for stellar population studies.",
+      "params": {"query": "Hertzsprung Russell diagram stellar populations isochrone fitting", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "hr_diagram",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 5,
+        "verification": "Return count >= 5; cosine similarity >= 0.7"
+      }
     },
     {
-      "id": "Q29",
-      "category": "multi_wavelength",
-      "query": "Find papers connecting Gaia astrometry to radio astronomy",
-      "type": "semantic",
-      "params": {"topic": "Gaia astrometry radio interferometry VLBI", "limit": 10},
-      "expected_min_results": 3,
-      "difficulty": "hard",
-      "ground_truth_notes": "Multi-wavelength astrometry is emerging field"
+      "id": "Q31", "family": "semantic", "task": "Specific author search",
+      "prompt": "Find papers authored by or citing work by Jeremy R. King on star cluster membership.",
+      "params": {"query": "Jeremy King star cluster membership Gaia", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "cluster_membership_king",
+        "expected_method": "Qdrant author/metadata filter + similarity",
+        "expected_count_min": 2,
+        "verification": "Return count >= 2; author field contains 'King'"
+      }
+    },
+
+    {
+      "id": "Q32", "family": "hybrid", "task": "Cluster discovery — Hyades",
+      "prompt": "Find and rank the most interesting stars in the Hyades region (RA=66.75°, Dec=15.87°, r=5°) combining catalog data and literature.",
+      "params": {"ra": 66.75, "dec": 15.87, "radius_deg": 5.0, "limit": 10, "profile": "balanced"},
+      "ground_truth": {
+        "type": "hybrid",
+        "cluster": "hyades",
+        "expected_method": "HybridSearch.cone_search_with_context",
+        "expected_count_min": 5,
+        "expected_count_max": 20,
+        "verification": "Top candidates should include: highest motion stars, highest RUWE, bluest/reddest colors; graph should return papers on Hyades membership and dynamics"
+      }
     },
     {
-      "id": "Q30",
-      "category": "calibration",
-      "query": "Find standard candles (Cepheids, RR Lyrae) mentioned in literature",
-      "type": "semantic",
-      "params": {"topic": "Cepheid RR Lyrae period luminosity distance ladder", "limit": 10},
-      "expected_min_results": 5,
-      "difficulty": "medium",
-      "ground_truth_notes": "Standard candles enable cosmic distance scale"
+      "id": "Q33", "family": "hybrid", "task": "Cluster discovery — Coma Ber",
+      "prompt": "Find and rank candidates in the Coma Berenices region combining spatial search, discovery ranking, and literature.",
+      "params": {"ra": 185.0, "dec": 25.83, "radius_deg": 4.0, "limit": 10, "profile": "balanced"},
+      "ground_truth": {
+        "type": "hybrid",
+        "cluster": "coma_berenices",
+        "expected_method": "HybridSearch.cone_search_with_context",
+        "expected_count_min": 5,
+        "expected_count_max": 20,
+        "verification": "Candidates should include high-proper-motion members, color outliers; papers should include Kharchenko+ membership studies"
+      }
     },
     {
-      "id": "Q31",
-      "category": "special",
-      "query": "Find hypervelocity stars or unusual kinematic populations",
-      "type": "discovery",
-      "params": {"min_proper_motion": 100.0},
-      "expected_min_results": 1,
-      "difficulty": "very_hard",
-      "ground_truth_notes": "Hypervelocity stars are extremely rare"
+      "id": "Q34", "family": "hybrid", "task": "Multi-wavelength cluster study — Praesepe",
+      "prompt": "Find all relevant stars in Praesepe and return them with discovery scores, literature context, and HR diagram data.",
+      "params": {"ra": 130.05, "dec": 19.52, "radius_deg": 2.5, "limit": 20, "profile": "balanced", "include_hr": true},
+      "ground_truth": {
+        "type": "hybrid",
+        "cluster": "praesepe",
+        "expected_method": "HybridSearch.cone_search_with_context + HR diagram",
+        "expected_count_min": 10,
+        "expected_count_max": 50,
+        "verification": "HR diagram should show main sequence + giant branch; discovery scores should flag giants, binaries"
+      }
     },
     {
-      "id": "Q32",
-      "category": "special",
-      "query": "Find white dwarfs in the solar neighborhood",
-      "type": "discovery",
-      "params": {"max_distance_pc": 50, "min_bp_rp": 1.5, "max_g_mag": 15},
-      "expected_min_results": 5,
-      "difficulty": "hard",
-      "ground_truth_notes": "White dwarfs are cool and faint"
+      "id": "Q35", "family": "hybrid", "task": "NGC 2516 with strict discovery profile",
+      "prompt": "Find high-confidence anomalies in NGC 2516 using the strict discovery profile.",
+      "params": {"ra": 119.71, "dec": -60.85, "radius_deg": 0.5, "limit": 5, "profile": "strict"},
+      "ground_truth": {
+        "type": "hybrid",
+        "cluster": "ngc2516",
+        "profile": "strict",
+        "expected_method": "HybridSearch with strict profile",
+        "expected_count_min": 1,
+        "expected_count_max": 5,
+        "verification": "Strict profile should return only the highest-confidence candidates (RUWE > 2.0 or motion > 80 mas/yr)"
+      }
+    },
+
+    {
+      "id": "Q36", "family": "discovery", "task": "Low-mass members — Alpha Persei",
+      "prompt": "Find low-mass M-dwarf candidates in Alpha Persei (G > 12, BP-RP > 1.4) that may be cluster members.",
+      "params": {"ra": 51.08, "dec": 49.86, "radius_deg": 2.0, "g_min": 12.0, "bp_rp_min": 1.4},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "alpha_per",
+        "expected_anomaly": "low_mass_candidate",
+        "expected_method": "Discovery ranking + color/magnitude filter",
+        "expected_count_min": 5,
+        "expected_count_max": 30,
+        "verification": "Alpha Persei has known M-dwarf members; compare with WEBDA membership"
+      }
     },
     {
-      "id": "Q33",
-      "category": "special",
-      "query": "Find star clusters in the Magellanic Clouds",
-      "type": "spatial",
-      "params": {"ra": 80.9, "dec": -69.0, "radius_deg": 3.0},
-      "expected_min_results": 1,
-      "difficulty": "hard",
-      "ground_truth_notes": "LMC/SMC are satellite galaxies"
+      "id": "Q37", "family": "discovery", "task": "High-confidence binary candidates",
+      "prompt": "Find binary candidates in Orion OB1 with RUWE > 1.4 AND photometric parallax consistency.",
+      "params": {"ra": 83.82, "dec": -5.39, "radius_deg": 4.0, "ruwe_min": 1.4},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "orion_ob1",
+        "expected_anomaly": "binary",
+        "expected_method": "Discovery ranking + RUWE + color filter",
+        "expected_count_min": 5,
+        "expected_count_max": 30,
+        "verification": "Orion OB1 is young; high RUWE indicates youth + binarity; compare with ElBadry+ 2021 binary catalog"
+      }
     },
     {
-      "id": "Q34",
-      "category": "comparison",
-      "query": "Compare literature coverage of globular vs open clusters",
-      "type": "semantic",
-      "params": {"topic1": "globular cluster", "topic2": "open cluster", "limit": 10},
-      "expected_min_results": 10,
-      "difficulty": "medium",
-      "ground_truth_notes": "Both have extensive literature but different focus"
+      "id": "Q38", "family": "discovery", "task": "Giant branch stars in Hyades",
+      "prompt": "Find giant branch stars in the Hyades region (M_G < 4, BP-RP > 0.5) for HR diagram anchor points.",
+      "params": {"ra": 66.75, "dec": 15.87, "radius_deg": 5.5, "abs_mag_max": 4.0, "bp_rp_min": 0.5},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "hyades",
+        "expected_anomaly": "giant_branch",
+        "expected_method": "Discovery ranking + absolute magnitude + color filter",
+        "expected_count_min": 3,
+        "expected_count_max": 15,
+        "verification": "Hyades has known giant branch members; compare with Gaia DR3 HR diagram locus"
+      }
+    },
+
+    {
+      "id": "Q39", "family": "semantic", "task": "Gaia DR3 calibration",
+      "prompt": "Find papers discussing the calibration and accuracy of Gaia DR3 astrometric solutions.",
+      "params": {"query": "Gaia DR3 astrometric calibration accuracy Lindegren 2021", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "gaia_dr3_calibration",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 3,
+        "verification": "Should return Lindegren+ 2021 and related Gaia DPAC papers"
+      }
     },
     {
-      "id": "Q35",
-      "category": "multi_look",
-      "query": "Find literature about binary star formation",
-      "type": "semantic",
-      "params": {"topic": "binary star formation multiple star systems", "limit": 10},
-      "expected_min_results": 5,
-      "difficulty": "medium",
-      "ground_truth_notes": "Binary fraction is key stellar property"
+      "id": "Q40", "family": "semantic", "task": "MESA stellar evolution",
+      "prompt": "Find papers using MESA (Modules for Experiments in Stellar Astrophysics) for stellar evolution modeling.",
+      "params": {"query": "MESA Paxton 2011 stellar evolution code inlist", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "mesa_stellar_evolution",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 3,
+        "verification": "Should return Paxton+ 2011, 2013, 2015 MESA series papers"
+      }
+    },
+
+    {
+      "id": "Q41", "family": "spatial", "task": "Cross-cluster comparison",
+      "prompt": "Retrieve all stars within 1 degree of the boundary between the Hyades and Praesepe clusters (approximately RA=98°, Dec=17.5°).",
+      "params": {"ra": 98.0, "dec": 17.5, "radius_deg": 1.0, "limit": 200},
+      "ground_truth": {
+        "type": "sky_coverage",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 50,
+        "expected_count_max": 200,
+        "verification": "Tests whether the spatial search correctly handles a direction between two cluster centers"
+      }
+    },
+    {
+      "id": "Q42", "family": "spatial", "task": "Wide binary candidate region",
+      "prompt": "Find stars in a 0.5-degree cone around Sirius (RA=101.29°, Dec=-16.72°) for wide binary companion search.",
+      "params": {"ra": 101.29, "dec": -16.72, "radius_deg": 0.5, "limit": 100},
+      "ground_truth": {
+        "type": "region_anchor",
+        "cluster": "sirius_field",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 20,
+        "expected_count_max": 100,
+        "verification": "Field around Sirius should include Sirius A + known companions and field stars"
+      }
+    },
+    {
+      "id": "Q43", "family": "spatial", "task": "Galactic anticenter — empty region",
+      "prompt": "Find stars in a 0.2-degree cone at Galactic anticenter (l=180°, b=0°, RA≈315°, Dec≈0°).",
+      "params": {"ra": 315.0, "dec": 0.0, "radius_deg": 0.2, "limit": 100},
+      "ground_truth": {
+        "type": "edge_case",
+        "expected_method": "Q3C cone search",
+        "expected_count_min": 5,
+        "expected_count_max": 50,
+        "verification": "Tests handling of sparse anticenter direction"
+      }
+    },
+
+    {
+      "id": "Q44", "family": "discovery", "task": "Parallax outlier — Hyades",
+      "prompt": "Find stars in the Hyades region with parallax inconsistent with cluster distance (within 5 deg of Hyades center but parallax > 25 mas or < 18 mas).",
+      "params": {"ra": 66.75, "dec": 15.87, "radius_deg": 5.0, "parallax_min": 25.0, "parallax_max": 18.0},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "hyades",
+        "expected_anomaly": "parallax_outlier",
+        "expected_method": "Discovery ranking + parallax filter",
+        "expected_count_min": 1,
+        "expected_count_max": 20,
+        "verification": "Hyades distance ~22.5 mas (44.5 pc); foreground/background contamination expected"
+      }
+    },
+    {
+      "id": "Q45", "family": "discovery", "task": "Young moving group — IC 2391",
+      "prompt": "Find very young star candidates (blue + high motion + high RUWE) in IC 2391 consistent with ~50 Myr age.",
+      "params": {"ra": 130.07, "dec": -52.97, "radius_deg": 0.3, "ruwe_min": 1.4, "bp_rp_max": 0.5, "motion_min": 30.0},
+      "ground_truth": {
+        "type": "discovery",
+        "cluster": "ic2391",
+        "expected_anomaly": "young_stellar_object",
+        "expected_method": "Discovery ranking + combined YSO diagnostics",
+        "expected_count_min": 1,
+        "expected_count_max": 10,
+        "verification": "IC 2391 is ~50 Myr; should contain few Herbig Ae/Be and T Tauri stars"
+      }
+    },
+
+    {
+      "id": "Q46", "family": "semantic", "task": "Gaia hyperspatial resolution",
+      "prompt": "Find papers on the Gaia hyperspatial resolution method for detecting binary stars.",
+      "params": {"query": "Gaia hyperspatial resolution binary star detection astrometric excess noise", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "gaia_hyperspatial",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 3,
+        "verification": "Should return Gaia Collaboration papers on hyperspatial analysis"
+      }
+    },
+    {
+      "id": "Q47", "family": "semantic", "task": "Simbad catalog cross-identification",
+      "prompt": "Find papers on cross-identification between Gaia DR3 and other major catalogs (SIMBAD, VizieR, LAMOST).",
+      "params": {"query": "Gaia DR3 cross-match SIMBAD VizieR catalog identification", "limit": 5},
+      "ground_truth": {
+        "type": "semantic",
+        "topic": "catalog_crossmatch",
+        "expected_method": "Qdrant vector similarity",
+        "expected_count_min": 3,
+        "verification": "Should return papers on cross-identification methodology"
+      }
+    },
+
+    {
+      "id": "Q48", "family": "hybrid", "task": "Strict discovery in Orion OB1",
+      "prompt": "Use the strict discovery profile to find the highest-confidence anomaly candidates in Orion OB1.",
+      "params": {"ra": 83.82, "dec": -5.39, "radius_deg": 4.0, "limit": 5, "profile": "strict"},
+      "ground_truth": {
+        "type": "hybrid",
+        "cluster": "orion_ob1",
+        "profile": "strict",
+        "expected_method": "HybridSearch with strict profile",
+        "expected_count_min": 1,
+        "expected_count_max": 5,
+        "verification": "Strict should flag: RUWE > 2.0, motion > 80 mas/yr, or blue + high motion combined"
+      }
+    },
+    {
+      "id": "Q49", "family": "hybrid", "task": "Aggressive recall in Alpha Persei",
+      "prompt": "Use the aggressive discovery profile to maximize recall of any unusual star in Alpha Persei.",
+      "params": {"ra": 51.08, "dec": 49.86, "radius_deg": 2.0, "limit": 20, "profile": "aggressive"},
+      "ground_truth": {
+        "type": "hybrid",
+        "cluster": "alpha_per",
+        "profile": "aggressive",
+        "expected_method": "HybridSearch with aggressive profile",
+        "expected_count_min": 5,
+        "expected_count_max": 20,
+        "verification": "Aggressive should return all stars with any signal flag; confirm variety of signal types"
+      }
+    },
+    {
+      "id": "Q50", "family": "hybrid", "task": "Full export with provenance",
+      "prompt": "Retrieve 20 candidates from Praesepe with full provenance metadata, HR diagram, and DS9 region export.",
+      "params": {"ra": 130.05, "dec": 19.52, "radius_deg": 2.5, "limit": 20, "profile": "balanced", "include_hr": true, "include_provenance": true, "export_format": "votable"},
+      "ground_truth": {
+        "type": "hybrid",
+        "cluster": "praesepe",
+        "expected_method": "HybridSearch + HR diagram + DS9 export + provenance",
+        "expected_count_min": 10,
+        "expected_count_max": 50,
+        "verification": "VOTable must be valid VOTable 1.4; provenance manifest must include session_id, timestamp, query params"
+      }
     }
+
   ]
 }

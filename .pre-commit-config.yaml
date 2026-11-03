@@ -1,0 +1,44 @@
+# TaarYa — Pre-commit hooks
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+# =============================================================================
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=5120"]
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic>=2.0
+          - astropy>=6.0
+          - qdrant-client>=1.12
+          - neo4j>=5.16
+        args: ["--ignore-missing-imports"]
+
+  - repo: https://github.com/sirosen/trim-lines
+    rev: v0.0.3
+    hooks:
+      - id: trim-lines
+        args: ["--max-lines=5", "--max-chars=500"]
+
+ci:
+  autoupdate_schedule: monthly

@@ -1,0 +1,50 @@
+<aside class="project-browser" aria-label="Project browser">
+  <div class="browser-titlebar">
+    <span>Browser</span>
+    <span id="project-browser-count" class="browser-count"></span>
+  </div>
+  <div class="browser-root">
+    <span class="material-icons" aria-hidden="true">expand_more</span>
+    <span class="material-icons browser-root-icon" aria-hidden="true">folder_open</span>
+    <span>Research projects</span>
+  </div>
+  <div class="projects-heading">
+    <span class="nav-section-title">Projects</span>
+    <button id="new-project-btn" type="button" title="Create project" aria-label="Create project">
+      <span class="material-icons" aria-hidden="true">add</span>
+    </button>
+  </div>
+  <div id="project-list" class="project-list" aria-label="Research projects"></div>
+  <div class="browser-section-heading">
+    <span class="material-icons" aria-hidden="true">expand_more</span>
+    <span class="nav-section-title">Sessions</span>
+  </div>
+  <button id="new-chat-btn" class="new-chat-btn" type="button">
+    <span class="material-icons" aria-hidden="true">add</span><span>New session</span>
+  </button>
+  <div id="session-list" class="session-list"></div>
+  <section class="project-items" aria-label="Saved project items">
+    <div class="browser-section-heading">
+      <span class="material-icons" aria-hidden="true">expand_more</span>
+      <span class="nav-section-title">Pinned targets & searches</span>
+    </div>
+    <div id="project-items-list" class="project-items-list"><span class="project-items-empty">Select a project</span></div>
+  </section>
+  <button class="browser-settings" type="button" title="Settings" aria-label="Settings" onclick="window.location.href='/static/settings.html'">
+    <span class="material-icons" aria-hidden="true">settings</span><span>Settings</span>
+  </button>
+</aside>
+<dialog id="project-create-dialog" class="project-dialog">
+  <form id="project-create-form" method="dialog">
+    <h2>New research project</h2>
+    <label for="project-name">Name</label>
+    <input id="project-name" name="name" maxlength="120" required autocomplete="off">
+    <label for="project-description">Description <span>Optional</span></label>
+    <textarea id="project-description" name="description" rows="3" maxlength="2000"></textarea>
+    <p id="project-create-error" class="project-form-error" role="alert" hidden></p>
+    <div class="project-dialog-actions">
+      <button type="button" id="project-cancel-btn">Cancel</button>
+      <button type="submit" id="project-submit-btn">Create project</button>
+    </div>
+  </form>
+</dialog>

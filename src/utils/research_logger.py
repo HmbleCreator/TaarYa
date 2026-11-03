@@ -22,7 +22,8 @@ class ResearchProvenanceLogger:
 
     def __init__(self, session_id: Optional[str] = None):
         self.session_id = session_id or datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.log_dir = Path("eval") / "sessions" / self.session_id
+        _base = Path(os.environ.get("TAARYA_LOG_DIR", "eval"))
+        self.log_dir = _base / "sessions" / self.session_id
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.manifest_path = self.log_dir / "manifest.json"
         self.actions: List[Dict[str, Any]] = []

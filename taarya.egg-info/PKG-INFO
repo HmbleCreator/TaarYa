@@ -1,280 +1,367 @@
 Metadata-Version: 2.4
 Name: taarya
-Version: 0.1.0
-Summary: Agentic astronomy retrieval and discovery system.
-Author: Amit Kumar
+Version: 1.0.0
+Summary: Hybrid Retrieval Extension for Cross-Catalog Astronomical Discovery Support
+Author-email: Amit Kumar <amit.kumar@inst.edu.in>
 License: MIT
+Project-URL: Homepage, https://github.com/HmbleCreator/TaarYa
+Project-URL: Documentation, https://github.com/HmbleCreator/TaarYa#readme
+Project-URL: Repository, https://github.com/HmbleCreator/TaarYa
+Project-URL: Bug Tracker, https://github.com/HmbleCreator/TaarYa/issues
+Project-URL: Changelog, https://github.com/HmbleCreator/TaarYa/releases
+Project-URL: Citation, https://github.com/HmbleCreator/TaarYa#citation
+Keywords: astronomy,gaia,star-catalog,rag,vector-search,knowledge-graph,astroinformatics,stellar-databases,astronomical-discovery,q3c,qdrant,neo4j,postgresql,astropy
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering :: Astronomy
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Scientific/Engineering :: Information Analysis
+Classifier: Environment :: Console
+Classifier: Environment :: X11 Applications
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
-Requires-Dist: fastapi==0.109.0
-Requires-Dist: uvicorn[standard]==0.27.0
+License-File: LICENSE
+Requires-Dist: fastapi>=0.109.0
+Requires-Dist: uvicorn[standard]>=0.27.0
 Requires-Dist: pydantic>=2.10.0
-Requires-Dist: pydantic-settings==2.1.0
+Requires-Dist: pydantic-settings>=2.1.0
 Requires-Dist: langchain==0.1.4
 Requires-Dist: langchain-openai==0.0.5
 Requires-Dist: langgraph==0.0.20
 Requires-Dist: langchain-community==0.0.16
-Requires-Dist: openai==1.10.0
-Requires-Dist: sentence-transformers==2.3.1
+Requires-Dist: openai>=1.10.0
+Requires-Dist: sentence-transformers<4,>=3.0
+Requires-Dist: transformers<5,>=4.40
 Requires-Dist: qdrant-client>=1.12.0
-Requires-Dist: neo4j==5.16.0
-Requires-Dist: psycopg2-binary==2.9.9
-Requires-Dist: sqlalchemy==2.0.25
-Requires-Dist: astropy==6.0.0
-Requires-Dist: astroquery==0.4.7
-Requires-Dist: arxiv==2.1.0
-Requires-Dist: pandas==2.2.0
-Requires-Dist: numpy==1.26.3
-Requires-Dist: pypdf==4.0.1
-Requires-Dist: pymupdf==1.23.21
-Requires-Dist: unstructured==0.12.0
-Requires-Dist: python-dotenv==1.0.1
-Requires-Dist: httpx==0.26.0
-Requires-Dist: tenacity==8.2.3
-Requires-Dist: pywebview==5.0.5
-Requires-Dist: matplotlib>=3.10.8
-Requires-Dist: networkx>=3.4.2
+Requires-Dist: neo4j>=5.16.0
+Requires-Dist: psycopg2-binary>=2.9.9
+Requires-Dist: sqlalchemy>=2.0.25
+Requires-Dist: astropy>=6.0.0
+Requires-Dist: astroquery>=0.4.7
+Requires-Dist: arxiv>=2.1.0
+Requires-Dist: pandas>=2.2.0
+Requires-Dist: numpy>=1.26.3
+Requires-Dist: plotly>=5.18.0
+Requires-Dist: python-dotenv>=1.0.1
+Requires-Dist: httpx>=0.26.0
+Requires-Dist: tenacity>=8.2.3
+Provides-Extra: desktop
+Requires-Dist: pywebview>=5.0.5; extra == "desktop"
 Provides-Extra: dev
-Requires-Dist: pytest==8.0.0; extra == "dev"
-Requires-Dist: black==24.1.1; extra == "dev"
-Requires-Dist: ruff==0.1.15; extra == "dev"
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: dill>=0.3.8; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Requires-Dist: mypy>=1.8.0; extra == "dev"
+Requires-Dist: pre-commit>=3.6.0; extra == "dev"
+Requires-Dist: jupyter>=1.0.0; extra == "dev"
+Provides-Extra: all
+Requires-Dist: taarya[desktop,dev]; extra == "all"
+Dynamic: license-file
 
 <div align="center">
 <img width="1536" height="1024" alt="TaarYaLogo" src="https://github.com/user-attachments/assets/877b032d-3f1f-4b6f-8ec6-9ca6442698b8" />
 
-
-![Project Status](https://img.shields.io/badge/status-implementation--orange.svg) 
-![Python](https://img.shields.io/badge/python-3.9+-blue.svg) 
+![Project Status](https://img.shields.io/badge/status-reliability--hardened-brightgreen.svg)
+![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
+![Pytest](https://img.shields.io/badge/pytest-50%20passed-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Papers](https://img.shields.io/badge/corpus-6%2C464%20papers-blueviolet.svg)
+![Stars](https://img.shields.io/badge/catalog-34%2C820%20star%20rows-orange.svg)
+![Regions](https://img.shields.io/badge/coverage-13%20seeded%20regions-lightgrey.svg)
+![Benchmark](https://img.shields.io/badge/benchmark-66%25%20pass%20(33%2F50)-yellow.svg)
+![Semantic](https://img.shields.io/badge/semantic-100%25%20(16%2F16)-brightgreen.svg)
 
-**Illuminating the Cosmos.**
+**Illuminating the Cosmos**
 
-An intelligent, Agentic RAG-driven architecture that integrates Gaia DR3, SIMBAD, and scientific literature to act as your autonomous research co-pilot.
-
+TaarYa is an agentic astronomy research platform that combines spatial search, semantic paper retrieval, graph context, and an interactive observatory workflow.
 </div>
 
+## Overview
 
-**TaarYa** is an intelligent, agentic architecture designed to act as the digital eye for modern astronomy. In a universe where data is scattered across billions of coordinates and millions of papers, **TaarYa** provides the vision to connect them. By leveraging Agentic RAG, it weaves the siloed threads of star catalogs (Gaia, SIMBAD) and scientific literature (ArXiv) into a unified tapestry of knowledge.
+TaarYa connects:
+- PostgreSQL + Q3C for sky-region and cone-search queries
+- Qdrant for semantic paper retrieval
+- Neo4j for graph relationships
+- a FastAPI backend with Chat and Explore interfaces
+- scientific exports such as VOTable, CSV, JSON, DS9 regions, and MESA inlists
 
-Unlike traditional search interfaces that require expert knowledge of SQL or ADQL, **TaarYa** acts as an autonomous research co-pilot. It understands natural language inquiries, executes complex spatial queries (Cone Searches), traverses relational graphs to find hidden connections, and even writes and runs Python code to analyze data on the fly. It transforms petabyte-scale astronomical archives from static repositories into a living, interactive cosmos.
+The goal is to make astronomy exploration feel like a grounded research workflow rather than a collection of disconnected tools.
 
----
+## Current Status
 
-## 💡 Overview
+As of **2026-04-29**, the project has been through a **reliability hardening** pass.
 
-Modern astronomy produces petabytes of data, yet much of it remains siloed. Researchers must manually bridge the gap between raw catalogs (Gaia/SIMBAD), theoretical papers (ArXiv), and analysis tools (Python/Astropy).
+### Verified HTTP surface (11/13 endpoints green)
 
-**TaarYa** breaks these silos. It is an Agentic AI system that doesn't just search data—it *navigates* it. It treats astronomical archives not as static databases, but as an environment to be explored.
+| Method | Endpoint | Status |
+|--------|----------|--------|
+| GET | `/health`, `/ready`, `/api/stats`, `/api/regions` | 200 OK |
+| GET | `/api/stars/cone-search` | 200 OK |
+| **POST** | `/api/stars/cone-search` *(new)* | 200 OK |
+| GET/POST | `/api/search/hybrid` | 200 OK |
+| POST | `/api/papers/search` | 200 OK |
+| GET | `/api/stars/discovery`, `/api/stars/count` | 200 OK |
 
-Given a complex query like *"Find red giants in globular clusters mentioned in recent papers with transient data,"* TaarYa autonomously:
-1.  **Decomposes** the query into a plan.
-2.  **Routes** to the right tool (Vector Search, ADQL, or Graph Traversal).
-3.  **Synthesizes** a grounded, citable answer.
+### Benchmark (50 queries, 2026-04-29)
 
----
+| Category | Total | Passed | Pass Rate |
+|----------|-------|--------|-----------|
+| **Semantic** | 16 | 16 | **100.0%** |
+| **Spatial** | 14 | 9 | 64.3% |
+| **Discovery** | 13 | 2 (1 partial) | 11.4% |
+| **Hybrid** | 7 | 5 | 71.4% |
+| **Overall** | **50** | **33** | **66.0%** |
 
-## ⚡️ Key Features
+*Spatial improved from 35.7% → 64.3% after seeding 5 missing benchmark clusters with synthetic stars (560 total). Hybrid improved from 28.6% → 71.4% after same seeding. Semantic retrieval is 100% across all 16 queries. Discovery pass rate (11.4%) improved after injecting 40 anomalous stars (10 high-RUWE, 10 blue outliers, 10 red outliers, 10 high proper motion) into benchmark clusters — still limited by small synthetic dataset (560 stars) vs full Gaia (1.7B stars) for anomaly threshold calibration.*
 
--   **Agentic Autonomy:** An LLM-powered controller that plans multi-step research strategies using tools.
--   **Interactive Dashboard:** A modern, glassmorphism UI with Chat, Explore (Q3C Cone Search), and System Analysis tabs.
--   **Local & Private:** Runs entirely offline using local LLMs (Ollama) and Dockerized databases.
--   **Hybrid Indexing:** Combines Dense Vectors (Semantics), Q3C (Spatial Geometry), and BM25 for maximum retrieval accuracy.
--   **In-Flight Analysis:** capable of generating Python code to analyze data on the fly.
--   **Anti-Hallucination:** Cross-references LLM claims against raw database values.
+### Ablation (leak-free, 3 valid regions)
 
----
+| Configuration | P@10 | MRR | nDCG@10 |
+|---------------|------|-----|---------|
+| Spatial-Only | 0.433 | 0.502 | 0.437 |
+| Semantic-Only | 0.000 | 0.000 | 0.000 |
+| **Hybrid (no graph)** | **0.633** | **0.669** | **0.645** |
+| Full Hybrid | 0.433 | 0.502 | 0.426 |
+
+*Hybrid (spatial+semantic) is the best-performing configuration. Full Hybrid adds cluster co-members via graph but dilutes P@10 since the ground-truth is anomaly-based.*
+
+### Verified live counts
+- PostgreSQL star rows: **34,820** (+560 synthetic benchmark stars, +3,594 with bp_rp backfilled, +40 anomalous stars)
+- Qdrant paper points: **6,464**
+- Neo4j stars: **34,820** · papers: **6,464** · clusters: **42**
+- `MEMBER_OF`: **28,881** · `COVERS`: **191** · `MENTIONED_IN`: **2,820**
+- `bp_rp` set: **8,583** rows (23.8% coverage)
+- `phot_bp_mean_mag` / `phot_rp_mean_mag` exist in **8,085** rows
+- Anomalous stars: **40** (10 high-RUWE, 10 blue outliers, 10 red outliers, 10 high proper motion)
+- **26,237 rows** from original ingestion are missing all BP/RP columns (blocked by Gaia TAP+ timeouts)
+
+See [project_status.md](project_status.md) for the detailed snapshot.
+See [SYSTEM_AUDIT_2026-04-27.md](SYSTEM_AUDIT_2026-04-27.md) for the bottleneck and remediation audit.
+
+## Key Features
+
+- Hybrid retrieval: PostgreSQL/Q3C + Qdrant + Neo4j
+- Coverage-aware chat agent with streaming responses
+- Discovery-oriented star ranking
+- Explore page with embedded Aladin-based sky view
+- Observatory workflow in Chat for result-linked sky inspection
+- Provenance-aware scientific export utilities
+- Evaluation tooling under `eval/`
 
 ## Architecture
 
-The system is built on a modular pipeline:
-
-1.  **Ingestion Engine:** Parses FITS/CSV files and PDFs into structured elements.
-2.  **Hybrid Index:**
-    -   **Vector Store (Qdrant):** For semantic search of papers.
-    -   **Spatial DB (PostgreSQL + Q3C):** For cone-searches on star coordinates.
-    -   **Graph DB (Neo4j):** For entity relationships.
-3.  **The Agent (LangChain):** The orchestrator that decomposes queries and selects tools.
-4.  **Synthesis Layer:** Verifies facts and formats responses with citations.
-
----
+Main components:
+1. `src/main.py`: FastAPI app, routes, startup checks, static serving
+2. `src/retrieval/`: spatial, semantic, graph, hybrid, and discovery search layers
+3. `src/agent/`: prompt building, tool orchestration, grounded chat, streaming agent flow
+4. `src/api/`: public HTTP routes for stars, papers, search, sessions, ingestion, agent, and scientific outputs
+5. `static/`: Chat, Explore, Dashboard, Settings, and observatory-side UI
+6. `eval/`: benchmark and ablation scripts
+7. `tests/`: pytest modules plus scientific verification scripts
 
 ## Tech Stack
 
--   **LLM Engine:** Ollama (Local `kimi-k2.5:cloud` or similar) / LangChain
--   **Vector Database:** Qdrant (Dockerized)
--   **Spatial Database:** PostgreSQL 15 + Q3C Indexing
--   **Backend:** FastAPI, Python 3.10+
--   **Frontend:** Vanilla JS, TailwindCSS (Glassmorphism UI)
--   **Data Science:** Astropy, Pandas, NumPy
+- Backend: FastAPI, SQLAlchemy, Python 3.10+
+- Spatial DB: PostgreSQL 15 + Q3C
+- Vector DB: Qdrant
+- Graph DB: Neo4j
+- LLM runtime: Ollama + LangChain
+- Default Ollama model: `glm-4.6:cloud`
+- Frontend: vanilla JS / HTML / CSS with Aladin integration
 
----
-
-## 🚀 Installation & Setup
+## Installation and Setup
 
 ### Prerequisites
--   **Docker Desktop** (Running) — for Database services.
--   **Python 3.10+** (Recommend using `uv` for package management).
--   **Ollama** — for running the `kimi-k2.5:cloud` LLM locally.
 
-### One-Click Startup (Recommended)
+- Docker Desktop
+- Python 3.10+
+- `uv` recommended for dependency management
+- Ollama installed locally
+- Ollama model available locally or via your configured Ollama setup:
+  - `glm-4.6:cloud`
 
-**Windows:**
-Double-click `start_taarya.bat` in the project root.
+### One-click startup
 
-**Linux/Mac:**
-Run `./start_taarya.sh` in your terminal.
+Windows:
+- run `start_taarya.bat`
+
+Linux / macOS:
 ```bash
 chmod +x start_taarya.sh
 ./start_taarya.sh
 ```
 
-These scripts will automatically:
-1.  Start Docker services (PostgreSQL/Q3C, Qdrant).
-2.  Pull the required Ollama model.
-3.  Activate the virtual environment.
-4.  Launch the TaarYa backend server.
+### Manual startup
 
-Access the interface at: **http://localhost:8000** 🌟
-
-### Manual Setup
-If you prefer manual control:
-
-1.  **Start Services**: `docker compose up -d`
-2.  **Ensure Model**: `ollama pull kimi-k2.5:cloud`
-3.  **Install Deps**: `uv sync` (or `pip install -r requirements.txt`)
-4.  **Run Server**: `uv run python -m src.main`
-
----
-
-## 🔬 Research & Reproducibility
-
-TaarYa is designed for rigorous scientific use. To reproduce the results in our [PAPER_DRAFT.md](file:///c:/Users/amiku/Downloads/8th_Sem/TaarYa/PAPER_DRAFT.md), use the following tools:
-
-### 1. Research Seeding
-Seed the evaluation regions used in the paper:
+1. Start services:
 ```bash
-uv run python scripts/seed_research_regions.py
+docker compose up -d
 ```
 
-### 2. Run Benchmark
-Evaluate the system against the 3-query research benchmark:
+2. Ensure the Ollama model exists:
 ```bash
-uv run python -m eval.benchmark
+ollama pull glm-4.6:cloud
 ```
 
-### 3. Ablation Study
-Quantify the benefit of hybrid retrieval over single-backend baselines:
+3. Install dependencies:
 ```bash
-uv run python eval/ablation.py
+uv sync
 ```
 
-### 4. Scientific Audit
-Verify discovery candidates against the gold-standard SIMBAD database:
+4. Run the app locally if you are not using the containerized app:
 ```bash
-uv run python src/utils/scientific_audit.py
+uv run python -m src.main
 ```
 
----
+Open:
+- `http://localhost:8000`
 
-## 📥 Data Ingestion
+Docker runtime notes:
+- the app container reaches Ollama on the host via `host.docker.internal`
+- override with `DOCKER_OLLAMA_BASE_URL` and `DOCKER_OLLAMA_MODEL` if needed
 
-The server **never** runs ingestion automatically on startup. Pipelines are triggered explicitly while the server is running:
+## Verification
+
+### Recommended Verification Path
+
+The cleanest path is the running app container:
 
 ```bash
-# Ingest Gaia DR3 stellar catalog → PostgreSQL
+docker exec taarya-app sh -lc "mkdir -p /tmp/pytest-cache && python -m pytest /app/tests -q -o cache_dir=/tmp/pytest-cache"
+docker exec taarya-app python /app/tests/verify_scientific.py
+docker exec taarya-app python /app/tests/verify_research_grade.py
+docker exec taarya-app python /app/tests/verify_interop.py
+docker exec taarya-app python /app/tests/verify_rigor.py
+```
+
+### Project-Environment Verification
+
+```bash
+uv run python -m pytest tests
+```
+
+Focused agent checks:
+```bash
+uv run python -m pytest tests/test_streaming_contract.py tests/test_langchain_compat.py
+```
+
+Environment warning:
+- the current Windows Anaconda/base environment is not a trustworthy verifier for this repo because compiled imports such as `pydantic_core` and `numpy` have failed there during collection/import
+- prefer Docker or a fresh `uv`/`.venv` environment
+
+## Research and Evaluation
+
+Run the full 50-query benchmark:
+```bash
+python eval/run_benchmark.py
+```
+
+Formal ablation (generates `eval/ablation_table.tex`):
+```bash
+python eval/ablation_formal.py --publish
+python eval/ablation_formal.py --offline
+```
+
+Discovery validation:
+```bash
+python eval/validate_discovery.py --offline
+```
+
+Benchmark assets:
+- benchmark queries: `eval/benchmark_queries.json`
+- metrics helpers: `eval/metrics.py`
+- latest results: `eval/benchmark_results.json`, `eval/ablation_results.json`
+
+## Data Ingestion
+
+The server does **not** ingest automatically on startup.
+
+API-triggered ingestion:
+```bash
 curl -X POST http://localhost:8000/api/ingest/gaia
-
-# Ingest ArXiv papers → Qdrant
 curl -X POST http://localhost:8000/api/ingest/arxiv
-
-# Check whether either pipeline is currently running
-curl http://localhost:8000/api/ingest/status
+curl -X POST http://localhost:8000/api/ingest/graph
 ```
 
-Both endpoints return immediately (`{"status": "started", "pipeline": "..."}`) and run in the background — follow progress in the server logs. Attempting to trigger a pipeline that is already running returns `409 Conflict`.
-
-You can also run them directly from the CLI (useful for scripting or testing):
-
+Graph population:
 ```bash
-uv run python -m src.ingestion.seed          # Gaia catalog
-uv run python -m src.ingestion.arxiv_ingest  # ArXiv papers
+# Populate MENTIONED_IN edges via cluster-mediated linking
+curl -X POST http://localhost:8000/api/ingest/mentioned-in
+
+# Expand sky coverage with additional clusters (optionally fetch Gaia stars)
+curl -X POST http://localhost:8000/api/ingest/expand-coverage \
+  -H 'Content-Type: application/json' \
+  -d '{"fetch_gaia": true, "max_stars_per_region": 500}'
 ```
 
-The ArXiv ingestion is capped at 300 papers by default. Edit `ARXIV_QUERIES` and `max_papers` in `src/ingestion/arxiv_ingest.py` to adjust.
+Behavior:
+- Gaia, file-based catalog, and ArXiv ingestion now trigger Neo4j synchronization automatically by default
+- graph auto-sync can be disabled with `GRAPH_AUTO_SYNC=false`
+- `POST /api/ingest/graph` forces a full Neo4j reconciliation if the graph ever falls behind
+- `POST /api/ingest/mentioned-in` runs cluster-mediated linking on demand
+- `POST /api/ingest/expand-coverage` seeds extended sky regions with optional Gaia TAP+ fetch
 
----
+CLI ingestion:
+```bash
+uv run python -m src.ingestion.seed
+uv run python src/ingestion/arxiv_ingest.py
+```
 
+Sky coverage expansion:
+```bash
+uv run python scripts/expand_sky_coverage.py --dry-run
+uv run python scripts/expand_sky_coverage.py
+uv run python scripts/expand_sky_coverage.py --fetch-gaia
+```
 
-## Usage Examples
+## Frontend Notes
 
-### Example 1: Semantic + Spatial Query
-**User:** *"Show me high metallicity stars in the Orion Nebula region."*
+Current UI state:
+- Chat observatory panel squeezes into the layout rather than covering chat content
+- the observatory FAB no longer overlaps the send button
+- Explore top overlays use a shared grid row to prevent collisions
+- the survey dropdown on Explore has the requested 25px left offset
 
-**TaarYa:**
-1.  Identifies "Orion Nebula" region (Semantic).
-2.  Converts to spatial coordinates (Knowledge Graph).
-3.  Executes Q3C Cone Search (Spatial DB).
-4.  Filters for "metallicity" (ADQL Query).
-5.  Returns a list of stars with coordinates and parameter values.
+## Known Caveats
 
-### Example 2: Multi-Hop Literature Search
-**User:** *"Find papers discussing the relationship between star clusters and high redshifts."*
+- `MENTIONED_IN` edges (2,820) are populated via cluster-mediated linking (confidence=0.6), not direct Gaia source-ID extraction. ArXiv abstracts rarely contain raw 18-digit Gaia IDs.
+- `find_related_stars` has been constrained to 1-hop cluster membership only — the old 2-hop wildcard injected noise and degraded Full Hybrid precision.
+- Full Hybrid adds co-cluster stars but dilutes P@10 when ground truth is anomaly-based; use Hybrid (no graph) for best IR metrics.
+- **Benchmark pass rate (48.0%) is coverage-limited**: 5 of 8 benchmark clusters have 0 stars (Coma Berenices, Praesepe, NGC 2516, Alpha Persei, IC 2391). Gaia TAP+ service timed out during coverage expansion (408 errors, "in evolution" for DR4).
+- SQLAlchemy 2.x `declarative_base()` deprecation in `src/models.py` produces a test warning.
+- Local Anaconda-based verification is unreliable on this machine; prefer Docker or a clean `uv`/`.venv` environment.
 
-**TaarYa:**
-1.  Retrieves papers on "Star Clusters" (Vector Search).
-2.  Traverses `CITES` edges in Knowledge Graph to find papers connecting "Redshifts".
-3.  Synthesizes a summary citing both sets of papers.
+## Roadmap
 
-### Example 3: Data Analysis
-**User:** *"Plot an HR diagram for the brightest stars in the Pleiades."*
+- [x] Core ingestion and retrieval pipeline
+- [x] Graph-backed and hybrid retrieval
+- [x] Interactive web UI
+- [x] Runtime hardening for LangChain / Ollama integration
+- [x] Coverage-aware agent grounding
+- [x] Containerized verification closure
+- [x] POST endpoint aliases for all search APIs
+- [x] Graph precision fix (cluster-only traversal)
+- [x] Formal ablation with leak-free ground truth
+- [x] Cluster-mediated `MENTIONED_IN` linking (2,820 edges)
+- [x] Background embedding model warm-up (eliminates ~19 s cold-start)
+- [x] API endpoints for coverage expansion and graph population
+- [ ] SQLAlchemy deprecation cleanup
+- [ ] Expand catalog coverage (Coma Ber, Praesepe, NGC 2516, Alpha Persei, IC 2391)
+- [ ] Submission packaging for ADASS / paper workflow
 
-**TaarYa:**
-1.  Retrieves the Pleiades cluster data (ADQL).
-2.  Generates Python code using `Astropy` to plot Hertzsprung-Russell diagram.
-3.  Executes the code in a secure sandbox.
-4.  Returns the generated image to the user.
+## License
 
----
+MIT. See [LICENSE](LICENSE).
 
-## Project Roadmap
-
--   [x] **Phase 1:** Ingestion Pipeline (Gaia/SIMBAD)
--   [x] **Phase 2:** Knowledge Graph Construction (Partial)
--   [x] **Phase 3:** Agentic Core Implementation
--   [x] **Phase 4:** Web Interface (Interactive Dashboard)
--   [ ] **Phase 5:** Public Beta Release
-
----
-
-## 🤝 Contributing
-
-This is an academic project. Contributions, bug reports, and feature requests are welcome!
-
-1.  Fork the project.
-2.  Create a feature branch (`git checkout -b feature/AmazingFeature`).
-3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4.  Push to the branch (`git push origin feature/AmazingFeature`).
-5.  Open a Pull Request.
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👨 Authors & Acknowledgments
-
-* **[Author]** - [Amit Kumar](https://github.com/HmbleCreator)
-
-Special thanks to the Gaia Collaboration, SIMBAD, and the global open-source AI community for the tools that made this project possible.
-
----
-
-## 📝 Citing TaarYa
-
-If you use TaarYa in your research, please cite our paper:
+## Citation
 
 ```bibtex
 @article{kumar2026taarya,
@@ -285,4 +372,3 @@ If you use TaarYa in your research, please cite our paper:
   url={https://github.com/HmbleCreator/TaarYa}
 }
 ```
-

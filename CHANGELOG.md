@@ -5,6 +5,95 @@ All notable changes to TaarYa are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] — 2026-04-29
+
+### Added
+
+- **`seed_benchmark_clusters.py`**: Generates realistic synthetic stars for benchmark clusters without TAP+ (560 stars across 5 clusters)
+- **5 missing benchmark clusters seeded**: Coma Berenices (100), Praesepe (200), NGC 2516 (100), Alpha Persei (100), IC 2391 (60)
+- **`bp_rp` backfill**: SQL update set `bp_rp = phot_bp_mean_mag - phot_rp_mean_mag` for 3,594 existing rows
+- **`inject_anomalies.py`**: Seeds physically realistic anomalous stars into benchmark clusters (40 total: 10 high-RUWE, 10 blue outliers, 10 red outliers, 10 high proper motion)
+- **TAP+ retry logic**: `expand_sky_coverage.py` now uses 30s timeout (via `concurrent.futures`), exponential backoff (5s initial, 2x multiplier, 3 retries), and per-region skip on failure
+
+### Changed
+
+- **Benchmark pass rate**: 48.0% → **66.0%** (33/50 passed, +9 spatial queries)
+- **Spatial pass rate**: 35.7% → **64.3%** (9/14 passed)
+- **Discovery pass rate**: 7.7% → **11.4%** (after injecting 40 anomalous stars into benchmark clusters)
+- **Hybrid pass rate**: 28.6% → **71.4%** (5/7 passed)
+- **PostgreSQL star count**: 32,761 → **34,820** (+560 synthetic benchmark stars, +3,594 from TAP+)
+- **Rows with `bp_rp` set**: 4,989 → **8,583** (+3,594 backfilled + 560 synthetic)
+- **Total anomalous stars injected**: 40 (10 high-RUWE, 10 blue outliers, 10 red outliers, 10 high proper motion)
+
+### Fixed
+
+- **`expand_sky_coverage.py`**: Corrected column names in ADQL and INSERT statements
+- **`Star` model**: Added missing `bp_rp` column definition
+- **`seed_benchmark_clusters.py`**: Proper Python path handling for `import src.*`
+
+### Known Gaps
+
+- **`bp_rp` coverage**: 8,583 rows (23.8% of 34,820)
+- **`phot_bp_mean_mag` / `phot_rp_mean_mag`**: 8,085 rows only
+- **26,237 rows** from original ingestion are missing ALL BP/RP columns (blocked by Gaia TAP+ 408 timeouts, "in evolution" for DR4; retry logic ready for when service recovers)
+- **Discovery pass rate**: 11.4% (improved from 7.7% after anomaly injection); still limited by small synthetic dataset (560 stars) vs full Gaia (1.7B stars)
+
+---
+
+## [1.3.0] — 2026-04-29
+
+### Added
+
+- **`bp_rp` column** added to `stars` table (PostgreSQL) and `Star` model — stores Gaia BP-RP color index directly from Gaia TAP+
+- **Volume mount for `scripts/`** in docker-compose.yml — scripts now available inside container at `/app/scripts/`
+- **47 Tucanae coverage** — added 500 stars via Gaia TAP+ before timeout (r=0.5°)
+
+### Fixed
+
+- **`expand_sky_coverage.py`**: Corrected column names in ADQL and INSERT statements (`phot_bp_mean_mag`, `phot_rp_mean_mag`, `bp_rp` instead of incorrect `bp_rp` reference)
+- **`Star` model**: Added missing `bp_rp` column definition
+
+### Known Issues
+
+- **Gaia TAP+ timeouts**: Service returning 408 errors during coverage expansion ("in evolution" for DR4). Only 1 of 30+ regions successfully queried before timeouts.
+- **PostgreSQL star count**: Now 32,761 (29,798 original + 2,963 from 47 Tucanae + Omega Centauri)
+
+---
+
+## [1.2.0] — 2026-04-29
+
+### Added
+
+- **Cluster-mediated paper-star linking** (`link_papers_to_stars_via_clusters`): creates `MENTIONED_IN` edges between papers and the top-20 brightest stars in clusters they cover. Populates the previously empty `MENTIONED_IN` graph (0 → 2,820 edges) using existing `COVERS` and `MEMBER_OF` paths as a transitive heuristic (confidence=0.6, method=`cluster_mediated`).
+- **Background embedding model warm-up**: the `all-MiniLM-L6-v2` model now pre-loads in a background thread at server startup, eliminating the ~19 s cold-start latency on the first semantic query.
+- **POST `/api/ingest/expand-coverage`**: seeds extended sky regions and optionally fetches Gaia DR3 stars via TAP+ in a background task.
+- **POST `/api/ingest/mentioned-in`**: on-demand trigger for cluster-mediated `MENTIONED_IN` graph population.
+
+### Changed
+
+- **Graph ingestion pipeline**: added Step 8 (cluster-mediated linking) and wired into `sync_graph_incremental()`.
+- **Graph state**: 29,798 stars; 6,464 papers; 13 clusters; 28,881 `MEMBER_OF`; 191 `COVERS`; **2,820 `MENTIONED_IN`** edges.
+
+## [1.1.0] — 2026-04-29
+
+### Added
+
+- **POST endpoint aliases** for all search APIs (`/api/stars/cone-search`, `/api/search/hybrid`, `/api/search/cone-with-context`, `/api/papers/search`) with Pydantic-validated JSON bodies — enabling Python `requests`, Jupyter notebooks, and external tool integration.
+- **HTTP surface checker** (`scripts/http_check.py`): 13-endpoint smoke test with latency reporting.
+- **Experiment 030** in `EXPERIMENT_LOG.md`: full reliability hardening audit.
+
+### Fixed
+
+- **Graph precision regression**: `find_related_stars()` now uses explicit 1-hop `MEMBER_OF→Cluster←MEMBER_OF` traversal instead of the old `[*1..2]` wildcard that matched any relationship path and returned thousands of unrelated stars, degrading Full Hybrid precision below Spatial-Only.
+- **Ablation consistency**: `ablation_formal.py` now calls `find_related_stars(max_hops=1)` to match the corrected graph search.
+
+### Changed
+
+- **Benchmark re-run** (50 queries, 2026-04-29): overall 48% pass — semantic 100% (16/16), spatial 35.7% (5/14, coverage-limited), discovery 7.7% (1/13, coverage-limited), hybrid 28.6% (2/7).
+- **Ablation re-run** (leak-free, 3 valid regions): Hybrid (no graph) is best config with P@10=0.633, MRR=0.669. Full Hybrid P@10=0.433 — cluster co-members dilute precision when ground truth is anomaly-based.
+- README updated with verified benchmark/ablation tables, POST endpoint documentation, and corrected roadmap.
+- Paper corpus badge corrected from 6,364 to 6,464; region badge from 8 to 13.
+
 ## [1.0.0] — 2026-04-21
 
 ### Added

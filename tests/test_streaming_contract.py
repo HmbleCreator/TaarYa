@@ -1,9 +1,15 @@
 import json
 from queue import Queue
 
-from src.agent.agent import build_system_prompt_sync
+from src.agent.agent import (
+    build_system_prompt_sync,
+    _query_needs_catalog_grounding,
+    _ground_query_to_catalog,
+    _coverage_followup_hint,
+    _normalize_session_id,
+)
 from src.agent.tools import cone_search
-from src.agent.streaming import StreamingCallbackHandler
+from src.agent.streaming import StreamingCallbackHandler, _build_grounded_fallback_answer
 from src.retrieval.spatial_search import SpatialSearch
 
 
@@ -117,3 +123,103 @@ def test_build_system_prompt_sync_injects_live_coverage(monkeypatch):
     assert "Stars loaded: 1000" in prompt
     assert "RA range: 43.65° to 46.36°" in prompt
     assert "Suggested search center: RA 45.01°, Dec 1.11°" in prompt
+
+
+class TestCoverageFirstGrounding:
+    COVERAGE = {
+        "total_stars": 1000,
+        "ra_min": 43.65,
+        "ra_max": 46.36,
+        "dec_min": 0.02,
+        "dec_max": 2.19,
+        "suggested_search_center": {"ra": 45.01, "dec": 1.11},
+    }
+
+    def test_vague_sky_query_triggers_catalog_grounding(self):
+        assert _query_needs_catalog_grounding("show me something interesting") is True
+        assert _query_needs_catalog_grounding("explore the catalog") is True
+        assert _query_needs_catalog_grounding("find nearby stars") is True
+        assert _query_needs_catalog_grounding("surprise me") is True
+
+    def test_explicit_coords_skip_grounding(self):
+        assert _query_needs_catalog_grounding("RA 83.82 Dec -5.39") is False
+        assert _query_needs_catalog_grounding("source_id 123456") is False
+
+    def test_literature_query_skips_grounding(self):
+        assert _query_needs_catalog_grounding("find papers about exoplanets") is False
+        assert _query_needs_catalog_grounding("search arxiv for binaries") is False
+
+    def test_ground_query_injects_live_footprint(self, monkeypatch):
+        monkeypatch.setattr(
+            "src.agent.agent.get_catalog_coverage_raw",
+            lambda: self.COVERAGE,
+        )
+        result = _ground_query_to_catalog("show me something interesting")
+        assert "GROUNDING DIRECTIVE" in result
+        assert "RA 43.65° to 46.36°" in result
+        assert "Dec 0.02° to 2.19°" in result
+        assert "45.01" in result
+
+    def test_ground_query_noop_for_explicit_coords(self, monkeypatch):
+        monkeypatch.setattr(
+            "src.agent.agent.get_catalog_coverage_raw",
+            lambda: self.COVERAGE,
+        )
+        result = _ground_query_to_catalog("RA 83.82 Dec -5.39")
+        assert "GROUNDING DIRECTIVE" not in result
+
+
+class TestLiveCoverageFallback:
+    COVERAGE = {
+        "total_stars": 1000,
+        "ra_min": 43.65,
+        "ra_max": 46.36,
+        "dec_min": 0.02,
+        "dec_max": 2.19,
+        "suggested_search_center": {"ra": 45.01, "dec": 1.11},
+    }
+
+    def test_fallback_uses_live_coverage_not_hardcoded(self, monkeypatch):
+        monkeypatch.setattr(
+            "src.agent.streaming.get_catalog_coverage_raw",
+            lambda: self.COVERAGE,
+        )
+        answer = _build_grounded_fallback_answer([])
+        assert "43.65" in answer
+        assert "0.02" in answer
+        assert "hardcoded" not in answer.lower()
+        assert "RA 43–46°, Dec 0–2°" not in answer
+
+    def test_fallback_mentions_followup_hint(self, monkeypatch):
+        monkeypatch.setattr(
+            "src.agent.streaming.get_catalog_coverage_raw",
+            lambda: self.COVERAGE,
+        )
+        answer = _build_grounded_fallback_answer([])
+        assert "45.01" in answer
+
+    def test_fallback_out_of_coverage_message(self, monkeypatch):
+        monkeypatch.setattr(
+            "src.agent.streaming.get_catalog_coverage_raw",
+            lambda: self.COVERAGE,
+        )
+        out_of_cov_step = DummyAction(
+            "cone_search",
+            '{"ra": 83.82, "dec": -5.39}',
+        )
+        obs = '{"status": "OUT_OF_COVERAGE"}'
+        steps = [(out_of_cov_step, obs)]
+        answer = _build_grounded_fallback_answer(steps)
+        assert "outside" in answer.lower() or "coverage" in answer.lower()
+
+    def test_fallback_uses_no_stale_ra_dec(self, monkeypatch):
+        monkeypatch.setattr(
+            "src.agent.streaming.get_catalog_coverage_raw",
+            lambda: self.COVERAGE,
+        )
+        answer = _build_grounded_fallback_answer([])
+        assert "RA 43–46°, Dec 0–2°" not in answer
+def test_invalid_session_id_is_ignored():
+    assert _normalize_session_id("verification-session") is None
+    assert _normalize_session_id(None) is None
+    assert _normalize_session_id("550e8400-e29b-41d4-a716-446655440000") == "550e8400-e29b-41d4-a716-446655440000"

@@ -1,0 +1,175 @@
+{
+  "covariates_only_cv": {
+    "auc": 0.74,
+    "ci95": [
+      0.688,
+      0.789
+    ]
+  },
+  "neighbour_only_cv": {
+    "auc": 0.527,
+    "ci95": [
+      0.462,
+      0.587
+    ]
+  },
+  "covariates+neighbour_cv": {
+    "auc": 0.749,
+    "ci95": [
+      0.698,
+      0.797
+    ]
+  },
+  "baseline_covariates": [
+    "depth_ppm",
+    "tmag",
+    "period",
+    "dur_h",
+    "abs_galactic_lat"
+  ],
+  "analysis_spec_frozen": {
+    "model": "SimpleImputer+StandardScaler+SplineTransformer(4 knots, deg 3)+LogisticRegression(C=0.3)",
+    "cv": "5-fold StratifiedGroupKFold by TIC, 5 repeats averaged",
+    "bootstrap": "1000 resamples by TIC",
+    "practical_threshold_delta_auc": 0.02,
+    "note": "do not tune after seeing results; report any change as a new analysis"
+  },
+  "raw_depth_auc_fixed_sign": 0.415,
+  "warnings": [],
+  "delta_auc_with_vs_without_neighbour": {
+    "mean": 0.009,
+    "ci95": [
+      0.004,
+      0.015
+    ],
+    "separated": true
+  },
+  "matched_operating_point": {
+    "fp_rejection": 0.8,
+    "planet_loss_covariates_only": 0.435,
+    "planet_loss_with_neighbour": 0.447,
+    "diff_with_minus_without": {
+      "mean": -0.021,
+      "ci95": [
+        -0.086,
+        0.047
+      ]
+    },
+    "note": "planets lost at the SAME 80% false-positive rejection; negative diff = neighbour feature helps"
+  },
+  "depth_only_cv": {
+    "auc": 0.74,
+    "ci95": [
+      0.688,
+      0.789
+    ]
+  },
+  "depth+neighbour_cv": {
+    "auc": 0.749,
+    "ci95": [
+      0.698,
+      0.797
+    ]
+  },
+  "delta_auc_combined_minus_depth": {
+    "mean": 0.009,
+    "ci95": [
+      0.004,
+      0.015
+    ],
+    "separated": true
+  },
+  "operating_points": {
+    "score>=-1.0": {
+      "fp_rejected": {
+        "k": 180,
+        "n": 193,
+        "rate": 0.9326,
+        "ci95": [
+          0.8882,
+          0.9602
+        ]
+      },
+      "planets_lost": {
+        "k": 140,
+        "n": 170,
+        "rate": 0.8235,
+        "ci95": [
+          0.7593,
+          0.8735
+        ]
+      },
+      "enrichment_vs_random": 0.109
+    },
+    "score>=0.0": {
+      "fp_rejected": {
+        "k": 153,
+        "n": 193,
+        "rate": 0.7927,
+        "ci95": [
+          0.7301,
+          0.8439
+        ]
+      },
+      "planets_lost": {
+        "k": 96,
+        "n": 170,
+        "rate": 0.5647,
+        "ci95": [
+          0.4896,
+          0.637
+        ]
+      },
+      "enrichment_vs_random": 0.228
+    },
+    "score>=0.5": {
+      "fp_rejected": {
+        "k": 118,
+        "n": 193,
+        "rate": 0.6114,
+        "ci95": [
+          0.5411,
+          0.6774
+        ]
+      },
+      "planets_lost": {
+        "k": 74,
+        "n": 170,
+        "rate": 0.4353,
+        "ci95": [
+          0.363,
+          0.5104
+        ]
+      },
+      "enrichment_vs_random": 0.176
+    },
+    "score>=1.0": {
+      "fp_rejected": {
+        "k": 69,
+        "n": 193,
+        "rate": 0.3575,
+        "ci95": [
+          0.2933,
+          0.4273
+        ]
+      },
+      "planets_lost": {
+        "k": 42,
+        "n": 170,
+        "rate": 0.2471,
+        "ci95": [
+          0.1883,
+          0.317
+        ]
+      },
+      "enrichment_vs_random": 0.11
+    }
+  },
+  "n": {
+    "planets": 170,
+    "false_positives": 193,
+    "stars": 350
+  },
+  "verdict": "statistically detectable but NEGLIGIBLE (delta AUC 0.009 < practical threshold 0.02); do not present as useful vetting information",
+  "operating_points_note": "operating_points use the legacy ratio score (contains depth and target brightness); cite matched_operating_point, not these, as evidence about neighbour vetting"
+}

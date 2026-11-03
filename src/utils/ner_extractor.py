@@ -146,6 +146,7 @@ class NERExtractor:
 
     def __init__(self):
         self._spatial = None
+        self._resolution_cache: Dict[str, List[str]] = {}
 
     @property
     def spatial(self):
@@ -207,20 +208,35 @@ class NERExtractor:
                 return coords
         return None
 
-    def resolve_to_source_ids(self, names: List[str]) -> List[str]:
-        """Resolve names to local Gaia source IDs via local map, then SIMBAD."""
+    def resolve_to_source_ids(
+        self,
+        names: List[str],
+        allow_simbad: bool = True,
+        max_simbad_queries: Optional[int] = None,
+    ) -> List[str]:
+        """Resolve names to local Gaia source IDs via local map, then optional SIMBAD."""
         if not names:
             return []
 
         cluster_names = {n.casefold() for n in self.extract_cluster_mentions(" ".join(names))}
         source_ids: List[str] = []
+        simbad_queries = 0
 
         for name in names:
             normalized = name.strip()
+            cache_key = f"{normalized.casefold()}|simbad={allow_simbad}"
+            if cache_key in self._resolution_cache:
+                source_ids.extend(self._resolution_cache[cache_key])
+                continue
+
+            resolved_for_name: List[str] = []
             if normalized.isdigit() and len(normalized) >= 18:
-                source_ids.append(normalized)
+                resolved_for_name.append(normalized)
+                source_ids.extend(resolved_for_name)
+                self._resolution_cache[cache_key] = resolved_for_name
                 continue
             if normalized.casefold() in cluster_names:
+                self._resolution_cache[cache_key] = []
                 continue
 
             coords = self.resolve_local_coordinates(normalized)
@@ -234,24 +250,37 @@ class NERExtractor:
                         limit=1,
                     )
                     if matches:
-                        source_ids.append(matches[0]["source_id"])
+                        resolved_for_name.append(matches[0]["source_id"])
+                        source_ids.extend(resolved_for_name)
+                        self._resolution_cache[cache_key] = resolved_for_name
                         logger.info(f"Resolved '{normalized}' locally to Gaia {matches[0]['source_id']}")
                         continue
                 except Exception:
                     pass
 
+            if not allow_simbad:
+                self._resolution_cache[cache_key] = []
+                continue
+            if max_simbad_queries is not None and simbad_queries >= max_simbad_queries:
+                self._resolution_cache[cache_key] = []
+                continue
+
+            simbad_queries += 1
             simbad_obj = query_simbad_by_name(normalized)
             if not simbad_obj:
+                self._resolution_cache[cache_key] = []
                 continue
 
             try:
                 if not SkyCoord or not u:
                     logger.debug("Astropy not available; skipping SIMBAD coordinate resolution.")
+                    self._resolution_cache[cache_key] = []
                     continue
 
                 ra_str = simbad_obj.get("ra")
                 dec_str = simbad_obj.get("dec")
                 if not ra_str or not dec_str:
+                    self._resolution_cache[cache_key] = []
                     continue
 
                 ra_str = " ".join(str(ra_str).split())
@@ -266,16 +295,31 @@ class NERExtractor:
                     limit=1,
                 )
                 if matches:
-                    source_ids.append(matches[0]["source_id"])
+                    resolved_for_name.append(matches[0]["source_id"])
+                    source_ids.extend(resolved_for_name)
                     logger.info(f"Resolved '{normalized}' via SIMBAD to Gaia {matches[0]['source_id']}")
             except Exception as exc:
                 logger.warning(f"Failed to resolve name '{normalized}': {exc}")
+            self._resolution_cache[cache_key] = resolved_for_name
 
         return _dedupe_keep_order(source_ids)
 
-    def process_text(self, text: str) -> List[str]:
+    def process_text(
+        self,
+        text: str,
+        allow_simbad: bool = True,
+        max_simbad_queries: Optional[int] = None,
+    ) -> List[str]:
         """Resolve a paper snippet into local Gaia source IDs."""
         direct_ids = self.extract_gaia_source_ids(text)
         candidate_names = self.extract_names(text)
-        resolved_ids = self.resolve_to_source_ids(candidate_names) if candidate_names else []
+        resolved_ids = (
+            self.resolve_to_source_ids(
+                candidate_names,
+                allow_simbad=allow_simbad,
+                max_simbad_queries=max_simbad_queries,
+            )
+            if candidate_names
+            else []
+        )
         return _dedupe_keep_order(direct_ids + resolved_ids)

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Inspect measured TaarYa workflow benchmark reports.">
+  <title>TaarYa | Benchmark</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="/static/workstation.css">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-mount"></div>
+    <main class="main-content">
+      <div class="report-page">
+        <header class="report-heading">
+          <div>
+            <h1>Benchmark</h1>
+            <p>Measured workflow comparisons</p>
+          </div>
+          <div class="report-actions">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
+              <span class="material-icons" aria-hidden="true">light_mode</span>
+            </button>
+            <label class="report-open" for="report-file">
+              <span class="material-icons" aria-hidden="true">folder_open</span>
+              <span>Open report</span>
+              <input class="report-file-input" id="report-file" type="file" accept="application/json,.json">
+            </label>
+          </div>
+        </header>
+
+        <div class="report-state" id="report-state" role="status" aria-live="polite">
+          <strong id="report-state-message">No benchmark report loaded.</strong>
+          <span id="report-state-help">Open a TaarYa JSON report to inspect measured outcomes and uncertainty intervals.</span>
+        </div>
+
+        <section class="report-content" id="report-content" hidden aria-live="polite">
+          <div class="report-meta" id="report-meta"></div>
+          <section class="report-section" aria-labelledby="systems-title">
+            <h2 id="systems-title">System results</h2>
+            <div class="report-table-wrap">
+              <table class="report-table">
+                <thead><tr><th>System</th><th>Scenarios</th><th>Participants</th><th>Precision@k</th><th>Recall@k</th><th>nDCG@k</th><th>Provenance</th><th>Task time</th><th>Tool latency</th><th>Dataset match</th></tr></thead>
+                <tbody id="system-rows"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="report-section" aria-labelledby="paired-title">
+            <h2 id="paired-title">Paired differences</h2>
+            <div class="report-table-wrap">
+              <table class="report-table">
+                <thead><tr><th>Comparison</th><th>Paired scenarios</th><th>Participants</th><th>Precision@k</th><th>Recall@k</th><th>nDCG@k</th><th>Provenance</th><th>Task time</th><th>Tool latency</th></tr></thead>
+                <tbody id="paired-rows"></tbody>
+              </table>
+            </div>
+          </section>
+          <p class="report-note" id="report-note"></p>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="/static/theme.js"></script>
+  <script src="/static/js/sidebar.js"></script>
+  <script src="/static/workstation.js"></script>
+  <script src="/static/benchmark.js"></script>
+</body>
+</html>

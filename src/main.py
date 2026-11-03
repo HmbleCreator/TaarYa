@@ -17,8 +17,9 @@ from sqlalchemy import text
 
 from src.config import settings
 from src.utils.logger import setup_logging
-from src.database import postgres_conn, qdrant_conn, neo4j_conn
+from src.database import apply_sql_migrations, postgres_conn, qdrant_conn, neo4j_conn
 from src.api import regions as regions_router
+from src.api import tess as tess_router
 
 # Setup logging
 setup_logging()
@@ -27,6 +28,21 @@ logger = logging.getLogger(__name__)
 # Resolve project root (parent of src/)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = PROJECT_ROOT / "static"
+
+
+def _load_embedding_model_sync():
+    """Synchronous helper called from a thread pool to pre-load the model."""
+    from src.retrieval.vector_search import _get_embedding_model
+    _get_embedding_model()
+
+
+def _ensure_chat_schema() -> None:
+    """Apply schema migrations for sessions and research projects."""
+    postgres_conn.connect()
+    try:
+        apply_sql_migrations(postgres_conn.engine)
+    except Exception as exc:
+        logger.error(f"Failed to ensure chat schema: {exc}")
 
 
 def _ensure_star_schema() -> None:
@@ -110,6 +126,7 @@ async def lifespan(app: FastAPI):
 
         Base.metadata.create_all(postgres_conn.engine)
         _ensure_star_schema()
+        _ensure_chat_schema()
         logger.info("Database tables: ensured")
 
         qdrant_conn.connect()
@@ -128,6 +145,20 @@ async def lifespan(app: FastAPI):
         # blocking the server. The UI will show 'connected' automatically
         # once the container finishes booting.
         asyncio.create_task(neo4j_conn.connect_with_retry())
+
+    # Pre-load the embedding model in a background thread so the first
+    # semantic query doesn't pay the ~19 s cold-start penalty.
+    async def _warmup_embedding_model():
+        import concurrent.futures
+        try:
+            loop = asyncio.get_event_loop()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                await loop.run_in_executor(pool, _load_embedding_model_sync)
+            logger.info("Embedding model: warm-up complete")
+        except Exception as exc:
+            logger.warning(f"Embedding model warm-up failed (will lazy-load on first query): {exc}")
+
+    asyncio.create_task(_warmup_embedding_model())
 
     logger.info("TaarYa ready. Ingestion pipelines idle — trigger via POST /api/ingest/gaia or /api/ingest/arxiv")
     yield  # App is running
@@ -157,14 +188,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve static files
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-
-
 @app.get("/")
 async def root():
-    """Redirect to the TaarYa Dashboard."""
-    return RedirectResponse(url="/static/dashboard.html")
+    """Open the integrated research workbench."""
+    return RedirectResponse(url="/static/chat.html")
+
+
+@app.get("/static/dashboard.html")
+@app.get("/static/explore.html")
+async def legacy_dashboard():
+    """Route retired dashboard and standalone sky screens to the workbench."""
+    return RedirectResponse(url="/static/chat.html")
+
+
+# Keep explicit app routes ahead of the static mount for legacy redirects.
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 @app.get("/health")
@@ -189,6 +227,7 @@ from src.api.papers import router as papers_router
 from src.api.search import router as search_router, stats_router
 from src.api.agent import router as agent_router
 from src.api.sessions import router as sessions_router
+from src.api.projects import router as projects_router
 from src.api.ingestion import router as ingestion_router
 from src.api.scientific import router as scientific_router
 
@@ -198,9 +237,11 @@ app.include_router(search_router, prefix="/api")
 app.include_router(stats_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
+app.include_router(projects_router, prefix="/api")
 app.include_router(regions_router.router, prefix="/api")
 app.include_router(ingestion_router, prefix="/api")
 app.include_router(scientific_router, prefix="/api")
+app.include_router(tess_router.router, prefix="/api")
 
 
 def main() -> None:

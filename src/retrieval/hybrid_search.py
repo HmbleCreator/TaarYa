@@ -253,12 +253,15 @@ class HybridSearch:
         if enrich_with_graph and stars:
             papers_found = []
             seen_papers = set()
-            
-            for star in stars[:10]:  # Limit graph lookups for performance
-                star_papers = self.graph.find_star_papers(
-                    star["source_id"],
-                    include_cluster_context=True,
-                )
+
+            source_ids = [star["source_id"] for star in stars[: min(limit, 25)] if star.get("source_id")]
+            papers_by_star = self.graph.find_papers_for_stars(
+                source_ids,
+                include_cluster_context=True,
+                limit_per_star=10,
+            )
+            for star in stars[: min(limit, 25)]:
+                star_papers = papers_by_star.get(star["source_id"], [])
                 for p in star_papers:
                     if p["arxiv_id"] not in seen_papers:
                         papers_found.append(
@@ -318,16 +321,11 @@ class HybridSearch:
 
     def _find_stars_in_paper(self, arxiv_id: str) -> List[Dict[str, Any]]:
         """Find stars mentioned in a paper via the knowledge graph."""
-        query = """
-        MATCH (s:Star)-[:MENTIONED_IN]->(p:Paper {arxiv_id: $arxiv_id})
-        RETURN s.source_id AS source_id, s.ra AS ra, s.dec AS dec,
-               s.phot_g_mean_mag AS phot_g_mean_mag
-        """
-        from src.database import neo4j_conn
-
-        with neo4j_conn.session() as session:
-            result = session.run(query, {"arxiv_id": arxiv_id})
-            return [dict(record) for record in result]
+        return self.graph.find_paper_stars(
+            arxiv_id,
+            limit=50,
+            include_cluster_context=True,
+        )
 
     def multi_search(
         self,
@@ -394,23 +392,13 @@ class HybridSearch:
 
         # PostgreSQL
         try:
-            # Use a fast standard count count instead of a 360-degree Q3C query
-            # Since Q3C radial query with 360 radius might be invalid or very slow
             try:
                 from src.database import postgres_conn
                 from sqlalchemy import text
 
                 postgres_conn.connect()
                 with postgres_conn.session() as session:
-                    count = session.execute(
-                        text(
-                            "SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname='stars';"
-                        )
-                    ).scalar()
-                    if count is None or count < 100:
-                        count = session.execute(
-                            text("SELECT COUNT(*) FROM stars")
-                        ).scalar()
+                    count = session.execute(text("SELECT COUNT(*) FROM stars")).scalar()
             except Exception as e:
                 logger.warning(f"Stats query failed: {e}")
                 count = 0

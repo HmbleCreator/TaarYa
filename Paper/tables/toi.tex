@@ -1,0 +1,14 @@
+\begin{table}[htbp]\centering\small
+\caption{TOI vetting: neighbour feature versus TOI-table covariates (350 stars). statistically detectable but NEGLIGIBLE (delta AUC 0.009 < practical threshold 0.02); do not present as useful vetting information}\label{tab:toi}
+\begin{tabular}{lr}
+\toprule
+Model & AUC (95\% CI) \\
+\midrule
+covariates\_only\_cv & 0.740 [0.688, 0.789] \\
+neighbour\_only\_cv & 0.527 [0.462, 0.587] \\
+covariates+neighbour\_cv & 0.749 [0.698, 0.797] \\
+$\Delta$AUC (with minus without neighbour) & 0.009 [0.004, 0.015] \\
+Planets lost at 80\% FP rejection: without / with & 0.435 / 0.447 \\
+\bottomrule
+\end{tabular}
+\end{table}

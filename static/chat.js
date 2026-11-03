@@ -12,6 +12,7 @@
 
   let chatHistory = [];
   let activeSessionId = null;
+  let activeProjectId = localStorage.getItem('taarya.activeProjectId');
   let sending = false;
   let queryCount = 0;
 
@@ -120,13 +121,13 @@
   }
 
   function shortSourceId(value) {
-    const text = String(value || '—');
+    const text = String(value || '-');
     return text.length > 13 ? `${text.slice(0, 7)}…${text.slice(-6)}` : text;
   }
 
   function distancePc(star) {
     const parallax = Number(star.parallax);
-    if (!Number.isFinite(parallax) || parallax <= 0) return '—';
+    if (!Number.isFinite(parallax) || parallax <= 0) return '-';
     return (1000 / parallax).toFixed(1);
   }
 
@@ -200,10 +201,9 @@
         </div>
         <details class="agent-process" id="${thinkingId}-process">
           <summary class="process-header">
-            <span>⚡</span>
-            <span class="process-title">Research Trace</span>
+          <span class="process-title">Research steps</span>
             <span class="process-state running" id="${thinkingId}-process-state">working</span>
-            <span class="process-chevron">▼</span>
+            <span class="material-icons process-chevron" aria-hidden="true">expand_more</span>
           </summary>
           <div class="process-steps" id="${thinkingId}-steps"></div>
           <div class="process-summary" id="${thinkingId}-summary"></div>
@@ -238,7 +238,7 @@
           <summary>
             <div class="step-icon running">${iconForState('running')}</div>
             <div class="step-copy">
-              <div class="step-label">${escapeHtml(toolName)} — ${escapeHtml(label)}</div>
+              <div class="step-label">${escapeHtml(toolName)}: ${escapeHtml(label)}</div>
               <div class="step-result">running…</div>
             </div>
           </summary>
@@ -321,7 +321,7 @@
           <summary>
             <div class="step-icon error">${iconForState('error')}</div>
             <div class="step-copy">
-              <div class="step-label">system — Agent error</div>
+              <div class="step-label">System: agent error</div>
               <div class="step-result error">${escapeHtml(data.message || 'Unknown error')}</div>
             </div>
           </summary>
@@ -351,7 +351,6 @@
   function addUserMsg(text) {
     addHTML(`
       <div class="msg user">
-        <div class="msg-avatar"><span class="material-icons">person</span></div>
         <div class="msg-body">
           <div class="msg-sender">You</div>
           <div class="msg-bubble">${escapeHtml(text)}</div>
@@ -398,7 +397,7 @@
           <summary>
             <div class="step-icon ${state}">${iconForState(state)}</div>
             <div class="step-copy">
-              <div class="step-label">${escapeHtml(tool.tool)} â€” ${escapeHtml(label)}</div>
+              <div class="step-label">${escapeHtml(tool.tool)}: ${escapeHtml(label)}</div>
               <div class="step-result ${state}">${escapeHtml(preview)}</div>
             </div>
           </summary>
@@ -432,10 +431,9 @@
     return `
       <details class="agent-process">
         <summary class="process-header">
-          <span>âš¡</span>
-          <span class="process-title">Research Trace</span>
+          <span class="process-title">Research steps</span>
           <span class="process-state ${stateClass}">${stateText}</span>
-          <span class="process-chevron">â–¼</span>
+          <span class="material-icons process-chevron" aria-hidden="true">expand_more</span>
         </summary>
         <div class="process-steps">${steps.join('')}</div>
         <div class="process-summary">${stats.join('')}</div>
@@ -445,7 +443,6 @@
   function addAIMsg(html, traceHtml = '') {
     addHTML(`
       <div class="msg ai">
-        <div class="msg-avatar"><span class="material-icons">auto_awesome</span></div>
         <div class="msg-body">
           <div class="msg-sender">TaarYa</div>
           ${traceHtml}
@@ -519,7 +516,9 @@
   }
 
   async function initSessions() {
-    const res = await fetch('/api/sessions');
+    const params = activeProjectId ? `?project_id=${encodeURIComponent(activeProjectId)}` : '';
+    const res = await fetch('/api/sessions' + params);
+    if (!res.ok) throw new Error(`Sessions unavailable (${res.status})`);
     const sessions = await res.json();
     const list = document.getElementById('session-list');
     list.innerHTML = '';
@@ -544,7 +543,9 @@
   }
 
   async function newSession() {
-    const res = await fetch('/api/sessions', { method: 'POST' });
+    const params = activeProjectId ? `?project_id=${encodeURIComponent(activeProjectId)}` : '';
+    const res = await fetch('/api/sessions' + params, { method: 'POST' });
+    if (!res.ok) throw new Error(`Could not create session (${res.status})`);
     const data = await res.json();
     activeSessionId = data.session_id;
     chatHistory = [];
@@ -594,7 +595,7 @@
 
     let rows = stars.slice(0, 8).map((star) => `
       <tr>
-        <td class="source-cell">${escapeHtml(shortSourceId(star.source_id || star.id || '—'))}</td>
+        <td class="source-cell">${escapeHtml(shortSourceId(star.source_id || star.id || '-'))}</td>
         <td>${Number(star.ra || 0).toFixed(3)}</td>
         <td>${Number(star.dec || 0).toFixed(3)}</td>
         <td class="highlight-cell">${escapeHtml(distancePc(star))}</td>
@@ -632,9 +633,9 @@
     const papers = toolOutput.data || [];
     const rows = papers.slice(0, 6).map((paper) => `
       <tr>
-        <td class="source-cell">${escapeHtml((paper.arxiv_id || '—'))}</td>
+        <td class="source-cell">${escapeHtml((paper.arxiv_id || '-'))}</td>
         <td>${escapeHtml(paper.title || paper.name || 'Untitled')}</td>
-        <td>${escapeHtml(paper.published_date || paper.category || '—')}</td>
+        <td>${escapeHtml(paper.published_date || paper.category || '-')}</td>
       </tr>`).join('');
 
     return `
@@ -679,12 +680,10 @@
     if (!firstDataOutput && streamState.steps.length && streamState.steps.every(step => step.state === 'empty' || step.state === 'error')) {
       addHTML(`
         <div class="msg ai">
-          <div class="msg-avatar"><span class="material-icons">auto_awesome</span></div>
           <div class="msg-body">
             <div class="msg-sender">TaarYa</div>
             <div class="error-card">
-              <div class="error-icon">○</div>
-              <div><strong>No grounded results found.</strong><br>${formatAnswer(answer)}</div>
+              <div><strong>No grounded results found</strong><br>${formatAnswer(answer)}</div>
             </div>
           </div>
         </div>`);
@@ -700,22 +699,34 @@
         : buildStarsTable(firstDataOutput, matchingStep);
       chips = buildActionChips(firstDataOutput, matchingStep);
     }
+    const resultType = firstDataOutput?.tool === 'semantic_search' || firstDataOutput?.tool === 'graph_query' ? 'paper' : 'star';
+    const pinAction = firstDataOutput
+      ? '<button class="pin-results-btn" type="button">Pin results to project</button>'
+      : '';
 
     addHTML(`
       <div class="msg ai">
-        <div class="msg-avatar"><span class="material-icons">auto_awesome</span></div>
         <div class="msg-body">
           <div class="msg-sender">TaarYa</div>
           <div class="answer-card">
             <div class="answer-header">
-              <div class="answer-tag">${firstDataOutput ? 'DISCOVERY' : 'RESPONSE'}</div>
+              <div class="answer-tag">${firstDataOutput ? 'Discovery' : 'Response'}</div>
             </div>
             <div class="answer-body">${formatAnswer(answer)}</div>
             ${dataSection}
             ${chips}
+            ${pinAction}
           </div>
         </div>
       </div>`);
+    if (firstDataOutput) {
+      const button = messagesEl.lastElementChild?.querySelector('.pin-results-btn');
+      button?.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('taarya:pin-results', {
+          detail: { itemType: resultType, items: firstDataOutput.data || [] },
+        }));
+      });
+    }
   }
 
   // ─── Send Logic (SSE Stream) ───────────────────────────
@@ -827,14 +838,6 @@
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   });
 
-  // Suggestion chips
-  document.querySelectorAll('.welcome-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const q = chip.getAttribute('data-query');
-      if (q) send(q);
-    });
-  });
-
   messagesEl.addEventListener('click', (event) => {
     const welcomeChip = event.target.closest('.welcome-chip[data-query]');
     if (welcomeChip) {
@@ -851,13 +854,47 @@
 
   document.addEventListener('sidebar-ready', async () => {
     document.getElementById('new-chat-btn').addEventListener('click', newSession);
+    document.getElementById('assistant-new-session')?.addEventListener('click', newSession);
+    activeProjectId = localStorage.getItem('taarya.activeProjectId');
 
-    const sessions = await fetch('/api/sessions').then(r => r.json());
-    if (sessions.length > 0) {
+    const params = new URLSearchParams(window.location.search);
+    const requestedProject = params.get('project');
+    if (requestedProject) {
+      activeProjectId = requestedProject;
+      localStorage.setItem('taarya.activeProjectId', requestedProject);
+    }
+    const requestedSession = params.get('session');
+    const sessionQuery = activeProjectId ? `?project_id=${encodeURIComponent(activeProjectId)}` : '';
+    const sessionsResponse = await fetch('/api/sessions' + sessionQuery);
+    if (!sessionsResponse.ok) throw new Error(`Sessions unavailable (${sessionsResponse.status})`);
+    const sessions = await sessionsResponse.json();
+    if (params.get('new') === '1') {
+      await newSession();
+      window.history.replaceState({}, '', '/static/chat.html');
+    } else if (requestedSession && sessions.some(session => session.id === requestedSession)) {
+      await switchSession(requestedSession);
+      window.history.replaceState({}, '', '/static/chat.html');
+    } else if (sessions.length > 0) {
       await switchSession(sessions[0].id);
     } else {
       await newSession();
     }
     inputEl.focus();
+  });
+
+  window.addEventListener('taarya:project-selected', async (event) => {
+    const projectId = event.detail?.projectId || null;
+    if (projectId === activeProjectId) return;
+    activeProjectId = projectId;
+    activeSessionId = null;
+    try {
+      const response = await fetch('/api/sessions' + (projectId ? `?project_id=${encodeURIComponent(projectId)}` : ''));
+      if (!response.ok) throw new Error(`Sessions unavailable (${response.status})`);
+      const sessions = await response.json();
+      if (sessions.length) await switchSession(sessions[0].id);
+      else await newSession();
+    } catch (error) {
+      addAIMsg(`<span class="workspace-error">${escapeHtml(error.message)}</span>`);
+    }
   });
 })();

@@ -1,23 +1,19 @@
 """
-Expand TaarYa's sky coverage beyond the initial 8 clusters.
-
-Adds 20+ additional regions spanning a broad range of astrophysical
-environments: globular clusters, OB associations, star-forming regions,
-nearby moving groups, and high-latitude calibration fields.
+Seed sky regions and fetch Gaia DR3 stars via TAP+ with retry logic.
 
 Usage:
-    python scripts/expand_sky_coverage.py                # Seed all new regions
-    python scripts/expand_sky_coverage.py --dry-run      # Preview regions
-    python scripts/expand_sky_coverage.py --fetch-gaia   # Also fetch Gaia stars per region
+    python scripts/expand_sky_coverage.py                # Seed regions only
+    python scripts/expand_sky_coverage.py --fetch-gaia  # Seed + fetch with retry
+    python scripts/expand_sky_coverage.py --fetch-gaia --max-stars 1000
+
+Re-run after ESA TAP+ service recovery to backfill ~26k missing rows (uses ON CONFLICT DO NOTHING to avoid duplicates).
 """
-
-from __future__ import annotations
-
 import argparse
+import concurrent.futures
 import logging
+import random
+import time
 from datetime import datetime, timezone
-
-from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +21,6 @@ logger = logging.getLogger(__name__)
 # Extended region catalog
 # ---------------------------------------------------------------------------
 # Format: (name, ra_deg, dec_deg, radius_deg, description, region_type)
-# Coordinates from: SIMBAD, WEBDA, Dias+ (2021), Cantat-Gaudin+ (2020)
-#
 # Types: OC = open cluster, GC = globular cluster, OB = OB association,
 #        SFR = star-forming region, MG = moving group, CAL = calibration field
 
@@ -74,6 +68,12 @@ EXTENDED_REGIONS = [
     ("TESS CVZ North",       270.0,   66.5,   3.0,  "TESS continuous viewing zone, longest baselines", "CAL"),
 ]
 
+# Retry configuration
+MAX_RETRIES = 3
+INITIAL_BACKOFF_S = 5    # seconds
+MAX_TIMEOUT_S = 30       # per-query timeout
+BACKOFF_MULTIPLIER = 2
+
 
 def seed_extended_regions(dry_run: bool = False) -> int:
     """Seed extended regions into PostgreSQL and Neo4j."""
@@ -113,15 +113,61 @@ def seed_extended_regions(dry_run: bool = False) -> int:
         except Exception as e:
             logger.warning(f"Failed to create Neo4j node for {name}: {e}")
 
-        logger.info(f"Seeded [{rtype}] {name} (RA={ra:.2f}, Dec={dec:.2f}, r={radius}°)")
+        logger.info(f"Seeded [{rtype}] {name} (RA={ra:.2f}, Dec={dec:+.2f}, r={radius}°)")
         count += 1
 
     logger.info(f"Seeded {count} extended regions")
     return count
 
 
+def _run_gaia_query_with_retry(adql: str, region_name: str) -> "astropy.table.Table | None":
+    """Execute a Gaia TAP query with exponential backoff retry and 30s timeout."""
+    from astroquery.gaia import Gaia
+    import socket
+
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            logger.info(f"  Attempt {attempt + 1}/{MAX_RETRIES + 1} for {region_name}...")
+            start = time.time()
+
+            # Run TAP query with 30s timeout (Windows-compatible via ThreadPoolExecutor)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(Gaia.launch_job, adql)
+                try:
+                    job = future.result(timeout=MAX_TIMEOUT_S)
+                except concurrent.futures.TimeoutError:
+                    raise TimeoutError(f"Query timed out after {MAX_TIMEOUT_S}s")
+            
+            results = job.get_results()
+            elapsed = time.time() - start
+            logger.info(f"  Success: got {len(results)} rows in {elapsed:.1f}s")
+            return results
+
+        except Exception as e:
+            elapsed = time.time() - start if 'start' in locals() else 0
+            error_msg = str(e)
+
+            # Check for timeout (408) or connection errors
+            is_timeout = (
+                "408" in error_msg
+                or "timeout" in error_msg.lower()
+                or isinstance(e, (TimeoutError, socket.timeout, concurrent.futures.TimeoutError))
+            )
+
+            if is_timeout and attempt < MAX_RETRIES:
+                backoff = INITIAL_BACKOFF_S * (BACKOFF_MULTIPLIER ** attempt)
+                logger.warning(f"  Timeout after {elapsed:.1f}s (attempt {attempt + 1}/{MAX_RETRIES}). Retrying in {backoff}s...")
+                time.sleep(backoff)
+                continue
+            else:
+                logger.warning(f"  Query failed after {elapsed:.1f}s (attempt {attempt + 1}): {error_msg[:200]}")
+                return None
+
+    return None
+
+
 def fetch_gaia_for_regions(max_stars_per_region: int = 500) -> int:
-    """Fetch Gaia DR3 stars for each extended region via TAP+ (astroquery)."""
+    """Fetch Gaia DR3 stars for each extended region via TAP+ with retry logic."""
     try:
         from astroquery.gaia import Gaia
     except ImportError:
@@ -140,8 +186,8 @@ def fetch_gaia_for_regions(max_stars_per_region: int = 500) -> int:
         adql = f"""
         SELECT TOP {max_stars_per_region}
             source_id, ra, dec, parallax, parallax_error,
-            pmra, pmdec, phot_g_mean_mag, bp_rp,
-            ruwe, radial_velocity
+            pmra, pmdec, phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag,
+            bp_rp, ruwe, radial_velocity
         FROM gaiadr3.gaia_source
         WHERE 1=CONTAINS(
             POINT('ICRS', ra, dec),
@@ -152,27 +198,35 @@ def fetch_gaia_for_regions(max_stars_per_region: int = 500) -> int:
         ORDER BY phot_g_mean_mag ASC
         """
 
-        try:
-            job = Gaia.launch_job_async(adql)
-            results = job.get_results()
+        results = _run_gaia_query_with_retry(adql, name)
+        if results is None:
+            logger.warning(f"  Skipping {name} after all retries failed")
+            continue
 
-            if len(results) == 0:
-                logger.info(f"  No stars found for {name}")
-                continue
+        if len(results) == 0:
+            logger.info(f"  No stars found for {name}")
+            continue
 
-            # Insert into PostgreSQL
-            insert_stmt = sql_text("""
-                INSERT INTO stars (source_id, ra, dec, parallax, parallax_error,
-                                   pmra, pmdec, phot_g_mean_mag, bp_rp,
-                                   ruwe, radial_velocity, catalog_source)
-                VALUES (:source_id, :ra, :dec, :parallax, :parallax_error,
-                        :pmra, :pmdec, :phot_g_mean_mag, :bp_rp,
-                        :ruwe, :radial_velocity, 'GAIA_DR3')
-                ON CONFLICT (source_id) DO NOTHING
-            """)
+        # Insert into PostgreSQL
+        insert_stmt = sql_text("""
+            INSERT INTO stars (
+                source_id, ra, dec, parallax, parallax_error,
+                pmra, pmra_error, pmdec, pmdec_error,
+                phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, bp_rp,
+                ruwe, radial_velocity, catalog_source
+            ) VALUES (
+                :source_id, :ra, :dec, :parallax, :parallax_error,
+                :pmra, :pmra_error, :pmdec, :pmdec_error,
+                :phot_g_mean_mag, :phot_bp_mean_mag, :phot_rp_mean_mag, :bp_rp,
+                :ruwe, :radial_velocity, 'GAIA_DR3'
+            )
+            ON CONFLICT (source_id) DO NOTHING
+        """)
 
-            with postgres_conn.session() as session:
-                for row in results:
+        inserted = 0
+        with postgres_conn.session() as session:
+            for row in results:
+                try:
                     session.execute(insert_stmt, {
                         "source_id": str(row["source_id"]),
                         "ra": float(row["ra"]),
@@ -180,28 +234,32 @@ def fetch_gaia_for_regions(max_stars_per_region: int = 500) -> int:
                         "parallax": float(row["parallax"]) if row["parallax"] else None,
                         "parallax_error": float(row["parallax_error"]) if row["parallax_error"] else None,
                         "pmra": float(row["pmra"]) if row["pmra"] else None,
+                        "pmra_error": None,  # Not in the query
                         "pmdec": float(row["pmdec"]) if row["pmdec"] else None,
+                        "pmdec_error": None,  # Not in the query
                         "phot_g_mean_mag": float(row["phot_g_mean_mag"]) if row["phot_g_mean_mag"] else None,
+                        "phot_bp_mean_mag": float(row["phot_bp_mean_mag"]) if row["phot_bp_mean_mag"] else None,
+                        "phot_rp_mean_mag": float(row["phot_rp_mean_mag"]) if row["phot_rp_mean_mag"] else None,
                         "bp_rp": float(row["bp_rp"]) if row["bp_rp"] else None,
                         "ruwe": float(row["ruwe"]) if row["ruwe"] else None,
                         "radial_velocity": float(row["radial_velocity"]) if row["radial_velocity"] else None,
                     })
-                session.commit()
+                    inserted += 1
+                except Exception as e:
+                    logger.warning(f"  Error inserting star {row.get('source_id', '?')}: {e}")
+                    continue
+            session.commit()
 
-            total_fetched += len(results)
-            logger.info(f"  Inserted {len(results)} stars for {name}")
+        total_fetched += inserted
+        logger.info(f"  Inserted {inserted} stars for {name}")
 
-            # Update region star count
-            with postgres_conn.session() as session:
-                session.execute(
-                    sql_text("UPDATE regions SET star_count = :count WHERE name = :name"),
-                    {"count": len(results), "name": name},
-                )
-                session.commit()
-
-        except Exception as e:
-            logger.warning(f"  Gaia TAP query failed for {name}: {e}")
-            continue
+        # Update region star count
+        with postgres_conn.session() as session:
+            session.execute(
+                sql_text("UPDATE regions SET star_count = star_count + :count WHERE name = :name"),
+                {"count": inserted, "name": name},
+            )
+            session.commit()
 
     logger.info(f"Total new stars fetched: {total_fetched}")
     return total_fetched
@@ -231,8 +289,6 @@ def _print_dry_run() -> None:
         print(f"\n  [{type_labels.get(rtype, rtype)}] ({len(regions)} regions)")
         for name, ra, dec, radius, desc in regions:
             print(f"    {name:22s}  RA={ra:7.2f}  Dec={dec:+7.2f}  r={radius:4.1f}°  {desc}")
-
-    print(f"\n{'='*80}\n")
 
 
 def main():

@@ -4,7 +4,7 @@
 # One-command startup: docker compose up
 #
 # Services:
-#   postgres  — PostgreSQL 16 + Q3C spatial index
+#   postgres  — PostgreSQL 15 + Q3C spatial index
 #   qdrant    — Vector database (semantic retrieval)
 #   neo4j     — Graph database (paper-star-cluster links)
 #   app       — TaarYa FastAPI server
@@ -52,7 +52,9 @@ services:
 
   # ── Qdrant vector database ────────────────────────────────────────────────
   qdrant:
-    image: qdrant/qdrant:v1.7.4
+    build:
+      context: .
+      dockerfile: Dockerfile.qdrant
     container_name: taarya-qdrant
     restart: unless-stopped
     ports:
@@ -64,7 +66,7 @@ services:
       <<: *common-env
       QDRANT__SERVICE__GRPC_PORT: "6334"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      test: ["CMD", "/bin/busybox", "wget", "-q", "-O", "-", "http://127.0.0.1:6333/readyz"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -104,16 +106,29 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data       # persistent data
-      - ./.env:/app/.env       # env vars (create from .env.example)
+      - ./scripts:/app/scripts  # make scripts available in container
+      # NOTE: .env is NOT mounted — docker-compose `environment:` block provides
+      # all container config with correct Docker-network service hostnames.
     environment:
       <<: *common-env
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OLLAMA_BASE_URL: "${DOCKER_OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+      OLLAMA_MODEL: "${DOCKER_OLLAMA_MODEL:-glm-4.6:cloud}"
       DATABASE_URL: "postgresql+psycopg2://taarya:taarya123@postgres:5432/astronomy"
+      POSTGRES_HOST: "postgres"
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: "astronomy"
+      POSTGRES_USER: "taarya"
+      POSTGRES_PASSWORD: "taarya123"
       QDRANT_HOST: "qdrant"
       QDRANT_PORT: "6333"
       NEO4J_URI: "bolt://neo4j:7687"
       NEO4J_USER: "neo4j"
       NEO4J_PASSWORD: "taarya123"
       EMBEDDING_MODEL: "all-MiniLM-L6-v2"
+      TAARYA_LOG_DIR: "/app/data/eval"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy
@@ -132,13 +147,13 @@ services:
 
 volumes:
   postgres_data:
-    name: taarya-postgres-data
+    name: taarya_postgres_data
   qdrant_storage:
-    name: taarya-qdrant-data
+    name: taarya_qdrant_storage
   neo4j_data:
-    name: taarya-neo4j-data
+    name: taarya_neo4j_data
   neo4j_logs:
-    name: taarya-neo4j-logs
+    name: taarya_neo4j_logs
 
 networks:
   taarya-net:

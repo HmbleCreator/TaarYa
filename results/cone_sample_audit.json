@@ -1,0 +1,105 @@
+{
+  "n_selected": 30,
+  "n_evaluable": 19,
+  "n_skipped_truncated": 6,
+  "dropped_before_cones": [
+    "ASCC_51",
+    "NGC_7039",
+    "Stock_5",
+    "Theia_711",
+    "UPK_185"
+  ],
+  "adql_forms": 1,
+  "low_coverage": {
+    "ASCC_115": 0.476,
+    "ASCC_79": 0.372,
+    "Alessi_19": 0.346,
+    "FSR_1197": 0.443,
+    "Gulliver_22": 0.378,
+    "HSC_1865": 0.242,
+    "OC_0395": 0.392,
+    "Pozzo_1": 0.37,
+    "RSG_8": 0.285,
+    "Theia_172": 0.45,
+    "Theia_38": 0.342,
+    "Theia_986": 0.432,
+    "UPK_136": 0.486,
+    "UPK_51": 0.377
+  },
+  "member_shortfall": {
+    "ASCC_105": [
+      151,
+      173
+    ],
+    "ASCC_51": [
+      69,
+      172
+    ],
+    "ASCC_79": [
+      121,
+      214
+    ],
+    "Gulliver_22": [
+      148,
+      189
+    ],
+    "HSC_1865": [
+      194,
+      246
+    ],
+    "NGC_1647": [
+      360,
+      982
+    ],
+    "NGC_3532": [
+      756,
+      3414
+    ],
+    "NGC_5662": [
+      223,
+      439
+    ],
+    "NGC_7039": [
+      89,
+      170
+    ],
+    "PTB_9": [
+      240,
+      780
+    ],
+    "Stock_5": [
+      60,
+      115
+    ],
+    "Theia_172": [
+      189,
+      322
+    ],
+    "Theia_38": [
+      278,
+      1108
+    ],
+    "Theia_711": [
+      90,
+      105
+    ],
+    "UPK_185": [
+      89,
+      215
+    ]
+  },
+  "abs_b_median": {
+    "kept": 5.6,
+    "skipped_truncated": 2.0,
+    "mannwhitney_p": 0.025
+  },
+  "stars_shared_between_cones": 0,
+  "hard_failures": [
+    "15 cluster(s) have >10% fewer P>=0.7 members than the catalogue says (fetched, expected): {'ASCC_105': (151, 173), 'ASCC_51': (69, 172), 'ASCC_79': (121, 214), 'Gulliver_22': (148, 189), 'HSC_1865': (194, 246), 'NGC_1647': (360, 982), 'NGC_3532': (756, 3414), 'NGC_5662': (223, 439), 'NGC_7039': (89, 170), 'PTB_9': (240, 780), 'Stock_5': (60, 115), 'Theia_172': (189, 322), 'Theia_38': (278, 1108), 'Theia_711': (90, 105), 'UPK_185': (89, 215)}; the member download was probably truncated or the criteria column differs"
+  ],
+  "warnings": [
+    "low published-member coverage (<0.5) in 14 cone(s): the cone radius misses much of the cluster: {'ASCC_115': 0.476, 'ASCC_79': 0.372, 'Alessi_19': 0.346, 'FSR_1197': 0.443, 'Gulliver_22': 0.378, 'HSC_1865': 0.242, 'OC_0395': 0.392, 'Pozzo_1': 0.37, 'RSG_8': 0.285, 'Theia_172': 0.45, 'Theia_38': 0.342, 'Theia_986': 0.432, 'UPK_136': 0.486, 'UPK_51': 0.377}",
+    "truncated (skipped) cones sit at lower galactic latitude than kept ones: the sample is biased toward uncrowded fields; state this"
+  ],
+  "passed": false
+}

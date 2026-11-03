@@ -1,28 +1,37 @@
 # Custom PostgreSQL image with Q3C spatial extension pre-installed.
 # Usage: docker build -f Dockerfile.postgres -t taarya-postgres-custom .
 # Then: docker-compose up --build
-FROM postgres:16
+FROM postgres:15
 
-USER postgres
-
-# Install build deps for Q3C
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install build deps for Q3C (must run as root)
+RUN mkdir -p /var/lib/apt/lists/partial && \
+    apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
-        postgresql-server-dev-16 \
+        postgresql-server-dev-15 \
         git \
         cmake \
+        ca-certificates \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Build and install Q3C from source
-RUN git clone --depth 1 https://github.com/segasai/q3c.git /tmp/q3c \
+RUN git config --global http.sslCAInfo /etc/ssl/certs/ca-certificates.crt && \
+    git clone --depth 1 https://github.com/segasai/q3c.git /tmp/q3c \
     && cd /tmp/q3c \
     && make && make install \
     && cd / && rm -rf /tmp/q3c
 
-# Register Q3C in PostgreSQL shared_preload_libraries
-RUN echo "shared_preload_libraries = 'q3c'" >> /usr/local/share/postgresql/postgresql.conf.sample
+# Auto-create Q3C extension on first startup
+RUN printf '%s\n' \
+    '#!/bin/bash' \
+    'set -e' \
+    'psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c "CREATE EXTENSION IF NOT EXISTS q3c;"' \
+    > /docker-entrypoint-initdb.d/init-q3c.sh && \
+    chmod +x /docker-entrypoint-initdb.d/init-q3c.sh
 
-# Enable q3c index access method for all databases
-RUN echo "CREATE EXTENSION IF NOT EXISTS q3c;" | psql --quiet
+# Pre-load q3c library (required before initdb uses it)
+RUN mkdir -p /usr/local/share/postgresql/conf.d && \
+    echo "shared_preload_libraries = 'q3c'" > /usr/local/share/postgresql/conf.d/q3c.conf
 
-USER root
+# Switch to postgres user for runtime
+USER postgres
