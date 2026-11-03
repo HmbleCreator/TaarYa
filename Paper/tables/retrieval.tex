@@ -1,15 +1,15 @@
 \begin{table}[htbp]\centering\small
-\caption{Cluster-member retrieval from 10 seeds, mean over 3 clusters (95\% CI).}\label{tab:retrieval}
+\caption{Cluster-member retrieval from 10 seeds, mean over 19 clusters (95\% CI).}\label{tab:retrieval}
 \begin{tabular}{lrrrr}
 \toprule
 Method & AP & P@50 & nDCG@100 & $\Delta$AP vs seed box \\
 \midrule
-current\_graph\_traversal & 0.040 (n=3, no CI) & 0.041 (n=3, no CI) & 0.046 (n=3, no CI) & -0.835 (n=3, no CI) \\
-seed\_box & 0.875 (n=3, no CI) & 0.955 (n=3, no CI) & 0.950 (n=3, no CI) & baseline \\
-seed\_mahalanobis & 0.899 (n=3, no CI) & 0.955 (n=3, no CI) & 0.955 (n=3, no CI) & 0.024 (n=3, no CI) \\
-seed\_knn & 0.892 (n=3, no CI) & 0.944 (n=3, no CI) & 0.944 (n=3, no CI) & 0.018 (n=3, no CI) \\
-graph\_ppr & 0.868 (n=3, no CI) & 0.933 (n=3, no CI) & 0.931 (n=3, no CI) & -0.007 (n=3, no CI) \\
-hdbscan\_with\_seeds & 0.526 (n=3, no CI) & 0.507 (n=3, no CI) & 0.521 (n=3, no CI) & -0.348 (n=3, no CI) \\
+current\_graph\_traversal & 0.022 [0.006, 0.044] & 0.022 [0.004, 0.048] & 0.024 [0.006, 0.048] & -0.847 [-0.895, -0.799] \\
+seed\_box & 0.869 [0.823, 0.914] & 0.807 [0.752, 0.862] & 0.932 [0.901, 0.962] & baseline \\
+seed\_mahalanobis & 0.878 [0.835, 0.920] & 0.814 [0.761, 0.865] & 0.938 [0.909, 0.966] & 0.009 [0.002, 0.020] \\
+seed\_knn & 0.877 [0.834, 0.919] & 0.809 [0.755, 0.863] & 0.940 [0.911, 0.967] & 0.008 [-0.001, 0.019] \\
+graph\_ppr & 0.873 [0.831, 0.915] & 0.813 [0.761, 0.864] & 0.933 [0.900, 0.963] & 0.004 [-0.009, 0.018] \\
+hdbscan\_with\_seeds & 0.567 [0.474, 0.645] & 0.565 [0.475, 0.643] & 0.701 [0.593, 0.790] & -0.302 [-0.365, -0.247] \\
 \bottomrule
 \end{tabular}
 \end{table}

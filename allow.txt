@@ -48,6 +48,7 @@
 11.5     # Table 1 fast-motion color weight
 14.0     # Table 1 balanced/fast-motion proper motion weight
 12.0     # Table 1 astrometry-heavy proper motion weight
+18.0     # Table 1 aggressive RUWE high weight
 5.0      # Table 1 balanced brightness weight
 5.5      # Table 1 astrometry-heavy brightness weight / cross-match cap
 6.5      # Table 1 fast-motion brightness weight

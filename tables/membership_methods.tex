@@ -1,15 +1,15 @@
 \begin{table}[htbp]\centering\small
-\caption{Membership recovery, mean over 3 clusters (95\% bootstrap CI).}\label{tab:membership_methods}
+\caption{Membership recovery, mean over 19 clusters (95\% bootstrap CI).}\label{tab:membership_methods}
 \begin{tabular}{lrrr}
 \toprule
 Method & Precision & Recall & F1 \\
 \midrule
-taarya\_member\_of\_edges & 0.039 (n=3, no CI) & 1.000 (n=3, no CI) & 0.075 (n=3, no CI) \\
-cone\_only & 0.039 (n=3, no CI) & 1.000 (n=3, no CI) & 0.075 (n=3, no CI) \\
-sigma\_clip\_pm\_plx & 0.400 (n=3, no CI) & 0.667 (n=3, no CI) & 0.498 (n=3, no CI) \\
-gmm\_2comp & 0.000 (n=3, no CI) & 0.000 (n=3, no CI) & 0.000 (n=3, no CI) \\
-hdbscan & 0.528 (n=3, no CI) & 1.000 (n=3, no CI) & 0.690 (n=3, no CI) \\
-random\_same\_size\_as\_edges & 0.039 (n=3, no CI) & 1.000 (n=3, no CI) & 0.075 (n=3, no CI) \\
+taarya\_member\_of\_edges & 0.022 [0.006, 0.044] & 1.000 [1.000, 1.000] & 0.040 [0.012, 0.078] \\
+cone\_only & 0.022 [0.006, 0.044] & 1.000 [1.000, 1.000] & 0.040 [0.012, 0.078] \\
+sigma\_clip\_pm\_plx & 0.073 [0.001, 0.186] & 0.343 [0.157, 0.554] & 0.088 [0.002, 0.217] \\
+gmm\_2comp & 0.023 [0.004, 0.050] & 0.679 [0.468, 0.884] & 0.041 [0.009, 0.086] \\
+hdbscan & 0.487 [0.345, 0.618] & 0.723 [0.518, 0.887] & 0.576 [0.413, 0.723] \\
+random\_same\_size\_as\_edges & 0.022 [0.006, 0.044] & 1.000 [1.000, 1.000] & 0.040 [0.012, 0.078] \\
 \bottomrule
 \end{tabular}
 \end{table}

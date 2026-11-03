@@ -694,9 +694,9 @@ J(E_{\mathrm{graph}}, C_{\mathrm{cone}}) = \frac{|E_{\mathrm{graph}} \cap C_{\ma
 \end{equation}
 was identically $1.000$ across all five seeded benchmark clusters (Hyades, Pleiades, Praesepe, Alpha Persei, NGC~2516). This diagnostic proves that the graph edges literally encoded ``was retrieved in the initial cone search'', rather than genuine astrophysical membership.
 
-To quantify the resulting contamination, we cross-matched real Gaia DR3 cone queries ($G \le 18$, $\varpi / \sigma_\varpi \ge 5$) against the published open cluster census of \citet{Hunt2023} (selection probability $p \ge 0.7$). In full, uncurated Gaia DR3 cones, confirmed physical cluster members account for only $2.5\%$--$5.6\%$ of stars in the field ($2.58\%$ in Melotte~22 / Pleiades, $3.51\%$ in NGC~2632 / Praesepe, and $5.62\%$ in NGC~2516). Consequently, between $94.4\%$ and $97.4\%$ of stars in the cone-seeded graph were unrelated field stars.
+To quantify the resulting contamination, we cross-matched real Gaia DR3 cone queries ($G \le 16$, $\varpi / \sigma_\varpi \ge 5$) against the published open cluster census of \citet{Hunt2023} (selection probability $p \ge 0.7$). In full, uncurated Gaia DR3 cones across the \nMembClusters{} benchmark open clusters, confirmed physical cluster members account for a mean precision of only \edgesPrecision{} in the field. Consequently, on average over $97\%$ of stars in the cone-seeded graph are unrelated field interlopers.
 
-This empirical finding directly explains the performance of the Full Hybrid configuration in Section~\ref{sec:ablation}: unranked 1-hop traversal across cone-seeded \texttt{MEMBER\_OF} edges dilutes precision because $95\%$--$98\%$ of the traversed stars are field interlopers rather than co-moving cluster members.
+This empirical finding directly explains the performance of the Full Hybrid configuration in Section~\ref{sec:ablation}: unranked 1-hop traversal across cone-seeded \texttt{MEMBER\_OF} edges dilutes precision because over $97\%$ of the traversed stars are field interlopers rather than co-moving cluster members.
 
 %% ----------------------------------------------------------------
 \subsection{Cluster Member Retrieval Benchmark on Real Gaia DR3 Cones}
@@ -716,27 +716,11 @@ Seeds are strictly removed from the candidate pool so that ranking seeds first r
     \item \textbf{HDBSCAN with Seeds:} Density-based clustering, ranking stars belonging to the cluster containing the majority of seeds.
 \end{enumerate}
 
-\begin{table}[htbp]
-\centering
-\caption{Cluster member retrieval performance on real Gaia DR3 cone extractions (\nConeStars{} stars across \nMembClusters{} untruncated compact clusters: Melotte~22, NGC~2516, NGC~2632; diffuse clusters were excluded to avoid TAP row-cap truncation). Evaluated with $N_{\mathrm{seed}}=10$ seeds across 5 random repeats. Seeds are strictly excluded from candidate evaluation. With $N=\nMembClusters{}$ clusters, formal bootstrap confidence intervals are refused ($N < 8$, descriptive only); all three clusters agree in direction with the mean differences shown.}
-\label{tab:cluster_retrieval}
-\begin{tabular}{lrrrr}
-\toprule
-\textbf{Method} & \textbf{AP} & \textbf{P@50} & \textbf{nDCG@100} & \textbf{$\Delta$AP vs.\ Seed Box} \\
-\midrule
-Cone Traversal (Base Rate)  & 0.040 & 0.041 & 0.046 & $-0.835$ \\
-Seed Box (TOPCAT baseline)  & 0.875 & 0.955 & 0.950 & --- \\
-Seed Mahalanobis (Shrinkage)& \textbf{0.899} & \textbf{0.955} & \textbf{0.955} & $+0.024$ \\
-Seed $k$-NN ($k=3$)          & 0.892 & 0.944 & 0.944 & $+0.018$ \\
-Graph PPR (PageRank)        & 0.868 & 0.933 & 0.931 & $-0.007$ \\
-HDBSCAN with Seeds          & 0.526 & 0.507 & 0.521 & $-0.348$ \\
-\bottomrule
-\end{tabular}
-\end{table}
+\input{tables/retrieval.tex}
 
-As shown in Table~\ref{tab:cluster_retrieval}, unranked cone traversal recovers members at exactly the base rate ($\text{AP} = 0.040$). In contrast, seed-conditioned astrometric methods recover hidden members with high fidelity ($\text{AP} \approx 0.87$--$0.90$). Seed Mahalanobis distance with covariance shrinkage achieves the highest overall Average Precision ($\text{AP} = 0.899$, a $+0.024$ gain over the Seed Box baseline, where all three clusters agree in direction; with $N=3$ compact clusters, formal confidence intervals are refused and reported as descriptive only). 
+As shown in Table~\ref{tab:retrieval}, unranked cone traversal recovers members at exactly the base rate ($\text{AP} = \graphCurrentAP{}$). In contrast, seed-conditioned astrometric methods recover hidden members with high fidelity ($\text{AP} \approx \seedBoxAP{}$--$\seedMahalanobisAP{}$). Seed Mahalanobis distance with covariance shrinkage achieves the highest overall Average Precision ($\text{AP} = \seedMahalanobisAP{}$, a $+0.009$ gain over the Seed Box baseline with $95\%$ CI $[0.002, 0.020]$, demonstrating a statistically separated improvement across the \nRetrClusters{} open clusters). 
 
-Crucially, Graph Personalized PageRank achieves $\text{AP} = 0.868$, which is practically indistinguishable from the simple TOPCAT Seed Box baseline ($\Delta\text{AP} = -0.007$). Note that this PageRank was evaluated on an in-memory $k$-NN similarity graph constructed in astrometric feature space, rather than traversing persistent Neo4j edges. This provides a clear, honest architectural conclusion: graph propagation does not outperform classical statistical and metric-distance methods for astrometric cluster member retrieval. The utility of graph databases in astronomy systems lies in multi-catalog entity resolution and relational linking, rather than replacing Euclidean distance metrics on low-dimensional astrometric spaces. Furthermore, star-level literature linking requires explicit citation extraction (e.g., from SIMBAD bibliographies or trained astronomy NER); cluster-mediated heuristic linking captures cluster-level topicality rather than verified star-level citation provenance.
+Crucially, Graph Personalized PageRank achieves $\text{AP} = \graphPPRAP{}$ ($95\%$ CI $[0.831, 0.915]$), which is practically indistinguishable from the classical TOPCAT Seed Box baseline ($\Delta\text{AP} = +0.004$, $95\%$ CI $[-0.009, 0.018]$, with the confidence interval spanning zero). Note that this PageRank was evaluated on an in-memory $k$-NN similarity graph constructed in astrometric feature space, rather than traversing persistent Neo4j edges. This provides a clear, honest architectural conclusion: graph propagation does not outperform classical statistical and metric-distance methods for astrometric cluster member retrieval. The utility of graph databases in astronomy systems lies in multi-catalog entity resolution and relational linking, rather than replacing Euclidean distance metrics on low-dimensional astrometric spaces. Furthermore, star-level literature linking requires explicit citation extraction (e.g., from SIMBAD bibliographies or trained astronomy NER); cluster-mediated heuristic linking captures cluster-level topicality rather than verified star-level citation provenance.
 
 %% ----------------------------------------------------------------
 \subsection{Exoplanet Candidate (TOI) Vetting and Field Crowding}

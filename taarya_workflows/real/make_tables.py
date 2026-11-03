@@ -53,6 +53,8 @@ def build_tex(results: dict, out_dir) -> list:
         (out / "retrieval.tex").write_text(tabular(["Method", "AP", "P@50", "nDCG@100", "$\\Delta$AP vs seed box"], rows,
                                                    f"Cluster-member retrieval from {r['n_seeds']} seeds, mean over {r['n_clusters']} clusters (95\\% CI).", "tab:retrieval")); made.append("retrieval.tex")
         nums += macro("nRetrClusters", r["n_clusters"]) + macro("graphCurrentAP", f(r["aggregate"]["current_graph_traversal"]["AP"]["mean"], 3))
+        if "seed_box" in r["aggregate"]: nums += macro("seedBoxAP", f(r["aggregate"]["seed_box"]["AP"]["mean"], 3))
+        if "seed_mahalanobis" in r["aggregate"]: nums += macro("seedMahalanobisAP", f(r["aggregate"]["seed_mahalanobis"]["AP"]["mean"], 3))
         if "graph_ppr" in r["aggregate"]: nums += macro("graphPPRAP", f(r["aggregate"]["graph_ppr"]["AP"]["mean"], 3))
     t = results.get("toi")
     if t:

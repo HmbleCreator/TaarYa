@@ -1,7 +1,7 @@
 {
-  "utc": "2026-11-01T09:10:15Z",
-  "code_hash": "6e2c111f922dbe70",
-  "git_commit": "4fa24a7073fb21531aa51a3285e49236896405d7",
+  "utc": "2026-11-01T17:37:48Z",
+  "code_hash": "ca3fe45c03d2222f",
+  "git_commit": "8f5e564ae1badb5bcf3d34c4909a1b73c39da5dd",
   "versions": {
     "python": "3.12.11",
     "platform": "Windows-11-10.0.26200-SP0",
@@ -11,18 +11,11 @@
     "sklearn": "1.7.2",
     "astropy": "6.0.0"
   },
-  "cone_manifest_hash": "4310bb54a951d2e0",
-  "toi_sample": {
-    "requested": 350,
-    "usable": 350,
-    "fetch_failed": 0,
-    "seed": 0,
-    "design": "seeded random sample of all labelled (CP/KP/FP) TOI stars"
-  },
+  "cone_manifest_hash": "41406daa27da05bc",
+  "toi_sample": null,
   "seed": 0,
   "outputs": [
     "membership",
-    "retrieval",
-    "toi"
+    "retrieval"
   ]
 }
