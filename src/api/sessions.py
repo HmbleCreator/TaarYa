@@ -1,5 +1,5 @@
 """Chat session API routes."""
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from sqlalchemy import text
 
 from src.database import postgres_conn
@@ -8,22 +8,22 @@ router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
 
 @router.post("")
-async def create_session():
-    """Create a new chat session."""
+async def create_session(project_id: str | None = Query(default=None)):
+    """Create a chat session, optionally attached to a research project."""
     query = text("""
-        INSERT INTO chat_sessions (title)
-        VALUES (NULL)
+        INSERT INTO chat_sessions (title, project_id)
+        VALUES (NULL, :project_id)
         RETURNING id
     """)
     with postgres_conn.session() as session:
-        row = session.execute(query).mappings().one()
+        row = session.execute(query, {"project_id": project_id}).mappings().one()
         session.commit()
     return {"session_id": str(row["id"])}
 
 
 @router.get("")
-async def list_sessions():
-    """Return all chat sessions ordered by most recently updated."""
+async def list_sessions(project_id: str | None = Query(default=None)):
+    """Return sessions, optionally scoped to one project."""
     query = text("""
         SELECT
             s.id,
@@ -37,10 +37,11 @@ async def list_sessions():
                 LIMIT 1
             ) AS last_message
         FROM chat_sessions s
+        WHERE (:project_id IS NULL OR s.project_id = :project_id)
         ORDER BY s.updated_at DESC
     """)
     with postgres_conn.session() as session:
-        rows = session.execute(query).mappings().all()
+        rows = session.execute(query, {"project_id": project_id}).mappings().all()
     return [
         {
             "id": str(row["id"]),

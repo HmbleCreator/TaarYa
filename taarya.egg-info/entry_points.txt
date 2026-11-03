@@ -1,6 +1,8 @@
 [console_scripts]
-taarya-api = src.cli:run_api
-taarya-ingest-arxiv = src.cli:ingest_arxiv_cli
-taarya-ingest-gaia = src.cli:ingest_gaia_cli
-taarya-init-db = src.cli:init_db_cli
-taarya-seed = src.cli:seed_cli
+taarya-ablation = eval.ablation_formal:main
+taarya-alerts = src.ingestion.alert_ingest:main
+taarya-corpus = src.ingestion.arxiv_ingest:main
+taarya-ingest = src.ingestion.catalog_ingestor:main
+taarya-readiness = src.launch_readiness:main
+taarya-server = src.main:main
+taarya-sky-expand = scripts.expand_sky_coverage:main

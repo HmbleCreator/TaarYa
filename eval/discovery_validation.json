@@ -1,0 +1,86 @@
+{
+  "validation_type": "discovery_precision",
+  "top_k": 20,
+  "regions": [
+    {
+      "region": "Hyades",
+      "total_stars": 100,
+      "total_scored": 50,
+      "top_k": 20,
+      "confirmed_anomalies": 8,
+      "precision_at_k": 0.4,
+      "anomaly_type_distribution": {
+        "binary_candidate": 4,
+        "high_pm": 4
+      },
+      "candidates": [],
+      "mode": "synthetic"
+    },
+    {
+      "region": "Pleiades",
+      "total_stars": 23,
+      "total_scored": 11,
+      "top_k": 20,
+      "confirmed_anomalies": 3,
+      "precision_at_k": 0.15,
+      "anomaly_type_distribution": {
+        "binary_candidate": 1,
+        "high_pm": 2
+      },
+      "candidates": [],
+      "mode": "synthetic"
+    },
+    {
+      "region": "Orion OB1",
+      "total_stars": 26,
+      "total_scored": 13,
+      "top_k": 20,
+      "confirmed_anomalies": 3,
+      "precision_at_k": 0.15,
+      "anomaly_type_distribution": {
+        "binary_candidate": 1,
+        "high_pm": 2
+      },
+      "candidates": [],
+      "mode": "synthetic"
+    },
+    {
+      "region": "Solar Nbhd",
+      "total_stars": 23,
+      "total_scored": 11,
+      "top_k": 20,
+      "confirmed_anomalies": 10,
+      "precision_at_k": 0.5,
+      "anomaly_type_distribution": {
+        "binary_candidate": 5,
+        "high_pm": 5
+      },
+      "candidates": [],
+      "mode": "synthetic"
+    },
+    {
+      "region": "Gal Center",
+      "total_stars": 56,
+      "total_scored": 28,
+      "top_k": 20,
+      "confirmed_anomalies": 5,
+      "precision_at_k": 0.25,
+      "anomaly_type_distribution": {
+        "binary_candidate": 2,
+        "high_pm": 3
+      },
+      "candidates": [],
+      "mode": "synthetic"
+    }
+  ],
+  "summary": {
+    "total_regions": 5,
+    "total_candidates_evaluated": 75,
+    "total_confirmed_anomalies": 29,
+    "overall_precision": 0.387,
+    "anomaly_type_distribution": {
+      "binary_candidate": 13,
+      "high_pm": 16
+    }
+  }
+}

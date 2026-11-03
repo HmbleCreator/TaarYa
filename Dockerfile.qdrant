@@ -1,0 +1,13 @@
+# =============================================================================
+# Qdrant with a self-contained healthcheck probe
+# =============================================================================
+# The official qdrant image is distroless-style: no package manager and no shell.
+# Instead of injecting shared-library-dependent curl binaries, copy a BusyBox
+# binary and use its built-in wget applet for the healthcheck.
+# =============================================================================
+
+FROM busybox:1.36.1 AS probe-provider
+
+FROM qdrant/qdrant:v1.17.1
+
+COPY --from=probe-provider /bin/busybox /bin/busybox

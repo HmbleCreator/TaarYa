@@ -11,9 +11,14 @@
   <!-- Aladin Lite v3 -->
   <!-- Aladin Lite v3 CSS is embedded in JS, no separate CSS needed -->
   <style>
+    .main-content::before {
+      display: none;
+    }
+
     /* ── Sky Viewer Hero ─────────────────────────────────── */
     .sky-hero {
       position: relative;
+      isolation: isolate;
       width: 100%;
       height: 420px;
       border-radius: 14px;
@@ -24,8 +29,11 @@
     }
 
     #aladin-container {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
+      z-index: 0;
     }
 
     /* ── Hide ALL Aladin built-in controls ────────────────── */
@@ -57,7 +65,7 @@
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 14px;
-      z-index: 10;
+      z-index: 20;
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       max-width: 720px;
       width: calc(100% - 32px);
@@ -124,15 +132,30 @@
       transform: scale(0.97);
     }
 
-    /* ── Top-Left Overlays ───────────────────────────────── */
-    .sky-overlay-tl {
+    .sky-top-row {
       position: absolute;
       top: 12px;
       left: 12px;
-      z-index: 10;
+      right: 12px;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .sky-top-row > * {
+      min-width: 0;
+      pointer-events: auto;
+    }
+
+    /* ── Top-Left Overlays ───────────────────────────────── */
+    .sky-overlay-tl {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      min-width: 0;
     }
 
     .sky-coord-readout {
@@ -145,16 +168,18 @@
       border-radius: 8px;
       border: 1px solid rgba(255,255,255,0.06);
       pointer-events: none;
-      min-width: 200px;
+      min-width: 0;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* ── Top-Right Controls ──────────────────────────────── */
     .sky-overlay-tr {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 10;
       display: flex;
+      align-items: center;
+      justify-content: flex-end;
       gap: 6px;
     }
 
@@ -171,6 +196,14 @@
       outline: none;
       appearance: none;
       -webkit-appearance: none;
+      width: 124px;
+      max-width: 124px;
+      flex: 0 0 124px;
+      padding-right: 28px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transform: translateX(-40px);
     }
 
     .sky-survey-select option {
@@ -181,6 +214,7 @@
     .sky-icon-btn {
       width: 32px;
       height: 32px;
+      flex: 0 0 32px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -201,13 +235,17 @@
 
     /* ── Quick Location Chips ────────────────────────────── */
     .sky-chips {
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
       display: flex;
+      align-items: center;
+      justify-content: center;
       gap: 6px;
-      z-index: 10;
+      padding: 0 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .sky-chips::-webkit-scrollbar {
+      display: none;
     }
 
     .sky-chip {
@@ -253,7 +291,7 @@
       bottom: 70px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 10;
+      z-index: 20;
       display: none;
       align-items: center;
       gap: 8px;
@@ -287,6 +325,7 @@
       .explore-results-section { grid-template-columns: 1fr; }
     }
   </style>
+  <link rel="stylesheet" href="/static/workstation.css">
 </head>
 <body>
 <div class="app-layout">
@@ -308,6 +347,7 @@
       <div id="aladin-container" style="width:100%;height:420px;"></div>
 
       <!-- Coordinate readout -->
+      <div class="sky-top-row">
       <div class="sky-overlay-tl">
         <div class="sky-coord-readout" id="sky-coords">RA —  Dec —</div>
       </div>
@@ -332,6 +372,7 @@
         </select>
         <button class="sky-icon-btn" id="sky-zoom-in" title="Zoom in"><span class="material-icons" style="font-size:18px;">add</span></button>
         <button class="sky-icon-btn" id="sky-zoom-out" title="Zoom out"><span class="material-icons" style="font-size:18px;">remove</span></button>
+      </div>
       </div>
 
       <!-- Loading indicator -->
@@ -435,6 +476,7 @@
 <script src="/static/js/aladin-panel.js"></script>
 <script src="/static/theme.js"></script>
 <script src="/static/js/sidebar.js"></script>
+<script src="/static/workstation.js"></script>
 
 <!-- Aladin Lite v3 (loaded separately, after other scripts) -->
 <script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
@@ -640,4 +682,3 @@
 </script>
 </body>
 </html>
-

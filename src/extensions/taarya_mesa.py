@@ -1,9 +1,8 @@
 """MESA Profile exporter for stellar evolution modeling."""
 
 import logging
+import math
 from typing import Any, Dict, List, Optional
-
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +43,7 @@ class TaarYaMESA:
         g = star.get("phot_g_mean_mag")
         plx = cls._parallax_mas_from_star(star)
         if g is not None and plx is not None and plx > 0:
-            return float(g) + 5.0 + 5.0 * np.log10(plx / 1000.0)
+            return float(g) + 5.0 + 5.0 * math.log10(plx / 1000.0)
         return None
 
     @classmethod

@@ -36,6 +36,7 @@ class Star(Base):
     phot_g_mean_mag = Column(Float, doc="G-band mean magnitude")
     phot_bp_mean_mag = Column(Float, doc="BP-band mean magnitude")
     phot_rp_mean_mag = Column(Float, doc="RP-band mean magnitude")
+    bp_rp = Column(Float, doc="BP-RP color index (phot_bp_mean_mag - phot_rp_mean_mag)")
     
     # Signal-to-Noise / Quality
     phot_g_mean_flux_over_error = Column(Float, doc="G-band flux SNR")

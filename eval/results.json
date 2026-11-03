@@ -3,9 +3,9 @@
     {
       "query": "Pleiades",
       "stars_found": 100,
-      "anomalous_stars": 0,
-      "top_discovery_score": 0.0,
-      "latency_s": 0.233,
+      "anomalous_stars": 9,
+      "top_discovery_score": 10.5,
+      "latency_s": 0.2102,
       "precision": 1.0
     },
     {
@@ -13,7 +13,7 @@
       "stars_found": 100,
       "anomalous_stars": 0,
       "top_discovery_score": 0.0,
-      "latency_s": 0.0218,
+      "latency_s": 0.0164,
       "precision": 1.0
     },
     {
@@ -21,7 +21,7 @@
       "stars_found": 100,
       "anomalous_stars": 0,
       "top_discovery_score": 0.0,
-      "latency_s": 0.0269,
+      "latency_s": 0.0153,
       "precision": 1.0
     }
   ],
@@ -34,19 +34,19 @@
   },
   "graph_metrics": {
     "nodes": {
-      "stars": 9716,
+      "stars": 29716,
       "papers": 1475,
-      "clusters": 3,
-      "relationships": 8674
+      "clusters": 7,
+      "relationships": 28744
     },
     "hyades_sample_members": 10,
-    "query_latency_s": 0.2555
+    "query_latency_s": 0.429
   },
   "cross_catalog_links": [
     {
       "cluster": "Hyades",
       "member_count": 100,
-      "covering_papers": 2
+      "covering_papers": 10
     },
     {
       "cluster": "Pleiades",
@@ -56,7 +56,7 @@
     {
       "cluster": "Orion OB1",
       "member_count": 100,
-      "covering_papers": 0
+      "covering_papers": 10
     }
   ]
 }

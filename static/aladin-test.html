@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aladin Test</title>
+</head>
+<body style="margin:0;background:#111;">
+  <h3 style="color:#fff;padding:10px;font-family:sans-serif;">Aladin Lite v3 — Minimal Test</h3>
+  <div id="aladin-lite-div" style="width:800px;height:500px;margin:10px;"></div>
+
+  <script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+  <script type="text/javascript">
+    var aladin;
+    A.init.then(() => {
+      aladin = A.aladin('#aladin-lite-div', {
+        survey: 'P/DSS2/color',
+        fov: 60,
+        target: 'M42',
+      });
+      document.title = 'Aladin Test — LOADED';
+      console.log('Aladin initialized successfully');
+    });
+  </script>
+</body>
+</html>

@@ -87,19 +87,26 @@ def seed_catalog(db) -> None:
             for r in session.execute(select(Region)).scalars().all()
         }
 
+    touched_source_ids = set()
+    touched_regions = []
+
     for region in SEED_REGIONS:
         # Get existing star count for this region
         existing = existing_regions.get(region["name"], 0)
         inserted = 0
+        region_touched = False
 
         def _upsert_rows(rows, count_new: bool) -> None:
             nonlocal inserted
+            nonlocal region_touched
             if not rows:
                 return
             with db.session() as session:
                 for row in rows:
                     row["catalog_source"] = "GAIA"
                     result = session.execute(insert_query, row)
+                    touched_source_ids.add(str(row["source_id"]))
+                    region_touched = True
                     if count_new:
                         inserted += result.rowcount or 0
                 session.commit()
@@ -158,6 +165,19 @@ def seed_catalog(db) -> None:
             region["radius_deg"],
             total_count,
         )
+        if region_touched:
+            touched_regions.append(region["name"])
+
+    if touched_source_ids:
+        try:
+            from src.ingestion.graph_ingest import sync_graph_incremental
+
+            sync_graph_incremental(
+                source_ids=sorted(touched_source_ids),
+                region_names=touched_regions,
+            )
+        except Exception as exc:
+            logger.warning(f"Graph auto-sync after Gaia seed failed: {exc}")
 
 
 if __name__ == "__main__":

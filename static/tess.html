@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Screen public TESS light curves and inspect archive provenance.">
+  <title>TaarYa | TESS</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="/static/workstation.css">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-mount"></div>
+    <main class="main-content">
+      <div class="tess-page">
+        <header class="tess-heading">
+          <div>
+            <h1>TESS light curves</h1>
+            <p>Public MAST SPOC products · bounded BLS screening</p>
+          </div>
+          <button class="theme-toggle" id="theme-toggle" type="button" title="Switch color theme" aria-label="Switch color theme">
+            <span class="material-icons" aria-hidden="true">light_mode</span>
+          </button>
+        </header>
+
+        <form class="tess-form" id="tess-form">
+          <label for="tic-id">TIC identifier</label>
+          <input id="tic-id" name="tic_id" type="text" inputmode="numeric" pattern="[0-9]{1,12}" maxlength="12" autocomplete="off" required>
+          <label for="tess-sectors">Sectors <span>(optional, up to 5)</span></label>
+          <input id="tess-sectors" name="sectors" type="text" inputmode="numeric" placeholder="For example: 6, 32, 98" autocomplete="off">
+          <button class="tess-submit" id="tess-submit" type="submit">
+            <span class="material-icons" aria-hidden="true">query_stats</span>
+            <span>Search MAST and screen</span>
+          </button>
+        </form>
+
+        <p class="tess-caveat">A BLS peak is a screening signal, not a planet validation. This workflow does not rule out eclipsing binaries, blended sources, stellar variability, or instrumental effects. PDCSAP systematics correction can also suppress astrophysical variability; inspect SAP or pixel-level data before drawing conclusions.</p>
+        <div class="tess-state" id="tess-state" role="status" aria-live="polite">
+          <strong id="tess-state-message">No analysis run.</strong>
+          <span id="tess-state-help">Enter a TIC identifier to query public MAST products and screen for periodic transit-like signals.</span>
+        </div>
+
+        <section class="tess-results" id="tess-results" hidden aria-labelledby="tess-result-title">
+          <div class="tess-result-heading">
+            <div>
+              <h2 id="tess-result-title">Candidate signal</h2>
+              <span class="tess-status" id="tess-status">Unvalidated candidate signal</span>
+            </div>
+            <p id="tess-target"></p>
+          </div>
+          <dl class="tess-metrics" id="tess-metrics"></dl>
+          <figure class="tess-plot">
+            <canvas id="tess-phase-plot" role="img" aria-label="Phase-folded relative flux plot"></canvas>
+            <figcaption>Phase-folded relative flux. Each point is a quality-screened, normalized MAST sample.</figcaption>
+          </figure>
+          <section class="tess-products" aria-labelledby="tess-products-title">
+            <h2 id="tess-products-title">Source products</h2>
+            <div class="report-table-wrap">
+              <table class="report-table">
+                <thead><tr><th>Sector</th><th>Pipeline</th><th>Product</th><th>MAST data URI</th><th>Flux column</th><th>Quality rule</th><th>FITS pipeline metadata</th><th>SHA-256</th></tr></thead>
+                <tbody id="tess-product-rows"></tbody>
+              </table>
+            </div>
+          </section>
+          <p class="tess-note" id="tess-interpretation"></p>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="/static/theme.js"></script>
+  <script src="/static/js/sidebar.js"></script>
+  <script src="/static/tess.js"></script>
+</body>
+</html>

@@ -106,6 +106,10 @@ window.TaarYaAladin = (function () {
     aladin.on('objectClicked', function (object) {
       if (!object || !object.data) return;
       var d = object.data;
+      window.dispatchEvent(new CustomEvent('taarya:sky-source-selected', { detail: {
+        source_id: d.source_id || d.name || '', ra: Number(d.ra), dec: Number(d.dec),
+        phot_g_mean_mag: d.phot_g_mean_mag ?? null, parallax: d.parallax ?? null,
+      }}));
       var popup =
         '<div style="font-family:Inter,sans-serif;font-size:12px;max-width:220px;">' +
         '<div style="font-weight:700;margin-bottom:4px;">' + (d.name || d.source_id || 'Star') + '</div>' +

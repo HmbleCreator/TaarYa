@@ -31,6 +31,7 @@ class GaiaIngestor:
         """
         logger.info(f"Starting ingestion: {filepath}")
         total_ingested = 0
+        touched_source_ids = set()
         
         postgres_conn.connect()
         
@@ -47,6 +48,10 @@ class GaiaIngestor:
                 
                 # Convert DataFrame to dict records
                 records = chunk.to_dict('records')
+                for record in records:
+                    source_id = record.get("source_id")
+                    if source_id is not None:
+                        touched_source_ids.add(str(source_id))
                 
                 # Upsert using PostgreSQL INSERT ... ON CONFLICT
                 stmt = insert(Star).values(records)
@@ -66,6 +71,14 @@ class GaiaIngestor:
                     traceback.print_exc()
                     session.rollback()
         
+        if touched_source_ids:
+            try:
+                from src.ingestion.graph_ingest import sync_graph_incremental
+
+                sync_graph_incremental(source_ids=sorted(touched_source_ids))
+            except Exception as exc:
+                logger.warning(f"Graph auto-sync after Gaia file ingest failed: {exc}")
+
         logger.info(f"Ingestion complete: {total_ingested} total records")
         return total_ingested
     

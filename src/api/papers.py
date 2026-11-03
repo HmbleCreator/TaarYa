@@ -1,11 +1,19 @@
 """Paper search API routes."""
 from fastapi import APIRouter, Query
+from pydantic import BaseModel, Field
 
 from src.services.paper_service import PaperService
 from src.schemas import PaperSearchResponse, PaperTopicResponse, PapersByStarResponse
 
 router = APIRouter(prefix="/papers", tags=["Papers"])
 _svc = PaperService()
+
+
+class PaperSearchBody(BaseModel):
+    """JSON body for POST /api/papers/search."""
+    q: str = Field(..., min_length=3, description="Natural language search query")
+    query: str | None = Field(None, description="Alias for q")
+    limit: int = Field(10, ge=1, le=50)
 
 
 @router.get("/search", response_model=PaperSearchResponse)
@@ -15,6 +23,14 @@ async def semantic_search(
 ):
     """Semantic search across indexed papers using vector similarity."""
     results = _svc.semantic_search(query=q, limit=limit)
+    return PaperSearchResponse(query=q, count=len(results), results=results)
+
+
+@router.post("/search", response_model=PaperSearchResponse)
+async def semantic_search_post(body: PaperSearchBody):
+    """Semantic paper search (POST with JSON body)."""
+    q = body.q or body.query or ""
+    results = _svc.semantic_search(query=q, limit=body.limit)
     return PaperSearchResponse(query=q, count=len(results), results=results)
 
 

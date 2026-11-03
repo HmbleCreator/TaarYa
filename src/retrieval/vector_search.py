@@ -17,6 +17,9 @@ def _get_embedding_model():
     """Lazy-load sentence-transformers model."""
     global _embedding_model
     if _embedding_model is None:
+        import sys
+        if "torchvision" not in sys.modules:
+            sys.modules["torchvision"] = None
         from sentence_transformers import SentenceTransformer
 
         logger.info(f"Loading embedding model: {settings.embedding_model}")
@@ -260,6 +263,15 @@ class VectorSearch:
         client = qdrant_conn.get_client()
 
         try:
+            collections = client.get_collections().collections
+            if collection not in {item.name for item in collections}:
+                return {
+                    "name": collection,
+                    "vectors_count": 0,
+                    "points_count": 0,
+                    "status": "connected",
+                    "exists": False,
+                }
             info = client.get_collection(collection)
             # Handle different Qdrant client versions
             vectors_count = getattr(info, "vectors_count", None) or getattr(
@@ -278,4 +290,4 @@ class VectorSearch:
                 "exists": True,
             }
         except Exception as e:
-            return {"name": collection, "exists": False, "error": str(e)}
+            return {"name": collection, "exists": False, "status": "error", "error": str(e)}

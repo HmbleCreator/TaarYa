@@ -1,65 +1,153 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "taarya"
-version = "0.1.0"
-description = "Agentic astronomy retrieval and discovery system."
+version = "1.0.0"
+description = "Hybrid Retrieval Extension for Cross-Catalog Astronomical Discovery Support"
 readme = "README.md"
-requires-python = ">=3.10"
-license = { text = "MIT" }
+license = {text = "MIT"}
 authors = [
-  { name = "Amit Kumar" }
+    { name = "Amit Kumar", email = "amit.kumar@inst.edu.in" },
+]
+requires-python = ">=3.10"
+keywords = [
+    "astronomy",
+    "gaia",
+    "star-catalog",
+    "rag",
+    "vector-search",
+    "knowledge-graph",
+    "astroinformatics",
+    "stellar-databases",
+    "astronomical-discovery",
+    "q3c",
+    "qdrant",
+    "neo4j",
+    "postgresql",
+    "astropy",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Environment :: Console",
+    "Environment :: X11 Applications",
 ]
 dependencies = [
-  "fastapi==0.109.0",
-  "uvicorn[standard]==0.27.0",
-  "pydantic>=2.10.0",
-  "pydantic-settings==2.1.0",
-  "langchain==0.1.4",
-  "langchain-openai==0.0.5",
-  "langgraph==0.0.20",
-  "langchain-community==0.0.16",
-  "openai==1.10.0",
-  "sentence-transformers==2.3.1",
-  "qdrant-client>=1.12.0",
-  "neo4j==5.16.0",
-  "psycopg2-binary==2.9.9",
-  "sqlalchemy==2.0.25",
-  "astropy==6.0.0",
-  "astroquery==0.4.7",
-  "arxiv==2.1.0",
-  "pandas==2.2.0",
-  "numpy==1.26.3",
-  "pypdf==4.0.1",
-  "pymupdf==1.23.21",
-  "unstructured==0.12.0",
-  "python-dotenv==1.0.1",
-  "httpx==0.26.0",
-  "tenacity==8.2.3",
-  "pywebview==5.0.5",
-  "matplotlib>=3.10.8",
-  "networkx>=3.4.2",
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.1.0",
+    "langchain==0.1.4",
+    "langchain-openai==0.0.5",
+    "langgraph==0.0.20",
+    "langchain-community==0.0.16",
+    "openai>=1.10.0",
+    "sentence-transformers>=3.0,<4",
+    "transformers>=4.40,<5",
+    "qdrant-client>=1.12.0",
+    "neo4j>=5.16.0",
+    "psycopg2-binary>=2.9.9",
+    "sqlalchemy>=2.0.25",
+    "astropy>=6.0.0",
+    "astroquery>=0.4.7",
+    "arxiv>=2.1.0",
+    "pandas>=2.2.0",
+    "numpy>=1.26.3",
+    "plotly>=5.18.0",
+    "python-dotenv>=1.0.1",
+    "httpx>=0.26.0",
+    "tenacity>=8.2.3",
 ]
 
 [project.optional-dependencies]
+desktop = [
+    "pywebview>=5.0.5",
+]
 dev = [
-  "pytest==8.0.0",
-  "black==24.1.1",
-  "ruff==0.1.15",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "dill>=0.3.8",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+    "jupyter>=1.0.0",
+]
+all = [
+    "taarya[desktop,dev]",
 ]
 
+[project.urls]
+Homepage = "https://github.com/HmbleCreator/TaarYa"
+Documentation = "https://github.com/HmbleCreator/TaarYa#readme"
+Repository = "https://github.com/HmbleCreator/TaarYa"
+"Bug Tracker" = "https://github.com/HmbleCreator/TaarYa/issues"
+Changelog = "https://github.com/HmbleCreator/TaarYa/releases"
+Citation = "https://github.com/HmbleCreator/TaarYa#citation"
+
 [project.scripts]
-taarya-api = "src.cli:run_api"
-taarya-init-db = "src.cli:init_db_cli"
-taarya-seed = "src.cli:seed_cli"
-taarya-ingest-gaia = "src.cli:ingest_gaia_cli"
-taarya-ingest-arxiv = "src.cli:ingest_arxiv_cli"
-taarya-tool = "src.cli:tool_cli"
+taarya-server = "src.main:main"
+taarya-ingest = "src.ingestion.catalog_ingestor:main"
+taarya-readiness = "src.launch_readiness:main"
+taarya-ablation = "eval.ablation_formal:main"
+taarya-corpus = "src.ingestion.arxiv_ingest:main"
+taarya-alerts = "src.ingestion.alert_ingest:main"
+taarya-sky-expand = "scripts.expand_sky_coverage:main"
+
+[tool.setuptools.package-data]
+taarya = ["py.typed", "static/*", "eval/*", "scripts/*"]
 
 [tool.setuptools.packages.find]
-include = ["src*"]
+where = ["."]
+include = ["src*", "eval*", "scripts*"]
+exclude = ["tests*", "docs*"]
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "N", "B", "A", "C4", "SIM"]
+ignore = ["E501", "B008", "SIM108"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

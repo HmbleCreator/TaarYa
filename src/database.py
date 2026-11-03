@@ -2,13 +2,29 @@
 from typing import Any, Optional, TYPE_CHECKING
 from contextlib import contextmanager
 import logging
+from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from src.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def apply_sql_migrations(engine) -> None:
+    """Apply numbered SQL migrations once, transactionally."""
+    migrations_dir = Path(__file__).with_name("database") / "migrations"
+    with engine.begin() as connection:
+        connection.execute(text("CREATE TABLE IF NOT EXISTS schema_migrations (version VARCHAR(32) PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())"))
+        applied = {row[0] for row in connection.execute(text("SELECT version FROM schema_migrations"))}
+        for migration in sorted(migrations_dir.glob("[0-9][0-9][0-9]_*.sql")):
+            version = migration.name.split("_", 1)[0]
+            if version in applied:
+                continue
+            connection.exec_driver_sql(migration.read_text(encoding="utf-8"))
+            connection.execute(text("INSERT INTO schema_migrations (version) VALUES (:version)"), {"version": version})
+            logger.info("Applied database migration %s", migration.name)
 
 if TYPE_CHECKING:
     from qdrant_client import QdrantClient

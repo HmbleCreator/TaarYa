@@ -3,12 +3,14 @@ import asyncio
 import json
 import logging
 import re
+import uuid
 from threading import Thread
 from typing import Any, Dict, Optional
 
-from langchain_core.messages import AIMessage, HumanMessage
 from sqlalchemy import text
 
+from src.agent.langchain_compat import build_agent_executor
+from src.agent.runtime_shims import AIMessage, HumanMessage
 from src.agent.tools import (
     ALL_TOOLS,
     cone_search,
@@ -41,6 +43,8 @@ Guidelines:
 - Use the live coverage block above as the source of truth for where star data exists right now.
 - Never guess famous astronomy coordinates from prior knowledge if they are outside the loaded bounds.
 - If a requested coordinate is outside coverage, explain that the current database does not contain that region.
+- If the user did NOT provide coordinates or a source_id and you need a sky location, call get_catalog_coverage first.
+- For exploratory requests like "surprise me" or "show me something interesting", stay inside the returned coverage bounds and prefer the suggested_search_center instead of inventing coordinates.
 - When users mention coordinates, use cone_search.
   - If they only give RA, assume Dec=0.
   - If they give a star identifier, use star_lookup.
@@ -56,8 +60,107 @@ CRITICAL TOOL USE RULES:
 1. After generating your "Action" JSON block, you MUST immediately STOP generating text. DO NOT generate the "Observation:" block yourself. The system will provide the Observation.
 2. DO NOT hallucinate, invent, or make up data for tool outputs. Only use the real data returned in the explicit Observation.
 3. You MUST call Final Answer as your last action. After gathering data from 2-3 tool calls, always synthesize and call Final Answer — do not keep calling more tools.
-4. Minimize tool calls. Use at most 2 tools before calling Final Answer. For a "surprise me" query, one cone_search is enough — immediately synthesize and respond.
+4. Minimize tool calls, but NEVER skip coverage grounding. If the user did not provide coordinates or a source_id and you need a sky position, your first tool call MUST be get_catalog_coverage before any cone_search.
 """
+
+SKY_EXPLORATION_TERMS = (
+    "surprise",
+    "interesting",
+    "catalog",
+    "star",
+    "stars",
+    "sky",
+    "region",
+    "nearby",
+    "object",
+    "objects",
+    "source",
+    "sources",
+    "solar twin",
+    "show me",
+    "find",
+    "explore",
+    "search",
+)
+
+LITERATURE_TERMS = (
+    "paper",
+    "papers",
+    "research",
+    "study",
+    "studies",
+    "arxiv",
+    "literature",
+    "publication",
+    "publications",
+)
+
+
+def _format_coverage_window(coverage: Dict[str, Any]) -> str:
+    """Return a concise RA/Dec summary for the current catalog footprint."""
+    if not coverage or not coverage.get("total_stars"):
+        return "no star catalog coverage is currently loaded"
+    return (
+        f"RA {coverage['ra_min']}° to {coverage['ra_max']}° and "
+        f"Dec {coverage['dec_min']}° to {coverage['dec_max']}°"
+    )
+
+
+def _query_has_explicit_catalog_target(query: str) -> bool:
+    """Detect whether the user already supplied a concrete sky target."""
+    query_lower = query.lower()
+    if re.search(r"\bra\s*[:=]?\s*[+-]?\d", query_lower) and re.search(r"\bdec\s*[:=]?\s*[+-]?\d", query_lower):
+        return True
+    if re.search(r"\bsource_id\b", query_lower):
+        return True
+    if re.search(r"\b(?:star|source|id)\s*[:=]\s*\d{4,}\b", query_lower):
+        return True
+    return False
+
+
+def _query_is_literature_focused(query: str) -> bool:
+    """Detect broad literature requests that do not need sky coverage grounding."""
+    query_lower = query.lower()
+    return any(term in query_lower for term in LITERATURE_TERMS)
+
+
+def _query_needs_catalog_grounding(query: str) -> bool:
+    """Return True for broad sky exploration queries that need live coverage first."""
+    if _query_has_explicit_catalog_target(query) or _query_is_literature_focused(query):
+        return False
+    query_lower = query.lower()
+    return any(term in query_lower for term in SKY_EXPLORATION_TERMS)
+
+
+def _ground_query_to_catalog(query: str) -> str:
+    """Inject turn-level grounding instructions for vague sky exploration requests."""
+    if not _query_needs_catalog_grounding(query):
+        return query
+
+    coverage = get_catalog_coverage_raw()
+    if not coverage.get("total_stars"):
+        return query
+
+    center = coverage.get("suggested_search_center") or {}
+    center_ra = center.get("ra")
+    center_dec = center.get("dec")
+    guidance_lines = [
+        "GROUNDING DIRECTIVE FOR THIS TURN:",
+        "- The user did not provide explicit coordinates or a source_id.",
+        "- Your first tool call must be get_catalog_coverage before any cone_search.",
+        f"- The loaded catalog footprint currently spans {_format_coverage_window(coverage)}.",
+    ]
+    if center_ra is not None and center_dec is not None:
+        guidance_lines.append(
+            f"- If you need a starting point, use the suggested in-bounds center RA {center_ra}°, Dec {center_dec}°."
+        )
+    guidance_lines.extend(
+        [
+            "- Do not probe famous or memorized coordinates unless the returned coverage includes them.",
+            "- For exploratory requests, stay inside the loaded footprint and keep the search grounded.",
+        ]
+    )
+    return f"{query}\n\n" + "\n".join(guidance_lines)
 
 
 async def build_system_prompt() -> str:
@@ -104,6 +207,19 @@ def build_system_prompt_sync() -> str:
     return result_holder["prompt"]
 
 
+def _coverage_followup_hint(coverage: Dict[str, Any]) -> str:
+    """Return a concise next-step hint anchored to the loaded footprint."""
+    if not coverage or not coverage.get("total_stars"):
+        return "Load a catalog first, then ask me to explore a region."
+
+    center = coverage.get("suggested_search_center") or {}
+    center_ra = center.get("ra")
+    center_dec = center.get("dec")
+    if center_ra is None or center_dec is None:
+        return "Ask me to explore within the currently loaded footprint."
+    return f"Ask me to explore near RA {center_ra}°, Dec {center_dec}° or another point inside the loaded footprint."
+
+
 def _run_async_sync(coro):
     """Bridge async DB helpers into the current sync agent path."""
     try:
@@ -127,6 +243,18 @@ def _run_async_sync(coro):
     if "error" in error_holder:
         raise error_holder["error"]
     return result_holder.get("result")
+
+
+def _normalize_session_id(session_id: Optional[str]) -> Optional[str]:
+    """Accept only UUID-backed session identifiers used by the chat tables."""
+    if not session_id:
+        return None
+
+    try:
+        return str(uuid.UUID(str(session_id)))
+    except (ValueError, TypeError, AttributeError):
+        logger.warning("Ignoring invalid session_id value that is not a UUID: %r", session_id)
+        return None
 
 
 async def load_session_history(session_id: str) -> list:
@@ -229,6 +357,35 @@ def _parse_tool_output(tool_output: Any) -> Optional[Any]:
     return None
 
 
+def _normalize_agent_answer(answer: Any) -> str:
+    """Unwrap structured-chat final answer JSON into plain text."""
+    if answer is None:
+        return "I couldn't generate a response."
+
+    if not isinstance(answer, str):
+        return str(answer)
+
+    raw = answer.strip()
+    if not raw:
+        return "I couldn't generate a response."
+
+    if not (raw.startswith("{") and raw.endswith("}")):
+        return raw
+
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return raw
+
+    if payload.get("action") != "Final Answer":
+        return raw
+
+    final_answer = payload.get("action_input")
+    if isinstance(final_answer, str) and final_answer.strip():
+        return final_answer.strip()
+    return raw
+
+
 def _get_llm():
     """Create the appropriate LLM based on configuration."""
     if settings.openai_api_key and settings.openai_api_key != "your-openai-key-here":
@@ -293,20 +450,16 @@ class AstronomyAgent:
         self._system_prompt = system_prompt
 
         try:
-            from langchain.agents import AgentType, initialize_agent
-
-            self._agent = initialize_agent(
+            self._agent = build_agent_executor(
                 tools=ALL_TOOLS,
                 llm=self._llm,
-                agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-                verbose=False,
+                system_prompt=system_prompt,
                 max_iterations=MAX_AGENT_ITERATIONS,
                 max_execution_time=MAX_AGENT_EXECUTION_TIME,
                 handle_parsing_errors=True,
                 return_intermediate_steps=True,
-                agent_kwargs={"prefix": system_prompt},
             )
-            logger.info("Agent initialized (ReAct mode)")
+            logger.info("Agent initialized")
         except Exception as e:
             logger.error(f"Failed to initialize agent: {e}")
             raise
@@ -315,6 +468,7 @@ class AstronomyAgent:
         """Process a natural language astronomy query."""
         system_prompt = build_system_prompt_sync()
         self._ensure_agent(system_prompt)
+        session_id = _normalize_session_id(session_id)
 
         history_messages = _run_async_sync(load_session_history(session_id)) if session_id else []
         if not history_messages and chat_history:
@@ -334,6 +488,7 @@ class AstronomyAgent:
                     for m in history_messages[-6:]
                 )
                 context_query = f"Previous Conversation:\n{history_text}\n\nCurrent Question: {query}"
+            context_query = _ground_query_to_catalog(context_query)
 
             result = self._agent.invoke({
                 "input": context_query,
@@ -363,7 +518,7 @@ class AstronomyAgent:
                             "data": structured_output,
                         })
 
-            answer = result.get("output", "I couldn't generate a response.")
+            answer = _normalize_agent_answer(result.get("output", "I couldn't generate a response."))
             tool_trace = {"tools_used": tools_used, "tool_outputs": tool_outputs}
             _run_async_sync(save_message(session_id, "user", query))
             _run_async_sync(save_message(session_id, "assistant", answer, tool_trace))

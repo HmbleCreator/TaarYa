@@ -1,5 +1,6 @@
 """Star catalog search API routes."""
 from fastapi import APIRouter, Query
+from pydantic import BaseModel, Field
 from typing import Optional, Literal
 
 from src.services.star_service import StarService
@@ -15,6 +16,18 @@ from src.schemas import (
 
 router = APIRouter(prefix="/stars", tags=["Stars"])
 _svc = StarService()
+
+
+class ConeSearchBody(BaseModel):
+    """JSON body for POST /api/stars/cone-search."""
+    ra: float = Field(..., description="Right Ascension or Longitude")
+    dec: float = Field(..., description="Declination or Latitude")
+    radius: float = Field(..., gt=0, description="Search radius")
+    unit: str = Field("deg", description="Radius unit: deg, arcmin, arcsec")
+    frame: str = Field("icrs", description="Coordinate frame: icrs, galactic")
+    mag_limit: Optional[float] = Field(None, description="Max G-band magnitude")
+    min_parallax: Optional[float] = Field(None, description="Min parallax in mas")
+    limit: int = Field(100, ge=1, le=1000, description="Max results")
 
 
 @router.get("/cone-search", response_model=ConeSearchResponse)
@@ -35,6 +48,22 @@ async def cone_search(
     )
     return ConeSearchResponse(
         query=ConeSearchQuery(ra=ra, dec=dec, radius_deg=radius),
+        count=len(stars),
+        stars=stars,
+    )
+
+
+@router.post("/cone-search", response_model=ConeSearchResponse)
+async def cone_search_post(body: ConeSearchBody):
+    """Cone search (POST with JSON body) for external tool interop."""
+    stars = _svc.cone_search(
+        ra=body.ra, dec=body.dec, radius=body.radius,
+        unit=body.unit, frame=body.frame,
+        mag_limit=body.mag_limit, min_parallax=body.min_parallax,
+        limit=body.limit,
+    )
+    return ConeSearchResponse(
+        query=ConeSearchQuery(ra=body.ra, dec=body.dec, radius_deg=body.radius),
         count=len(stars),
         stars=stars,
     )

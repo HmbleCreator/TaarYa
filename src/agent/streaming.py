@@ -6,12 +6,14 @@ from typing import Optional, List, Any
 from queue import Queue, Empty
 from threading import Thread
 
-from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.messages import HumanMessage, AIMessage
-
 from src.agent.agent import (
     MAX_AGENT_EXECUTION_TIME,
     MAX_AGENT_ITERATIONS,
+    _coverage_followup_hint,
+    _format_coverage_window,
+    _ground_query_to_catalog,
+    _normalize_agent_answer,
+    _normalize_session_id,
     _parse_tool_output,
     _run_async_sync,
     build_system_prompt_sync,
@@ -19,8 +21,10 @@ from src.agent.agent import (
     load_session_history,
     save_message,
 )
+from src.agent.langchain_compat import build_agent_executor
+from src.agent.runtime_shims import AIMessage, BaseCallbackHandler, HumanMessage
 from src.config import settings
-from src.agent.tools import ALL_TOOLS
+from src.agent.tools import ALL_TOOLS, get_catalog_coverage_raw
 
 logger = logging.getLogger(__name__)
 
@@ -156,22 +160,41 @@ Coordinates are in degrees (RA: 0-360, Dec: -90 to +90).
 """
 
 
-def _build_fallback_answer(steps: list) -> str:
-    """Build a minimal grounded answer from intermediate steps when LLM fails to synthesize."""
+def _build_grounded_fallback_answer(steps: list) -> str:
+    """Build a grounded fallback answer using the live catalog footprint."""
+    coverage = get_catalog_coverage_raw()
+    coverage_window = _format_coverage_window(coverage)
+    followup_hint = _coverage_followup_hint(coverage)
     star_results = []
+    out_of_coverage = False
+
     for action, observation in steps:
-        if hasattr(action, 'tool') and action.tool == 'cone_search':
+        if hasattr(action, "tool") and action.tool == "cone_search":
+            parsed = _parse_tool_output(observation)
+            if isinstance(parsed, dict) and parsed.get("status") == "OUT_OF_COVERAGE":
+                out_of_coverage = True
+
             obs_str = str(observation)
-            if 'Found' in obs_str:
+            if "Found" in obs_str:
                 star_results.append(obs_str[:400])
+
     if star_results:
         return (
-            "Here's what I found in the loaded catalog:\n\n" +
-            "\n\n".join(star_results) +
-            "\n\nThe catalog currently covers RA 43–46°, Dec 0–2°. "
-            "Ask me to look up specific stars or search for particular properties."
+            "Here's what I found in the loaded catalog:\n\n"
+            + "\n\n".join(star_results)
+            + f"\n\nThe catalog currently covers {coverage_window}. {followup_hint}"
         )
-    return "I searched the catalog but found no results for this query in the loaded data region (RA 43–46°, Dec 0–2°)."
+
+    if out_of_coverage:
+        return (
+            "That search fell outside the loaded catalog footprint. "
+            f"The catalog currently covers {coverage_window}. {followup_hint}"
+        )
+
+    return (
+        "I searched the catalog but found no grounded results in the currently loaded data region "
+        f"({coverage_window}). {followup_hint}"
+    )
 
 
 def _get_llm():
@@ -203,18 +226,15 @@ def _build_agent(callback_handler):
     llm = _get_llm()
     system_prompt = build_system_prompt_sync()
 
-    from langchain.agents import initialize_agent, AgentType
-    return initialize_agent(
+    return build_agent_executor(
         tools=ALL_TOOLS,
         llm=llm,
-        agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-        verbose=False,
+        system_prompt=system_prompt,
         max_iterations=MAX_AGENT_ITERATIONS,
         max_execution_time=MAX_AGENT_EXECUTION_TIME,
         handle_parsing_errors=False,
         return_intermediate_steps=True,
         callbacks=[callback_handler],
-        agent_kwargs={"prefix": system_prompt},
     )
 
 
@@ -230,6 +250,7 @@ def run_agent_streaming(
     """
     event_queue = Queue()
     callback_handler = StreamingCallbackHandler(event_queue)
+    session_id = _normalize_session_id(session_id)
     yield f"data: {json.dumps({'type': 'thinking', 'data': {'status': 'Connecting to agent...'}})}\n\n"
 
     # Convert chat_history
@@ -249,7 +270,7 @@ def run_agent_streaming(
         try:
             agent_exec = _build_agent(callback_handler)
             result = agent_exec.invoke({
-                "input": query,
+                "input": _ground_query_to_catalog(query),
                 "chat_history": history_messages,
             }, config={"callbacks": [callback_handler]})
             result_holder["result"] = result
@@ -298,14 +319,14 @@ def run_agent_streaming(
         yield f"data: {json.dumps({'type': 'error', 'data': {'message': result_holder['error']}})}\n\n"
     elif result_holder["result"]:
         result = result_holder["result"]
-        answer = result.get("output", "I couldn't generate a response.")
+        answer = _normalize_agent_answer(result.get("output", "I couldn't generate a response."))
         steps = result.get("intermediate_steps", [])
 
         if answer == "Agent stopped due to iteration limit or time limit." or not answer.strip():
             if callback_handler.final_answer_candidate:
                 answer = callback_handler.final_answer_candidate
             else:
-                answer = _build_fallback_answer(steps)
+                answer = _build_grounded_fallback_answer(steps)
 
         # Extract tool info from intermediate steps
         tools_used = []

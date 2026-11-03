@@ -23,7 +23,7 @@ router = APIRouter(prefix="/ingest", tags=["ingestion"])
 logger = logging.getLogger(__name__)
 
 # Track running jobs so we don't double-trigger
-_running: dict[str, bool] = {"gaia": False, "arxiv": False}
+_running: dict[str, bool] = {"gaia": False, "arxiv": False, "graph": False}
 _running_catalogs: dict[str, bool] = {}
 
 
@@ -77,6 +77,20 @@ def _run_arxiv():
         logger.error(f"ArXiv ingestion failed: {exc}", exc_info=True)
     finally:
         _running["arxiv"] = False
+
+
+def _run_graph():
+    _running["graph"] = True
+    try:
+        from src.ingestion.graph_ingest import ingest_graph  # noqa: PLC0415
+
+        logger.info("Graph reconciliation: starting ingest_graph...")
+        ingest_graph()
+        logger.info("Graph reconciliation: complete")
+    except Exception as exc:
+        logger.error(f"Graph reconciliation failed: {exc}", exc_info=True)
+    finally:
+        _running["graph"] = False
 
 
 def _run_catalog(
@@ -134,6 +148,21 @@ async def trigger_arxiv_ingestion(background_tasks: BackgroundTasks):
     executor = ThreadPoolExecutor(max_workers=1)
     background_tasks.add_task(loop.run_in_executor, executor, _run_arxiv)
     return {"status": "started", "pipeline": "arxiv"}
+
+
+@router.post("/graph", summary="Trigger a full Neo4j graph reconciliation")
+async def trigger_graph_reconciliation(background_tasks: BackgroundTasks):
+    """
+    Rebuild or reconcile the Neo4j graph from PostgreSQL/Qdrant in the background.
+    Returns immediately; check server logs for progress.
+    """
+    if _running["graph"]:
+        raise HTTPException(status_code=409, detail="Graph reconciliation is already running")
+
+    loop = asyncio.get_event_loop()
+    executor = ThreadPoolExecutor(max_workers=1)
+    background_tasks.add_task(loop.run_in_executor, executor, _run_graph)
+    return {"status": "started", "pipeline": "graph"}
 
 
 @router.post("/catalog", summary="Trigger a generic catalog ingestion")
@@ -218,8 +247,102 @@ async def ingestion_status():
     return {
         "gaia": "running" if _running["gaia"] else "idle",
         "arxiv": "running" if _running["arxiv"] else "idle",
+        "graph": "running" if _running["graph"] else "idle",
         "catalogs": {
             name: "running" if running else "idle"
             for name, running in sorted(_running_catalogs.items())
         },
     }
+
+
+class ExpandCoverageRequest(BaseModel):
+    """Request body for sky-coverage expansion."""
+    fetch_gaia: bool = Field(False, description="Also fetch Gaia DR3 stars via TAP+ (requires internet)")
+    max_stars_per_region: int = Field(500, ge=10, le=5000, description="Max stars to fetch per region")
+
+
+_running["expand"] = False
+_running["mentioned_in"] = False
+
+
+def _run_expand_coverage(fetch_gaia: bool, max_stars: int):
+    """Background task: seed extended regions and optionally fetch Gaia stars."""
+    _running["expand"] = True
+    try:
+        import sys, os
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        from scripts.expand_sky_coverage import seed_extended_regions, fetch_gaia_for_regions
+        count = seed_extended_regions()
+        logger.info(f"Seeded {count} extended regions")
+        stars = 0
+        if fetch_gaia:
+            stars = fetch_gaia_for_regions(max_stars_per_region=max_stars)
+            logger.info(f"Fetched {stars} Gaia DR3 stars for extended regions")
+        # Trigger graph sync for the new data
+        try:
+            from src.database import neo4j_conn
+            neo4j_conn.connect()
+            from src.ingestion.graph_ingest import ingest_graph
+            ingest_graph()
+        except Exception as e:
+            logger.warning(f"Post-expansion graph sync failed: {e}")
+    except Exception as e:
+        logger.error(f"Coverage expansion failed: {e}", exc_info=True)
+    finally:
+        _running["expand"] = False
+
+
+@router.post("/expand-coverage", summary="Expand sky coverage with additional clusters")
+async def expand_coverage(
+    request: ExpandCoverageRequest,
+    background_tasks: BackgroundTasks,
+):
+    """Seed extended regions (globular clusters, OB associations, SFRs, moving groups)
+    and optionally fetch Gaia DR3 stars for each region.
+    """
+    if _running.get("expand"):
+        raise HTTPException(status_code=409, detail="Coverage expansion already in progress")
+
+    loop = asyncio.get_event_loop()
+    executor = ThreadPoolExecutor(max_workers=1)
+    background_tasks.add_task(
+        loop.run_in_executor, executor,
+        _run_expand_coverage, request.fetch_gaia, request.max_stars_per_region,
+    )
+    return {
+        "status": "started",
+        "pipeline": "expand-coverage",
+        "fetch_gaia": request.fetch_gaia,
+        "max_stars_per_region": request.max_stars_per_region,
+    }
+
+
+def _run_mentioned_in_linking():
+    """Background task: run cluster-mediated MENTIONED_IN linking."""
+    _running["mentioned_in"] = True
+    try:
+        from src.database import neo4j_conn
+        neo4j_conn.connect()
+        from src.retrieval.graph_search import GraphSearch
+        from src.ingestion.graph_ingest import link_papers_to_stars_via_clusters
+        graph = GraphSearch()
+        count = link_papers_to_stars_via_clusters(graph)
+        logger.info(f"Cluster-mediated linking created {count} MENTIONED_IN edges")
+    except Exception as e:
+        logger.error(f"MENTIONED_IN linking failed: {e}", exc_info=True)
+    finally:
+        _running["mentioned_in"] = False
+
+
+@router.post("/mentioned-in", summary="Populate MENTIONED_IN edges via cluster mediation")
+async def trigger_mentioned_in(background_tasks: BackgroundTasks):
+    """Create MENTIONED_IN edges between papers and the top stars in clusters they cover."""
+    if _running.get("mentioned_in"):
+        raise HTTPException(status_code=409, detail="MENTIONED_IN linking already in progress")
+
+    loop = asyncio.get_event_loop()
+    executor = ThreadPoolExecutor(max_workers=1)
+    background_tasks.add_task(
+        loop.run_in_executor, executor, _run_mentioned_in_linking,
+    )
+    return {"status": "started", "pipeline": "mentioned-in"}

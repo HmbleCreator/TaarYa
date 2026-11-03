@@ -240,6 +240,7 @@ def ingest_arxiv_papers(
     total_inserted = 0
     queries_processed = 0
     skipped_duplicates = 0
+    inserted_arxiv_ids: list[str] = []
     batch: list[dict] = []
     start_time = datetime.now(timezone.utc)
 
@@ -299,6 +300,7 @@ def ingest_arxiv_papers(
                     },
                 }
                 batch.append(point)
+                inserted_arxiv_ids.append(arxiv_id)
 
                 if len(batch) >= BATCH_SIZE:
                     client.upsert(
@@ -329,6 +331,15 @@ def ingest_arxiv_papers(
 
     elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
 
+    graph_sync: dict = {}
+    if inserted_arxiv_ids:
+        try:
+            from src.ingestion.graph_ingest import sync_graph_incremental
+
+            graph_sync = sync_graph_incremental(arxiv_ids=inserted_arxiv_ids)
+        except Exception as exc:
+            logger.warning(f"Graph auto-sync after ArXiv ingest failed: {exc}")
+
     logger.info(
         f"ArXiv ingestion complete in {elapsed:.1f}s: "
         f"{total_inserted} new papers inserted, "
@@ -341,6 +352,7 @@ def ingest_arxiv_papers(
         "queries_processed": queries_processed,
         "skipped_duplicates": skipped_duplicates,
         "elapsed_s": round(elapsed, 2),
+        "graph_sync": graph_sync,
     }
 
 
