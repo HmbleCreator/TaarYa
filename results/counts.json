@@ -1,5 +1,5 @@
 {
-  "utc": "2026-11-01T09:49:00Z",
+  "utc": "2026-11-03T11:32:07Z",
   "postgres": {
     "stars_total": 34860,
     "stars_synthetic": 560,
@@ -15,7 +15,7 @@
     }
   },
   "neo4j": {
-    "nodes_star": 33820,
+    "nodes_star": 34860,
     "nodes_paper": 6464,
     "nodes_cluster": 42,
     "nodes_alert": 0,
@@ -26,7 +26,7 @@
     "edges_cites": 0
   },
   "qdrant": {
-    "papers": 6364
+    "papers": 6464
   },
   "toi_catalog": {
     "total": 8151,
@@ -35,7 +35,6 @@
     "unresolved_or_other": 5415
   },
   "warnings": [
-    "560 synthetic fixture rows are present in stars; exclude them from every reported scientific number",
-    "Neo4j has 33820 Star nodes but Postgres has 34860 stars: graph and catalogue are out of sync"
+    "560 synthetic fixture rows are present in stars; exclude them from every reported scientific number"
   ]
 }

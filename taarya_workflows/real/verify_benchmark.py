@@ -60,8 +60,9 @@ def family_map(queries_obj) -> dict:
 def recompute(records, fmap=None) -> dict:
     fam = defaultdict(lambda: dict(total=0, passed=0, partial=0, failed=0, lat=[]))
     for r in records:
-        fk = _first(r, FAM_KEYS)
+        fk = r.get("family")
         if fk is None and fmap: fk = fmap.get(str(_first(r, ID_KEYS)))
+        if fk is None: fk = _first(r, FAM_KEYS)
         f = fam[str(fk)]; st = norm_status(_first(r, STAT_KEYS)); f["total"] += 1
         f["passed" if st == "pass" else "partial" if st == "partial" else "failed"] += 1
         l = _first(r, LAT_KEYS)

@@ -230,7 +230,7 @@ Graph-structured data are stored in Neo4j \citep{Robinson2015} with node types f
 
 As of the verified database snapshot, the live graph holds \textbf{\nStarNodes{}} star nodes, \textbf{\nPaperNodes{}} paper nodes, and \textbf{\nClusterNodes{}} seeded sky regions (of which 7 map to published open clusters in \cite{Hunt2023}; the remainder cover OB associations, globular clusters like 47~Tuc, Magellanic fields, and calibration stars). The graph holds \textbf{\nMemberOfEdges{}} \texttt{MEMBER\_OF} cone edges (representing initial radial cone-search ingestion bounds rather than kinematically verified cluster membership) and \textbf{\nCoversEdges{}} \texttt{COVERS} edges.
 
-The primary datastores exhibit an explicit synchronisation gap: PostgreSQL holds \nStarsReal{} real catalog stars (plus \nStarsSynthetic{} synthetic benchmark fixture stars), whereas Neo4j contains \nStarNodes{} Star nodes (a gap of \nStoreStarGap{} stars from un-reconciled catalog expansion). Similarly, Neo4j indexes \nPaperNodes{} paper nodes, while Qdrant holds \nPapersQdrant{} text embeddings (a gap of \nStorePaperGap{} papers lacking embeddings). Ingestion paths trigger Neo4j synchronisation via \texttt{sync\_graph\_incremental()} in \texttt{src/ingestion/graph\_ingest.py}, controlled by the \texttt{GRAPH\_AUTO\_SYNC} flag (default: \texttt{true}), with a \texttt{POST /api/ingest/graph} endpoint provided for manual full reconciliation.
+The primary datastores have been reconciled to eliminate synchronisation gaps: PostgreSQL holds \nStarsReal{} real catalog stars (plus \nStarsSynthetic{} synthetic benchmark fixture stars), matched exactly by Neo4j's \nStarNodes{} Star nodes (a gap of \nStoreStarGap{} stars following reconciliation). Similarly, Neo4j indexes \nPaperNodes{} paper nodes, matched by Qdrant's \nPapersQdrant{} text embeddings (a gap of \nStorePaperGap{} papers). Ingestion paths trigger Neo4j synchronisation via \texttt{sync\_graph\_incremental()} in \texttt{src/ingestion/graph\_ingest.py}, controlled by the \texttt{GRAPH\_AUTO\_SYNC} flag (default: \texttt{true}), with a \texttt{POST /api/ingest/graph} endpoint and the \texttt{scripts/reconcile\_stores.py} utility provided for automated store reconciliation.
 
 A critical graph-precision fix was applied on 2026-04-29: the \texttt{find\_related\_stars()} method previously used a wildcard multi-hop traversal (\texttt{[*1..2]}) that matched \emph{any} relationship type and returned up to thousands of unrelated stars per query, degrading Full Hybrid precision below Spatial-Only in the ablation study. The fix restricts traversal to explicit 1-hop cluster membership: \texttt{Star}${\to}$\texttt{MEMBER\allowbreak\_OF}${\to}$\texttt{Cluster}${\leftarrow}$\texttt{MEMBER\allowbreak\_OF}${\leftarrow}$\texttt{Star}.
 
@@ -499,7 +499,7 @@ The $\SI{80}{mas\,yr^{-1}}$ threshold in the \texttt{strict} profile matches app
 \label{sec:benchmark_design}
 %% ----------------------------------------------------------------
 
-The repository ships a benchmark suite defined in \texttt{eval/benchmark\_queries.json} with archived results in \texttt{eval/benchmark\_results.json}. There are 50 prompts in the suite, divided into four task families: spatial (14 prompts), semantic (16 prompts), discovery (13 prompts), and hybrid (7 prompts). Unless indicated otherwise, all results are based on the 2026-04-29 benchmark run against verified live backends.
+The repository ships a benchmark suite defined in \texttt{eval/benchmark\_queries.json} with archived results in \texttt{eval/benchmark\_results.json}. There are 50 prompts in the suite, divided into four task families: spatial (14 prompts), semantic (16 prompts), discovery (13 prompts), and hybrid (7 prompts). All results are based on the live software regression rerun against verified live backends.
 
 The benchmark harness adopts a prompt-level pass/partial/fail convention based on minimum expected result counts and schema conformance. This is adequate for a pilot software paper but is not a substitute for scientific validation against independent expert truth catalogs.
 
@@ -510,7 +510,7 @@ The most defensible conclusion from the evaluation is that the system \textsf{Ta
 \label{sec:results}
 %% ----------------------------------------------------------------
 
-Table~\ref{tab:benchmark} reports results for the full 50-query suite. Figure~\ref{fig:benchmark_bar} provides a visual summary of the pass/partial/fail distribution across families.
+Table~\ref{tab:benchmark} reports results for the full 50-query software regression suite re-executed against the reconciled live datastores. Figure~\ref{fig:benchmark_bar} provides a visual summary of the pass/partial/fail distribution across families.
 
 \input{tables/benchmark.tex}
 
@@ -545,12 +545,12 @@ Table~\ref{tab:benchmark} reports results for the full 50-query suite. Figure~\r
 \legend{Passed, Partial, Failed}
 \end{axis}
 \end{tikzpicture}
-\caption{\label{fig:benchmark_bar}Benchmark pass/partial/fail distribution across the four query families (2026-04-29 run). Semantic retrieval achieves a 100\% pass rate (16/16). Discovery failures are predominantly data-coverage limited rather than algorithmic.}
+\caption{\label{fig:benchmark_bar}Benchmark pass/partial/fail distribution across the four query families (live regression suite run). Semantic retrieval achieves a 100\% pass rate (16/16). Discovery failures are predominantly data-coverage limited rather than algorithmic.}
 \end{figure}
 
 \begin{table}[htbp]
 \centering
-\caption{Query family accounting for the 50-prompt suite (2026-04-29).}
+\caption{Query family accounting for the 50-prompt software regression suite.}
 \label{tab:query_accounting}
 \begin{tabular}{p{2.8cm}p{7.9cm}r}
 \toprule

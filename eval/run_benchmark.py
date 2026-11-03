@@ -2,11 +2,15 @@
 
 import json
 import math
+import os
+import sys
 import time
 import logging
 import statistics
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -19,11 +23,11 @@ class TaarYaBenchmark:
         self.graph = None
         self.vector = None
         self.stats = {
-            "spatial": {"total": 0, "passed": 0, "failed": 0},
-            "semantic": {"total": 0, "passed": 0, "failed": 0},
-            "discovery": {"total": 0, "passed": 0, "failed": 0},
-            "graph": {"total": 0, "passed": 0, "failed": 0},
-            "hybrid": {"total": 0, "passed": 0, "failed": 0},
+            "spatial": {"total": 0, "passed": 0, "partial": 0, "failed": 0},
+            "semantic": {"total": 0, "passed": 0, "partial": 0, "failed": 0},
+            "discovery": {"total": 0, "passed": 0, "partial": 0, "failed": 0},
+            "graph": {"total": 0, "passed": 0, "partial": 0, "failed": 0},
+            "hybrid": {"total": 0, "passed": 0, "partial": 0, "failed": 0},
         }
 
     def _init_backends(self):
@@ -52,8 +56,65 @@ class TaarYaBenchmark:
                 logger.warning(f"Vector backend unavailable: {e}")
 
     @staticmethod
+    def _query_type(item: Dict[str, Any]) -> str:
+        """Support both legacy benchmark schema and v2 benchmark_queries.json."""
+        return item.get("type") or item.get("family") or "unknown"
+
+    @staticmethod
+    def _query_text(item: Dict[str, Any]) -> str:
+        return item.get("query") or item.get("prompt") or item.get("task") or item.get("id", "")
+
+    @staticmethod
+    def _category(item: Dict[str, Any]) -> str:
+        return item.get("category") or item.get("task") or item.get("family") or "unknown"
+
+    @staticmethod
+    def _difficulty(item: Dict[str, Any]) -> str:
+        return item.get("difficulty") or "medium"
+
+    @staticmethod
+    def _ground_truth(item: Dict[str, Any]) -> Dict[str, Any]:
+        gt = item.get("ground_truth")
+        return gt if isinstance(gt, dict) else {}
+
+    def _expected_min(self, item: Dict[str, Any]) -> int:
+        gt = self._ground_truth(item)
+        return int(item.get("expected_min_results", gt.get("expected_count_min", 0)) or 0)
+
+    def _expected_max(self, item: Dict[str, Any]) -> Optional[int]:
+        gt = self._ground_truth(item)
+        value = item.get("expected_max_results", gt.get("expected_count_max"))
+        return int(value) if isinstance(value, (int, float)) else None
+
+    @staticmethod
+    def _score_count(count: int, expected_min: int, expected_max: Optional[int] = None) -> tuple:
+        if expected_min <= 0 and (expected_max is None or count <= expected_max):
+            return 1.0, "PASS"
+        if count < expected_min:
+            score = count / expected_min if expected_min > 0 else 0.0
+            return score, "FAIL" if count == 0 else "PARTIAL"
+        if expected_max is not None and count > expected_max:
+            score = expected_max / count if count else 0.0
+            return max(0.5, score), "PARTIAL"
+        return 1.0, "PASS"
+
+    def _record_status(self, family: str, status: str) -> None:
+        """Update benchmark counters consistently for PASS/PARTIAL/FAIL/SKIP/ERROR."""
+        self.stats[family]["total"] += 1
+        if status == "PASS":
+            self.stats[family]["passed"] += 1
+        elif status == "PARTIAL":
+            self.stats[family]["partial"] += 1
+        else:
+            self.stats[family]["failed"] += 1
+
+    @staticmethod
     def _semantic_topic(params: Dict[str, Any]) -> str:
         """Normalize benchmark semantic query params to a single topic string."""
+        query = params.get("query")
+        if isinstance(query, str) and query.strip():
+            return query.strip()
+
         topic = params.get("topic")
         if isinstance(topic, str) and topic.strip():
             return topic.strip()
@@ -110,27 +171,21 @@ class TaarYaBenchmark:
         self._init_backends()
         start = time.time()
         try:
+            params = item["params"]
+            limit = int(params.get("limit", 100))
             stars = self.spatial.cone_search(
-                ra=item["params"]["ra"],
-                dec=item["params"]["dec"],
-                radius=item["params"]["radius_deg"],
-                limit=100,
+                ra=params["ra"],
+                dec=params["dec"],
+                radius=params["radius_deg"],
+                limit=limit,
                 include_discovery=True
             )
             latency = time.time() - start
             count = len(stars)
-            expected = item["expected_min_results"]
-
-            if count >= expected:
-                score = 1.0
-                status = "PASS"
-                self.stats["spatial"]["passed"] += 1
-            else:
-                score = count / expected if expected > 0 else 0
-                status = "FAIL"
-                self.stats["spatial"]["failed"] += 1
-
-            self.stats["spatial"]["total"] += 1
+            expected = min(self._expected_min(item), limit)
+            expected_max = self._expected_max(item)
+            score, status = self._score_count(count, expected, expected_max)
+            self._record_status("spatial", status)
 
             top_discovery = stars[0].get("discovery_score", 0) if stars else 0
             anomalous = sum(1 for s in stars if s.get("discovery_score", 0) > 0)
@@ -144,18 +199,17 @@ class TaarYaBenchmark:
                 "latency_ms": round(latency * 1000, 2),
                 "top_discovery": top_discovery,
                 "anomalous_count": anomalous,
-                "query": item["query"],
-                "category": item["category"],
-                "difficulty": item["difficulty"]
+                "query": self._query_text(item),
+                "category": self._category(item),
+                "difficulty": self._difficulty(item)
             }
         except Exception as e:
-            self.stats["spatial"]["total"] += 1
-            self.stats["spatial"]["failed"] += 1
+            self._record_status("spatial", "ERROR")
             return {
                 "id": item["id"],
                 "status": "ERROR",
                 "error": str(e),
-                "query": item["query"]
+                "query": self._query_text(item)
             }
 
     def _evaluate_semantic(self, item: Dict) -> Dict[str, Any]:
@@ -163,31 +217,30 @@ class TaarYaBenchmark:
         start = time.time()
         try:
             if self.vector is None:
+                self._record_status("semantic", "SKIP")
                 return {
                     "id": item["id"],
                     "status": "SKIP",
                     "reason": "Vector backend unavailable",
-                    "query": item["query"]
+                    "query": self._query_text(item)
                 }
 
+            params = item["params"]
             results = self.vector.search_similar(
-                self._semantic_topic(item["params"]),
-                limit=item["params"].get("limit", 10)
+                self._semantic_topic(params),
+                limit=params.get("limit", 10)
             )
             latency = time.time() - start
             count = len(results)
-            expected = item["expected_min_results"]
-
-            if count >= expected:
-                score = 1.0
-                status = "PASS"
-                self.stats["semantic"]["passed"] += 1
-            else:
-                score = count / expected if expected > 0 else 0
-                status = "FAIL"
-                self.stats["semantic"]["failed"] += 1
-
-            self.stats["semantic"]["total"] += 1
+            expected = self._expected_min(item)
+            score, status = self._score_count(count, expected)
+            top_score = float(results[0].get("score", 0.0)) if results else 0.0
+            mean_score = (
+                sum(float(r.get("score", 0.0)) for r in results) / count
+                if count
+                else 0.0
+            )
+            self._record_status("semantic", status)
 
             return {
                 "id": item["id"],
@@ -195,18 +248,19 @@ class TaarYaBenchmark:
                 "papers_found": count,
                 "expected": expected,
                 "score": round(score, 3),
+                "top_similarity": round(top_score, 4),
+                "mean_similarity": round(mean_score, 4),
                 "latency_ms": round(latency * 1000, 2),
-                "query": item["query"],
-                "category": item["category"]
+                "query": self._query_text(item),
+                "category": self._category(item)
             }
         except Exception as e:
-            self.stats["semantic"]["total"] += 1
-            self.stats["semantic"]["failed"] += 1
+            self._record_status("semantic", "ERROR")
             return {
                 "id": item["id"],
                 "status": "ERROR",
                 "error": str(e),
-                "query": item["query"]
+                "query": self._query_text(item)
             }
 
     def _evaluate_discovery(self, item: Dict) -> Dict[str, Any]:
@@ -214,12 +268,28 @@ class TaarYaBenchmark:
         start = time.time()
         try:
             params = item["params"]
+            ruwe_min = params.get("min_ruwe", params.get("ruwe_min"))
+            bp_rp_max = params.get("max_bp_rp", params.get("bp_rp_max"))
+            bp_rp_min = params.get("min_bp_rp", params.get("bp_rp_min"))
+            proper_motion_min = params.get(
+                "min_proper_motion",
+                params.get("motion_min", params.get("motion_threshold")),
+            )
+            distance_max = params.get("max_distance_pc")
+            distance_min = params.get("min_distance_pc")
+            g_max = params.get("max_g_mag", params.get("g_max"))
+            g_min = params.get("min_g_mag", params.get("g_min"))
+            parallax_min = params.get("parallax_min")
+            parallax_max = params.get("parallax_max", params.get("parallax_max_mas"))
+            abs_mag_max = params.get("abs_mag_max")
+            abs_mag_min = params.get("abs_mag_min")
+            limit = int(params.get("limit", 200))
             if "ra" in params and "dec" in params:
                 stars = self.spatial.cone_search(
                     ra=params["ra"],
                     dec=params["dec"],
                     radius=params.get("radius_deg", 1.0),
-                    limit=200,
+                    limit=limit,
                     include_discovery=True
                 )
             else:
@@ -232,52 +302,59 @@ class TaarYaBenchmark:
             filtered = []
             for s in stars:
                 ruwe = s.get("ruwe")
-                if "min_ruwe" in params and (ruwe is None or ruwe < params["min_ruwe"]):
+                if ruwe_min is not None and (ruwe is None or ruwe < ruwe_min):
                     continue
                 bp_rp = self._bp_rp(s)
-                if "max_bp_rp" in params:
-                    if bp_rp is None or bp_rp >= params["max_bp_rp"]:
+                if bp_rp_max is not None:
+                    if bp_rp is None or bp_rp >= bp_rp_max:
                         continue
-                if "min_bp_rp" in params:
-                    if bp_rp is None or bp_rp < params["min_bp_rp"]:
+                if bp_rp_min is not None:
+                    if bp_rp is None or bp_rp < bp_rp_min:
                         continue
-                if "min_proper_motion" in params:
+                if proper_motion_min is not None:
                     pm = self._proper_motion_total(s)
-                    if pm < params["min_proper_motion"]:
+                    if pm < proper_motion_min:
                         continue
                 distance_pc = self._distance_pc(s)
-                if "max_distance_pc" in params:
-                    if distance_pc is None or distance_pc > params["max_distance_pc"]:
+                if distance_max is not None:
+                    if distance_pc is None or distance_pc > distance_max:
                         continue
-                if "min_distance_pc" in params:
-                    if distance_pc is None or distance_pc < params["min_distance_pc"]:
+                if distance_min is not None:
+                    if distance_pc is None or distance_pc < distance_min:
                         continue
                 phot_g = s.get("phot_g_mean_mag")
-                if "max_g_mag" in params:
-                    if phot_g is None or phot_g > params["max_g_mag"]:
+                if g_max is not None:
+                    if phot_g is None or phot_g > g_max:
                         continue
-                if "min_g_mag" in params:
-                    if phot_g is None or phot_g < params["min_g_mag"]:
+                if g_min is not None:
+                    if phot_g is None or phot_g < g_min:
+                        continue
+                parallax = s.get("parallax")
+                if parallax_min is not None and parallax_max is not None and parallax_min > parallax_max:
+                    if parallax is None or not (parallax >= parallax_min or parallax <= parallax_max):
+                        continue
+                else:
+                    if parallax_min is not None and (parallax is None or parallax < parallax_min):
+                        continue
+                    if parallax_max is not None and (parallax is None or parallax > parallax_max):
+                        continue
+                if (abs_mag_min is not None or abs_mag_max is not None) and (
+                    phot_g is None or parallax is None or parallax <= 0
+                ):
+                    continue
+                if phot_g is not None and parallax is not None and parallax > 0:
+                    abs_mag = phot_g + 5 * math.log10(parallax / 1000.0) + 5
+                    if abs_mag_max is not None and abs_mag > abs_mag_max:
+                        continue
+                    if abs_mag_min is not None and abs_mag < abs_mag_min:
                         continue
                 filtered.append(s)
 
             latency = time.time() - start
             count = len(filtered)
-            expected = item["expected_min_results"]
-
-            if count >= expected:
-                score = 1.0
-                status = "PASS"
-                self.stats["discovery"]["passed"] += 1
-            else:
-                score = 0.5 if count > 0 else 0
-                status = "PARTIAL" if count > 0 else "FAIL"
-                if status == "FAIL":
-                    self.stats["discovery"]["failed"] += 1
-                else:
-                    self.stats["discovery"]["passed"] += 1
-
-            self.stats["discovery"]["total"] += 1
+            expected = min(self._expected_min(item), limit)
+            score, status = self._score_count(count, expected, self._expected_max(item))
+            self._record_status("discovery", status)
 
             return {
                 "id": item["id"],
@@ -286,18 +363,17 @@ class TaarYaBenchmark:
                 "expected": expected,
                 "score": round(score, 3),
                 "latency_ms": round(latency * 1000, 2),
-                "query": item["query"],
-                "category": item["category"],
-                "difficulty": item["difficulty"]
+                "query": self._query_text(item),
+                "category": self._category(item),
+                "difficulty": self._difficulty(item)
             }
         except Exception as e:
-            self.stats["discovery"]["total"] += 1
-            self.stats["discovery"]["failed"] += 1
+            self._record_status("discovery", "ERROR")
             return {
                 "id": item["id"],
                 "status": "ERROR",
                 "error": str(e),
-                "query": item["query"]
+                "query": self._query_text(item)
             }
 
     def _evaluate_graph(self, item: Dict) -> Dict[str, Any]:
@@ -305,29 +381,22 @@ class TaarYaBenchmark:
         start = time.time()
         try:
             if self.graph is None:
+                self._record_status("graph", "SKIP")
                 return {
                     "id": item["id"],
                     "status": "SKIP",
                     "reason": "Graph backend unavailable",
-                    "query": item["query"]
+                    "query": self._query_text(item)
                 }
 
-            cluster_name = item["params"].get("cluster", item["query"].split()[-1])
+            gt = self._ground_truth(item)
+            cluster_name = item["params"].get("cluster", gt.get("cluster", self._query_text(item).split()[-1]))
             members = self.graph.find_cluster_members(cluster_name, limit=50)
             latency = time.time() - start
             count = len(members)
-            expected = item["expected_min_results"]
-
-            if count >= expected:
-                score = 1.0
-                status = "PASS"
-                self.stats["graph"]["passed"] += 1
-            else:
-                score = count / expected if expected > 0 else 0
-                status = "FAIL"
-                self.stats["graph"]["failed"] += 1
-
-            self.stats["graph"]["total"] += 1
+            expected = min(self._expected_min(item), 50)
+            score, status = self._score_count(count, expected)
+            self._record_status("graph", status)
 
             return {
                 "id": item["id"],
@@ -336,82 +405,99 @@ class TaarYaBenchmark:
                 "expected": expected,
                 "score": round(score, 3),
                 "latency_ms": round(latency * 1000, 2),
-                "query": item["query"],
-                "category": item["category"]
+                "query": self._query_text(item),
+                "category": self._category(item)
             }
         except Exception as e:
-            self.stats["graph"]["total"] += 1
-            self.stats["graph"]["failed"] += 1
+            self._record_status("graph", "ERROR")
             return {
                 "id": item["id"],
                 "status": "ERROR",
                 "error": str(e),
-                "query": item["query"]
+                "query": self._query_text(item)
             }
 
     def _evaluate_hybrid(self, item: Dict) -> Dict[str, Any]:
         self._init_backends()
         start = time.time()
         try:
+            params = item["params"]
+            gt = self._ground_truth(item)
+            limit = int(params.get("limit", 20))
             spatial_result = self.spatial.cone_search(
-                ra=item["params"]["ra"],
-                dec=item["params"]["dec"],
-                radius=item["params"]["radius_deg"],
-                limit=50,
+                ra=params["ra"],
+                dec=params["dec"],
+                radius=params["radius_deg"],
+                limit=limit,
                 include_discovery=True
             )
+            spatial_result.sort(key=lambda s: s.get("discovery_score", 0), reverse=True)
 
             papers_result = []
-            if self.graph:
-                papers_result = self.graph.find_papers_about_topic(
-                    item["params"]["topic"],
-                    limit=10
+            topic = params.get("topic") or params.get("query") or gt.get("cluster") or self._query_text(item)
+            if self.vector:
+                papers_result = self.vector.search_similar(topic, limit=10)
+
+            related_papers_count = 0
+            if self.graph and spatial_result:
+                source_ids = [str(s["source_id"]) for s in spatial_result[: min(limit, 25)]]
+                papers_by_star = self.graph.find_papers_for_stars(
+                    source_ids,
+                    include_cluster_context=True,
+                    limit_per_star=10,
                 )
+                related_paper_ids = {
+                    paper.get("arxiv_id")
+                    for papers in papers_by_star.values()
+                    for paper in papers
+                    if paper.get("arxiv_id")
+                }
+                related_papers_count = len(related_paper_ids)
 
             latency = time.time() - start
             stars_count = len(spatial_result)
             papers_count = len(papers_result)
 
-            combined_score = 0.5 if stars_count > 0 else 0
-            combined_score += 0.5 if papers_count > 0 else 0
-
-            expected = item["expected_min_results"]
-            if stars_count >= expected:
-                combined_score = max(combined_score, 1.0)
-
-            status = "PASS" if combined_score >= 0.8 else "PARTIAL" if combined_score > 0 else "FAIL"
-            self.stats["hybrid"]["total"] += 1
-            if status == "PASS":
-                self.stats["hybrid"]["passed"] += 1
+            expected = min(self._expected_min(item), limit)
+            star_score, star_status = self._score_count(stars_count, expected, self._expected_max(item))
+            semantic_score = 1.0 if papers_count > 0 else 0.0
+            graph_score = 1.0 if related_papers_count > 0 else 0.0
+            combined_score = 0.6 * star_score + 0.25 * semantic_score + 0.15 * graph_score
+            if star_status == "PASS" and papers_count > 0:
+                status = "PASS"
+            elif combined_score > 0:
+                status = "PARTIAL"
             else:
-                self.stats["hybrid"]["failed"] += 1
+                status = "FAIL"
+            self._record_status("hybrid", status)
 
             return {
                 "id": item["id"],
                 "status": status,
                 "stars_found": stars_count,
                 "papers_found": papers_count,
+                "related_papers_found": related_papers_count,
                 "score": round(combined_score, 3),
                 "latency_ms": round(latency * 1000, 2),
-                "query": item["query"],
-                "category": item["category"]
+                "query": self._query_text(item),
+                "category": self._category(item)
             }
         except Exception as e:
-            self.stats["hybrid"]["total"] += 1
-            self.stats["hybrid"]["failed"] += 1
+            self._record_status("hybrid", "ERROR")
             return {
                 "id": item["id"],
                 "status": "ERROR",
                 "error": str(e),
-                "query": item["query"]
+                "query": self._query_text(item)
             }
 
     def run_benchmark(self, queries: List[Dict]) -> List[Dict[str, Any]]:
         logger.info(f"Starting benchmark with {len(queries)} queries...")
 
         for i, item in enumerate(queries):
-            qtype = item["type"]
-            logger.info(f"[{i+1}/{len(queries)}] Running {item['id']} ({qtype}): {item['query'][:50]}...")
+            qtype = self._query_type(item)
+            query_text = self._query_text(item)
+            logger.info(f"[{i+1}/{len(queries)}] Running {item['id']} ({qtype}): {query_text[:50]}...")
 
             if qtype == "spatial":
                 result = self._evaluate_spatial(item)
@@ -424,8 +510,9 @@ class TaarYaBenchmark:
             elif qtype == "hybrid":
                 result = self._evaluate_hybrid(item)
             else:
-                result = {"id": item["id"], "status": "UNKNOWN_TYPE", "query": item["query"]}
+                result = {"id": item["id"], "status": "UNKNOWN_TYPE", "query": query_text}
 
+            result["family"] = qtype
             self.results.append(result)
             status_str = f"[{result['status']}]"
             score = result.get('score', 'N/A')
@@ -447,14 +534,15 @@ class TaarYaBenchmark:
         print("=" * 80)
 
         print("\n[BY QUERY TYPE]")
-        print(f"{'Type':<12} | {'Total':<8} | {'Passed':<8} | {'Failed':<8} | {'Pass Rate':<12}")
-        print("-" * 55)
+        print(f"{'Type':<12} | {'Total':<8} | {'Passed':<8} | {'Partial':<8} | {'Failed':<8} | {'Pass Rate':<12}")
+        print("-" * 68)
         for qtype, stat in self.stats.items():
             total = stat["total"]
             passed = stat["passed"]
+            partial = stat.get("partial", 0)
             failed = stat["failed"]
             rate = (passed / total * 100) if total > 0 else 0
-            print(f"{qtype:<12} | {total:<8} | {passed:<8} | {failed:<8} | {rate:<12.1f}%")
+            print(f"{qtype:<12} | {total:<8} | {passed:<8} | {partial:<8} | {failed:<8} | {rate:<12.1f}%")
 
         print("\n[BY DIFFICULTY]")
         difficulty_stats = {"easy": {"total": 0, "passed": 0}, "medium": {"total": 0, "passed": 0},

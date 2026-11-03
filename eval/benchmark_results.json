@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-29T17:49:11.900316",
+  "timestamp": "2026-11-03T17:02:59.274551",
   "stats": {
     "spatial": {
       "total": 14,
@@ -39,12 +39,13 @@
       "stars_found": 100,
       "expected": 50,
       "score": 1.0,
-      "latency_ms": 175.66,
+      "latency_ms": 172.56,
       "top_discovery": 0.0,
       "anomalous_count": 0,
       "query": "Find all stars in a 3-degree cone centered on the Hyades core (RA=66.75\u00c2\u00b0, Dec=15.87\u00c2\u00b0).",
       "category": "Cone search",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q02",
@@ -52,12 +53,13 @@
       "stars_found": 200,
       "expected": 100,
       "score": 1.0,
-      "latency_ms": 21.4,
+      "latency_ms": 22.87,
       "top_discovery": 10.5,
       "anomalous_count": 9,
       "query": "Find all stars within 1 degree of the Pleiades core (RA=56.75\u00c2\u00b0, Dec=24.12\u00c2\u00b0).",
       "category": "Cone search",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q03",
@@ -65,25 +67,27 @@
       "stars_found": 200,
       "expected": 100,
       "score": 1.0,
-      "latency_ms": 21.36,
+      "latency_ms": 17.98,
       "top_discovery": 0.0,
       "anomalous_count": 0,
       "query": "Find all stars in the Orion OB1 association region (RA=83.82\u00c2\u00b0, Dec=-5.39\u00c2\u00b0, r=4\u00c2\u00b0).",
       "category": "Cone search",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q04",
       "status": "PARTIAL",
-      "stars_found": 100,
+      "stars_found": 108,
       "expected": 20,
-      "score": 0.8,
-      "latency_ms": 11.22,
+      "score": 0.741,
+      "latency_ms": 7.53,
       "top_discovery": 10.5,
-      "anomalous_count": 5,
+      "anomalous_count": 11,
       "query": "Find stars in the Coma Berenices open cluster region (RA=185\u00c2\u00b0, Dec=25.83\u00c2\u00b0, r=4\u00c2\u00b0).",
       "category": "Cone search",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q05",
@@ -91,38 +95,41 @@
       "stars_found": 200,
       "expected": 200,
       "score": 1.0,
-      "latency_ms": 13.36,
+      "latency_ms": 8.15,
       "top_discovery": 10.5,
-      "anomalous_count": 11,
+      "anomalous_count": 16,
       "query": "Find stars in the Praesepe (M44) cluster region (RA=130.05\u00c2\u00b0, Dec=19.52\u00c2\u00b0, r=2.5\u00c2\u00b0).",
       "category": "Cone search",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q06",
       "status": "PASS",
-      "stars_found": 100,
+      "stars_found": 101,
       "expected": 50,
       "score": 1.0,
-      "latency_ms": 9.74,
+      "latency_ms": 7.52,
       "top_discovery": 10.5,
-      "anomalous_count": 6,
+      "anomalous_count": 7,
       "query": "Find stars in NGC 2516 (RA=119.71\u00c2\u00b0, Dec=-60.85\u00c2\u00b0, r=0.5\u00c2\u00b0).",
       "category": "Cone search",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q07",
       "status": "PASS",
-      "stars_found": 100,
+      "stars_found": 105,
       "expected": 40,
       "score": 1.0,
-      "latency_ms": 12.47,
+      "latency_ms": 6.98,
       "top_discovery": 10.5,
-      "anomalous_count": 2,
+      "anomalous_count": 6,
       "query": "Find stars in the Alpha Persei (M34) region (RA=51.08\u00c2\u00b0, Dec=49.86\u00c2\u00b0, r=2\u00c2\u00b0).",
       "category": "Cone search",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q08",
@@ -130,12 +137,13 @@
       "stars_found": 59,
       "expected": 25,
       "score": 1.0,
-      "latency_ms": 9.52,
+      "latency_ms": 6.0,
       "top_discovery": 10.5,
       "anomalous_count": 5,
       "query": "Find stars in IC 2391 (RA=130.07\u00c2\u00b0, Dec=-52.97\u00c2\u00b0, r=0.3\u00c2\u00b0).",
       "category": "Cone search",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q09",
@@ -143,12 +151,13 @@
       "stars_found": 500,
       "expected": 500,
       "score": 1.0,
-      "latency_ms": 46.3,
+      "latency_ms": 29.91,
       "top_discovery": 0.0,
       "anomalous_count": 0,
       "query": "Find all stars in a 10-degree cone around the Galactic anti-center (RA=90\u00c2\u00b0, Dec=0\u00c2\u00b0).",
       "category": "Large radius sky coverage",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q10",
@@ -156,12 +165,13 @@
       "stars_found": 0,
       "expected": 0,
       "score": 1.0,
-      "latency_ms": 8.96,
+      "latency_ms": 4.8,
       "top_discovery": 0,
       "anomalous_count": 0,
       "query": "Find stars in a 0.1-degree cone at RA=0\u00c2\u00b0, Dec=+90\u00c2\u00b0 (celestial north pole).",
       "category": "Empty sky region",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q11",
@@ -169,12 +179,13 @@
       "stars_found": 0,
       "expected": 500,
       "score": 0.0,
-      "latency_ms": 6.21,
+      "latency_ms": 5.18,
       "top_discovery": 0,
       "anomalous_count": 0,
       "query": "Find stars within 2 degrees of the Galactic plane at l=60\u00c2\u00b0, b=0\u00c2\u00b0 (RA\u00e2\u2030\u02c6105\u00c2\u00b0, Dec\u00e2\u2030\u02c60\u00c2\u00b0).",
       "category": "Galactic plane cross",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q12",
@@ -182,10 +193,11 @@
       "candidates_found": 136,
       "expected": 1,
       "score": 0.5,
-      "latency_ms": 21.26,
+      "latency_ms": 15.64,
       "query": "Find candidates in the Hyades region (RA=66.75\u00c2\u00b0, Dec=15.87\u00c2\u00b0, r=5\u00c2\u00b0) with proper motion above 80 mas/yr.",
       "category": "High proper motion \u00e2\u20ac\u201d Hyades region",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q13",
@@ -193,10 +205,11 @@
       "candidates_found": 0,
       "expected": 1,
       "score": 0.0,
-      "latency_ms": 11.61,
+      "latency_ms": 6.58,
       "query": "Find high-proper-motion stars in the Coma Berenices region (RA=185\u00c2\u00b0, Dec=25.83\u00c2\u00b0, r=4\u00c2\u00b0) above 60 mas/yr.",
       "category": "High proper motion \u00e2\u20ac\u201d Coma Ber region",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q14",
@@ -204,10 +217,11 @@
       "candidates_found": 0,
       "expected": 1,
       "score": 0.0,
-      "latency_ms": 18.39,
+      "latency_ms": 14.76,
       "query": "Find blue outliers (BP-RP < -0.1) in the Pleiades region (RA=56.75\u00c2\u00b0, Dec=24.12\u00c2\u00b0, r=2\u00c2\u00b0).",
       "category": "Blue color outliers",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q15",
@@ -215,10 +229,11 @@
       "candidates_found": 0,
       "expected": 5,
       "score": 0.0,
-      "latency_ms": 26.58,
+      "latency_ms": 14.12,
       "query": "Find very red stars (BP-RP > 2.8) in Orion OB1 region (RA=83.82\u00c2\u00b0, Dec=-5.39\u00c2\u00b0, r=4\u00c2\u00b0).",
       "category": "Red color outliers",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q16",
@@ -226,10 +241,11 @@
       "candidates_found": 0,
       "expected": 0,
       "score": 1.0,
-      "latency_ms": 16.81,
+      "latency_ms": 11.12,
       "query": "Find anomalously bright stars (G < 10) at distances > 500 pc in the Praesepe region.",
       "category": "Bright-star anomaly",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q17",
@@ -237,21 +253,23 @@
       "candidates_found": 0,
       "expected": 1,
       "score": 0.0,
-      "latency_ms": 10.26,
+      "latency_ms": 10.15,
       "query": "Find stars with RUWE > 2.0 in the NGC 2516 region indicating possible binarity.",
       "category": "High RUWE \u00e2\u20ac\u201d NGC 2516",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q18",
       "status": "PARTIAL",
-      "candidates_found": 100,
+      "candidates_found": 105,
       "expected": 1,
       "score": 0.5,
-      "latency_ms": 7.75,
+      "latency_ms": 8.31,
       "query": "Find isolated stars (fewer than 3 neighbors within 1 deg) in the Alpha Persei region.",
       "category": "Low-density field anomaly",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q19",
@@ -259,10 +277,11 @@
       "candidates_found": 0,
       "expected": 1,
       "score": 0.0,
-      "latency_ms": 26.49,
+      "latency_ms": 13.37,
       "query": "Find stars in Orion OB1 that are simultaneously high-motion (mu > 40 mas/yr) AND blue (BP-RP < 0.5).",
       "category": "Multi-signal discovery \u00e2\u20ac\u201d Orion OB1",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q20",
@@ -272,9 +291,10 @@
       "score": 1.0,
       "top_similarity": 0.7019,
       "mean_similarity": 0.678,
-      "latency_ms": 67.61,
+      "latency_ms": 69.11,
       "query": "Find papers discussing the age and formation history of the Pleiades open cluster.",
-      "category": "Literature search \u00e2\u20ac\u201d Pleiades age"
+      "category": "Literature search \u00e2\u20ac\u201d Pleiades age",
+      "family": "semantic"
     },
     {
       "id": "Q21",
@@ -284,9 +304,10 @@
       "score": 1.0,
       "top_similarity": 0.5911,
       "mean_similarity": 0.5543,
-      "latency_ms": 45.75,
+      "latency_ms": 50.21,
       "query": "Find papers on the internal dynamics and mass segregation in the Hyades cluster.",
-      "category": "Literature search \u00e2\u20ac\u201d Hyades internal dynamics"
+      "category": "Literature search \u00e2\u20ac\u201d Hyades internal dynamics",
+      "family": "semantic"
     },
     {
       "id": "Q22",
@@ -296,9 +317,10 @@
       "score": 1.0,
       "top_similarity": 0.6877,
       "mean_similarity": 0.6797,
-      "latency_ms": 75.57,
+      "latency_ms": 55.75,
       "query": "Find papers discussing star formation in the Orion OB1 association.",
-      "category": "Literature search \u00e2\u20ac\u201d Orion star formation"
+      "category": "Literature search \u00e2\u20ac\u201d Orion star formation",
+      "family": "semantic"
     },
     {
       "id": "Q23",
@@ -308,9 +330,10 @@
       "score": 1.0,
       "top_similarity": 0.7699,
       "mean_similarity": 0.7379,
-      "latency_ms": 71.54,
+      "latency_ms": 47.74,
       "query": "Find papers on the structure of the Milky Way Galaxy based on Gaia DR3 data.",
-      "category": "Literature search \u00e2\u20ac\u201d Galactic structure"
+      "category": "Literature search \u00e2\u20ac\u201d Galactic structure",
+      "family": "semantic"
     },
     {
       "id": "Q24",
@@ -320,9 +343,10 @@
       "score": 1.0,
       "top_similarity": 0.7459,
       "mean_similarity": 0.6992,
-      "latency_ms": 69.57,
+      "latency_ms": 49.02,
       "query": "Find papers on photometric variability and variable stars in open clusters.",
-      "category": "Literature search \u00e2\u20ac\u201d Variable stars"
+      "category": "Literature search \u00e2\u20ac\u201d Variable stars",
+      "family": "semantic"
     },
     {
       "id": "Q25",
@@ -332,9 +356,10 @@
       "score": 1.0,
       "top_similarity": 0.8254,
       "mean_similarity": 0.7939,
-      "latency_ms": 48.84,
+      "latency_ms": 41.01,
       "query": "Find papers on white dwarf cooling and age-dating of open clusters using white dwarfs.",
-      "category": "Literature search \u00e2\u20ac\u201d White dwarfs in clusters"
+      "category": "Literature search \u00e2\u20ac\u201d White dwarfs in clusters",
+      "family": "semantic"
     },
     {
       "id": "Q26",
@@ -344,9 +369,10 @@
       "score": 1.0,
       "top_similarity": 0.7709,
       "mean_similarity": 0.7583,
-      "latency_ms": 72.46,
+      "latency_ms": 54.11,
       "query": "Find papers on binary star dynamics and N-body simulations in star clusters.",
-      "category": "Literature search \u00e2\u20ac\u201d Binary star dynamics"
+      "category": "Literature search \u00e2\u20ac\u201d Binary star dynamics",
+      "family": "semantic"
     },
     {
       "id": "Q27",
@@ -356,9 +382,10 @@
       "score": 1.0,
       "top_similarity": 0.6732,
       "mean_similarity": 0.6523,
-      "latency_ms": 59.59,
+      "latency_ms": 30.19,
       "query": "Find papers on hypervelocity stars and their origin in the Galactic halo.",
-      "category": "Literature search \u00e2\u20ac\u201d Hypervelocity stars"
+      "category": "Literature search \u00e2\u20ac\u201d Hypervelocity stars",
+      "family": "semantic"
     },
     {
       "id": "Q28",
@@ -368,9 +395,10 @@
       "score": 1.0,
       "top_similarity": 0.7162,
       "mean_similarity": 0.6973,
-      "latency_ms": 69.85,
+      "latency_ms": 24.35,
       "query": "Find papers on astrometric exoplanet detection using Gaia DR3 data.",
-      "category": "Literature search \u00e2\u20ac\u201d astrometric exoplanet detection"
+      "category": "Literature search \u00e2\u20ac\u201d astrometric exoplanet detection",
+      "family": "semantic"
     },
     {
       "id": "Q29",
@@ -380,9 +408,10 @@
       "score": 1.0,
       "top_similarity": 0.8496,
       "mean_similarity": 0.8197,
-      "latency_ms": 52.35,
+      "latency_ms": 72.93,
       "query": "Find papers on metallicity gradients across open clusters in the Milky Way.",
-      "category": "Literature search \u00e2\u20ac\u201d metallicity gradients"
+      "category": "Literature search \u00e2\u20ac\u201d metallicity gradients",
+      "family": "semantic"
     },
     {
       "id": "Q30",
@@ -392,9 +421,10 @@
       "score": 1.0,
       "top_similarity": 0.6262,
       "mean_similarity": 0.61,
-      "latency_ms": 84.03,
+      "latency_ms": 43.14,
       "query": "Find papers on Hertzsprung-Russell diagram analysis for stellar population studies.",
-      "category": "Literature search \u00e2\u20ac\u201d stellar astrophysics"
+      "category": "Literature search \u00e2\u20ac\u201d stellar astrophysics",
+      "family": "semantic"
     },
     {
       "id": "Q31",
@@ -404,9 +434,10 @@
       "score": 1.0,
       "top_similarity": 0.5889,
       "mean_similarity": 0.5706,
-      "latency_ms": 82.86,
+      "latency_ms": 42.81,
       "query": "Find papers authored by or citing work by Jeremy R. King on star cluster membership.",
-      "category": "Specific author search"
+      "category": "Specific author search",
+      "family": "semantic"
     },
     {
       "id": "Q32",
@@ -415,9 +446,10 @@
       "papers_found": 10,
       "related_papers_found": 10,
       "score": 1.0,
-      "latency_ms": 179.72,
+      "latency_ms": 821.56,
       "query": "Find and rank the most interesting stars in the Hyades region (RA=66.75\u00c2\u00b0, Dec=15.87\u00c2\u00b0, r=5\u00c2\u00b0) combining catalog data and literature.",
-      "category": "Cluster discovery \u00e2\u20ac\u201d Hyades"
+      "category": "Cluster discovery \u00e2\u20ac\u201d Hyades",
+      "family": "hybrid"
     },
     {
       "id": "Q33",
@@ -426,9 +458,10 @@
       "papers_found": 10,
       "related_papers_found": 10,
       "score": 1.0,
-      "latency_ms": 150.21,
+      "latency_ms": 67.74,
       "query": "Find and rank candidates in the Coma Berenices region combining spatial search, discovery ranking, and literature.",
-      "category": "Cluster discovery \u00e2\u20ac\u201d Coma Ber"
+      "category": "Cluster discovery \u00e2\u20ac\u201d Coma Ber",
+      "family": "hybrid"
     },
     {
       "id": "Q34",
@@ -437,9 +470,10 @@
       "papers_found": 10,
       "related_papers_found": 10,
       "score": 1.0,
-      "latency_ms": 166.11,
+      "latency_ms": 497.26,
       "query": "Find all relevant stars in Praesepe and return them with discovery scores, literature context, and HR diagram data.",
-      "category": "Multi-wavelength cluster study \u00e2\u20ac\u201d Praesepe"
+      "category": "Multi-wavelength cluster study \u00e2\u20ac\u201d Praesepe",
+      "family": "hybrid"
     },
     {
       "id": "Q35",
@@ -448,9 +482,10 @@
       "papers_found": 10,
       "related_papers_found": 10,
       "score": 1.0,
-      "latency_ms": 221.25,
+      "latency_ms": 71.74,
       "query": "Find high-confidence anomalies in NGC 2516 using the strict discovery profile.",
-      "category": "NGC 2516 with strict discovery profile"
+      "category": "NGC 2516 with strict discovery profile",
+      "family": "hybrid"
     },
     {
       "id": "Q36",
@@ -458,10 +493,11 @@
       "candidates_found": 1,
       "expected": 5,
       "score": 0.2,
-      "latency_ms": 18.14,
+      "latency_ms": 12.64,
       "query": "Find low-mass M-dwarf candidates in Alpha Persei (G > 12, BP-RP > 1.4) that may be cluster members.",
       "category": "Low-mass members \u00e2\u20ac\u201d Alpha Persei",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q37",
@@ -469,10 +505,11 @@
       "candidates_found": 0,
       "expected": 5,
       "score": 0.0,
-      "latency_ms": 46.95,
+      "latency_ms": 26.08,
       "query": "Find binary candidates in Orion OB1 with RUWE > 1.4 AND photometric parallax consistency.",
       "category": "High-confidence binary candidates",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q38",
@@ -480,10 +517,11 @@
       "candidates_found": 92,
       "expected": 3,
       "score": 0.5,
-      "latency_ms": 39.4,
+      "latency_ms": 24.52,
       "query": "Find giant branch stars in the Hyades region (M_G < 4, BP-RP > 0.5) for HR diagram anchor points.",
       "category": "Giant branch stars in Hyades",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q39",
@@ -493,9 +531,10 @@
       "score": 1.0,
       "top_similarity": 0.7302,
       "mean_similarity": 0.6871,
-      "latency_ms": 77.58,
+      "latency_ms": 52.74,
       "query": "Find papers discussing the calibration and accuracy of Gaia DR3 astrometric solutions.",
-      "category": "Gaia DR3 calibration"
+      "category": "Gaia DR3 calibration",
+      "family": "semantic"
     },
     {
       "id": "Q40",
@@ -505,9 +544,10 @@
       "score": 1.0,
       "top_similarity": 0.5442,
       "mean_similarity": 0.5325,
-      "latency_ms": 119.07,
+      "latency_ms": 28.69,
       "query": "Find papers using MESA (Modules for Experiments in Stellar Astrophysics) for stellar evolution modeling.",
-      "category": "MESA stellar evolution"
+      "category": "MESA stellar evolution",
+      "family": "semantic"
     },
     {
       "id": "Q41",
@@ -515,12 +555,13 @@
       "stars_found": 0,
       "expected": 50,
       "score": 0.0,
-      "latency_ms": 13.48,
+      "latency_ms": 10.89,
       "top_discovery": 0,
       "anomalous_count": 0,
       "query": "Retrieve all stars within 1 degree of the boundary between the Hyades and Praesepe clusters (approximately RA=98\u00c2\u00b0, Dec=17.5\u00c2\u00b0).",
       "category": "Cross-cluster comparison",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q42",
@@ -528,12 +569,13 @@
       "stars_found": 0,
       "expected": 20,
       "score": 0.0,
-      "latency_ms": 13.81,
+      "latency_ms": 8.41,
       "top_discovery": 0,
       "anomalous_count": 0,
       "query": "Find stars in a 0.5-degree cone around Sirius (RA=101.29\u00c2\u00b0, Dec=-16.72\u00c2\u00b0) for wide binary companion search.",
       "category": "Wide binary candidate region",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q43",
@@ -541,12 +583,13 @@
       "stars_found": 0,
       "expected": 5,
       "score": 0.0,
-      "latency_ms": 15.14,
+      "latency_ms": 9.68,
       "top_discovery": 0,
       "anomalous_count": 0,
       "query": "Find stars in a 0.2-degree cone at Galactic anticenter (l=180\u00c2\u00b0, b=0\u00c2\u00b0, RA\u00e2\u2030\u02c6315\u00c2\u00b0, Dec\u00e2\u2030\u02c60\u00c2\u00b0).",
       "category": "Galactic anticenter \u00e2\u20ac\u201d empty region",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "spatial"
     },
     {
       "id": "Q44",
@@ -554,10 +597,11 @@
       "candidates_found": 186,
       "expected": 1,
       "score": 0.5,
-      "latency_ms": 63.02,
+      "latency_ms": 27.82,
       "query": "Find stars in the Hyades region with parallax inconsistent with cluster distance (within 5 deg of Hyades center but parallax > 25 mas or < 18 mas).",
       "category": "Parallax outlier \u00e2\u20ac\u201d Hyades",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q45",
@@ -565,10 +609,11 @@
       "candidates_found": 0,
       "expected": 1,
       "score": 0.0,
-      "latency_ms": 19.13,
+      "latency_ms": 10.53,
       "query": "Find very young star candidates (blue + high motion + high RUWE) in IC 2391 consistent with ~50 Myr age.",
       "category": "Young moving group \u00e2\u20ac\u201d IC 2391",
-      "difficulty": "medium"
+      "difficulty": "medium",
+      "family": "discovery"
     },
     {
       "id": "Q46",
@@ -578,9 +623,10 @@
       "score": 1.0,
       "top_similarity": 0.7342,
       "mean_similarity": 0.6979,
-      "latency_ms": 140.87,
+      "latency_ms": 67.28,
       "query": "Find papers on the Gaia hyperspatial resolution method for detecting binary stars.",
-      "category": "Gaia hyperspatial resolution"
+      "category": "Gaia hyperspatial resolution",
+      "family": "semantic"
     },
     {
       "id": "Q47",
@@ -590,9 +636,10 @@
       "score": 1.0,
       "top_similarity": 0.4854,
       "mean_similarity": 0.4751,
-      "latency_ms": 132.18,
+      "latency_ms": 25.93,
       "query": "Find papers on cross-identification between Gaia DR3 and other major catalogs (SIMBAD, VizieR, LAMOST).",
-      "category": "Simbad catalog cross-identification"
+      "category": "Simbad catalog cross-identification",
+      "family": "semantic"
     },
     {
       "id": "Q48",
@@ -601,9 +648,10 @@
       "papers_found": 10,
       "related_papers_found": 10,
       "score": 1.0,
-      "latency_ms": 163.82,
+      "latency_ms": 59.55,
       "query": "Use the strict discovery profile to find the highest-confidence anomaly candidates in Orion OB1.",
-      "category": "Strict discovery in Orion OB1"
+      "category": "Strict discovery in Orion OB1",
+      "family": "hybrid"
     },
     {
       "id": "Q49",
@@ -612,9 +660,10 @@
       "papers_found": 10,
       "related_papers_found": 10,
       "score": 1.0,
-      "latency_ms": 190.52,
+      "latency_ms": 88.48,
       "query": "Use the aggressive discovery profile to maximize recall of any unusual star in Alpha Persei.",
-      "category": "Aggressive recall in Alpha Persei"
+      "category": "Aggressive recall in Alpha Persei",
+      "family": "hybrid"
     },
     {
       "id": "Q50",
@@ -623,18 +672,18 @@
       "papers_found": 10,
       "related_papers_found": 10,
       "score": 1.0,
-      "latency_ms": 178.09,
+      "latency_ms": 69.78,
       "query": "Retrieve 20 candidates from Praesepe with full provenance metadata, HR diagram, and DS9 region export.",
-      "category": "Full export with provenance"
+      "category": "Full export with provenance",
+      "family": "hybrid"
     }
   ],
   "summary": {
-    "total": 50,
-    "passed": 33,
-    "partial": 8,
-    "failed": 9,
-    "pass_rate": 0.66,
-    "avg_latency_ms": 68.5,
-    "notes": "Benchmark run 2026-04-29 (updated). Semantic 100% (16/16). Spatial improved: 5 missing benchmark clusters seeded with synthetic stars (560 total). Discovery pass rate (7.7%) remains low because anomaly thresholds (RUWE>1.4, BP-RP<-0.1, motion>40mas/yr) are calibrated for full Gaia catalog (1.7B stars); synthetic data (560 stars) lacks anomaly tails. Only 2 stars have RUWE>1.4, 0 have BP-RP>2.8. Not a retrieval failure \u2014 dataset shape problem."
+    "pass_rate": 66.0,
+    "avg_score": 0.71882,
+    "avg_latency": 58.904399999999995,
+    "total_stars": 1663,
+    "total_papers": 150,
+    "total_candidates": 520
   }
 }
